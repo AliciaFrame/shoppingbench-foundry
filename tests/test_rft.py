@@ -2,8 +2,11 @@ import json
 from pathlib import Path
 
 from evaluations.graders.rft_grader import grade
+from evaluations.graders.rft_grader_v2 import grade as grade_v2
+from evaluations.graders.rft_grader_v2 import grade_with_details as grade_v2_with_details
 from rft.scripts.prepare_data import prepare_task
 from rft.scripts.submit import (
+    _endpoint_grader,
     _private_preview_payload,
     _private_preview_url,
     _recipe_from_job,
@@ -35,6 +38,82 @@ def test_rft_grader_rewards_exact_order_and_complete_process():
     missing_termination = json.loads(json.dumps(sample))
     missing_termination["output_tools"].pop()
     assert grade(missing_termination, item) == 0.9
+
+
+def test_web_rft_grader_v2_rewards_correct_efficient_trajectory_without_keyword_stuffing():
+    sample = {
+        "output_tools": [
+            {
+                "function": {
+                    "name": "find_product",
+                    "arguments": {"q": "matching replacement part", "page": 1},
+                }
+            },
+            {
+                "function": {
+                    "name": "view_product_information",
+                    "arguments": {"product_ids": "p1"},
+                }
+            },
+            {"function": {"name": "recommend_product", "arguments": {"product_ids": "p1"}}},
+            {"function": {"name": "terminate", "arguments": {}}},
+        ]
+    }
+    item = {
+        "task": "web",
+        "reward": {"product_id": "p1"},
+        "knowledge_attribute": "specific fact",
+        "max_search_calls": 3,
+    }
+
+    assert grade_v2(sample, item) == 0.9
+
+    early_grounded = json.loads(json.dumps(sample))
+    early_grounded["output_tools"][0]["function"]["arguments"]["q"] = (
+        "specific fact matching replacement part"
+    )
+    assert grade_v2(early_grounded, item) == 1.0
+
+
+def test_web_rft_grader_v2_penalizes_search_bloat_and_keyword_stuffing():
+    searches = [
+        {
+            "function": {
+                "name": "find_product",
+                "arguments": {"q": f"broad search {index}", "page": 1},
+            }
+        }
+        for index in range(5)
+    ]
+    searches[-1]["function"]["arguments"]["q"] = "specific fact"
+    sample = {
+        "output_tools": searches
+        + [
+            {
+                "function": {
+                    "name": "view_product_information",
+                    "arguments": {"product_ids": "p1"},
+                }
+            },
+            {"function": {"name": "recommend_product", "arguments": {"product_ids": "p1"}}},
+            {"function": {"name": "terminate", "arguments": {}}},
+        ]
+    }
+    item = {
+        "task": "web",
+        "reward": {"product_id": "p1"},
+        "knowledge_attribute": "specific fact",
+        "max_search_calls": 3,
+    }
+
+    details = grade_v2_with_details(sample, item)
+    assert details["early_knowledge"] is False
+    assert details["excess_searches"] == 2
+    assert details["score"] == 0.79
+
+    wrong_product = json.loads(json.dumps(sample))
+    wrong_product["output_tools"][-2]["function"]["arguments"]["product_ids"] = "wrong"
+    assert grade_v2(wrong_product, item) < 0.25
 
 
 def test_prepare_task_excludes_holdout_and_uses_developer_message(tmp_path: Path):
@@ -135,6 +214,26 @@ def test_private_preview_payload_matches_blossom_contract(monkeypatch):
             }
         },
     }
+
+
+def test_v2_grader_submission_uses_isolated_route_and_suffix(monkeypatch):
+    monkeypatch.setenv("SHOPPINGBENCH_TOOL_BASE_URL", "https://tools.example")
+    monkeypatch.setenv("SHOPPINGBENCH_API_TOKEN", "test-token")
+
+    grader = _endpoint_grader("web", 0.9, "v2")
+    payload = _private_preview_payload(
+        model="MAI-Code-1.1-Flash",
+        training_file_id="file-train",
+        validation_file_id="file-validation",
+        task="web",
+        training_type="GlobalStandard",
+        threshold=0.9,
+        grader_version="v2",
+    )
+
+    assert grader["url"] == "https://tools.example/grade/v2"
+    assert grader["name"] == "shoppingbench_web_v2"
+    assert payload["fineTuningJobCreation"]["suffix"] == "mai-sb-web-rft3"
 
 
 def test_private_preview_url_and_recipe_confirmation_helpers(monkeypatch):

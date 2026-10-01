@@ -67,6 +67,39 @@ def test_original_tool_contracts_and_grader_endpoint(monkeypatch):
     assert grade.status_code == 200
     assert grade.json() == {"score": 1.0}
 
+    grade_v2 = client.post(
+        "/grade/v2",
+        json={
+            "sample": {
+                "output_tools": [
+                    {
+                        "function": {
+                            "name": "find_product",
+                            "arguments": {"q": "calculator", "page": 1},
+                        }
+                    },
+                    {
+                        "function": {
+                            "name": "view_product_information",
+                            "arguments": {"product_ids": "p1"},
+                        }
+                    },
+                    {"function": {"name": "recommend_product", "arguments": {"product_ids": "p1"}}},
+                    {"function": {"name": "terminate", "arguments": {}}},
+                ]
+            },
+            "item": {
+                "task": "web",
+                "reward": {"product_id": "p1"},
+                "knowledge_attribute": "orange",
+                "max_search_calls": 3,
+            },
+        },
+        headers=headers,
+    )
+    assert grade_v2.status_code == 200
+    assert grade_v2.json() == {"score": 0.9}
+
     rft_tool = client.post(
         "/rft/tools/find_product",
         json={

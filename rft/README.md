@@ -44,6 +44,47 @@ Web produced a 40% base failure rate at calibrated threshold `0.9`, providing
 useful training signal. Product produced only 15% failures over 60 repeated
 rollouts and is intentionally gated pending a harder curriculum.
 
+### Candidate Web grader v2
+
+The active `rft2` job continues to use the immutable v1 scoring contract:
+
+- 55% exact product ID
+- 15% literal knowledge attribute anywhere in any search query
+- 10% viewed before recommendation
+- 5% exactly one recommendation
+- 5% recommendation immediately followed by termination
+- 10% one-to-limit distinct searches
+
+That contract can reward repeated searching because its literal-knowledge bonus
+is larger than its all-or-nothing efficiency bonus. The candidate v2 grader in
+`src/shoppingbench_foundry/rft_grading_v2.py` is isolated from the active
+endpoint and is intended for a future run:
+
+- 65% exact product ID
+- 10% viewed before recommendation
+- 5% exactly one recommendation
+- 5% recommendation immediately followed by termination
+- 10% literal knowledge attribute within the first two searches
+- 5% one-to-limit distinct searches
+- 3% penalty per excess search and 5% penalty per duplicate search
+
+At threshold `0.9`, a correct, viewed, efficiently searched product with a
+complete recommendation/termination sequence passes even if the inferred fact
+is phrased differently. Late keyword insertion cannot recover the knowledge
+bonus, and search bloat reduces the score.
+
+Recalibrate from a downloaded Foundry Step 0 output-items response:
+
+```powershell
+python -m rft.scripts.recalibrate_step0 `
+  --step0 path\to\rft-step0-eval.json `
+  --output rft\results\web-step0-calibration-v2.json
+```
+
+The v2 endpoint is `/grade/v2`; `/grade` remains v1 so the active job is not
+changed mid-run. A future v2 submission must pass `--grader-version v2` and
+uses suffix `mai-sb-web-rft3`.
+
 ## Submit
 
 RFT access and supported endpoints are subscription/preview dependent. Set the

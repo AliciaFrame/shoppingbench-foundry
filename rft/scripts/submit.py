@@ -20,6 +20,7 @@ SUFFIXES = {
     "web": "mai-sb-web-rft2",
 }
 TOOL_NAMES = ["find_product", "view_product_information", "recommend_product", "terminate"]
+GRADER_VERSIONS = ("v1", "v2")
 
 
 def _required_env(name: str) -> str:
@@ -133,13 +134,30 @@ def _private_preview_url() -> str:
     return value
 
 
-def _endpoint_grader(task: str, threshold: float) -> dict[str, Any]:
+def _suffix(task: str, grader_version: str) -> str:
+    if grader_version == "v2":
+        if task != "web":
+            raise ValueError("The v2 grader currently supports only the Web task")
+        return "mai-sb-web-rft3"
+    return SUFFIXES[task]
+
+
+def _endpoint_grader(
+    task: str,
+    threshold: float,
+    grader_version: str = "v1",
+) -> dict[str, Any]:
     base_url = _required_env("SHOPPINGBENCH_TOOL_BASE_URL").rstrip("/")
     token = _required_env("SHOPPINGBENCH_API_TOKEN")
+    if grader_version not in GRADER_VERSIONS:
+        raise ValueError(f"Unknown grader version: {grader_version}")
+    if grader_version == "v2" and task != "web":
+        raise ValueError("The v2 grader currently supports only the Web task")
+    route = "/grade/v2" if grader_version == "v2" else "/grade"
     return {
         "type": "endpoint",
-        "name": f"shoppingbench_{task}_canonical",
-        "url": f"{base_url}/grade",
+        "name": f"shoppingbench_{task}_{grader_version}",
+        "url": f"{base_url}{route}",
         "headers": {"Authorization": f"Bearer {token}"},
         "rate_limit": 10,
         "pass_threshold": threshold,
@@ -154,6 +172,7 @@ def _private_preview_payload(
     task: str,
     training_type: str,
     threshold: float,
+    grader_version: str = "v1",
 ) -> dict[str, Any]:
     return {
         "fineTuningJobType": "fineTuning",
@@ -162,11 +181,11 @@ def _private_preview_payload(
             "training_file": training_file_id,
             "validation_file": validation_file_id,
             "trainingType": training_type,
-            "suffix": SUFFIXES[task],
+            "suffix": _suffix(task, grader_version),
             "method": {
                 "type": "reinforcement",
                 "reinforcement": {
-                    "grader": _endpoint_grader(task, threshold),
+                    "grader": _endpoint_grader(task, threshold, grader_version),
                     "tools": _tools(),
                     "max_episode_steps": 12,
                     "hyperparameters": {
@@ -236,6 +255,7 @@ def submit(
     threshold: float,
     minimal_payload: bool = False,
     private_preview: bool = False,
+    grader_version: str = "v1",
 ) -> dict[str, Any]:
     client = _client()
     model_id = _model()
@@ -263,6 +283,7 @@ def submit(
             task=task,
             training_type=training_type,
             threshold=threshold,
+            grader_version=grader_version,
         )
         requested_recipe = payload["execution_config"]["blossom"]["recipe"]
         job_data = _post_private_preview(payload)
@@ -273,7 +294,7 @@ def submit(
             raise RuntimeError("Private-preview submission returned no job ID")
     else:
         reinforcement: dict[str, Any] = {
-            "grader": _endpoint_grader(task, threshold),
+            "grader": _endpoint_grader(task, threshold, grader_version),
             "tools": _tools(),
             "max_episode_steps": 12,
         }
@@ -296,7 +317,7 @@ def submit(
             model=model_id,
             training_file=train_file.id,
             validation_file=validation_file.id,
-            suffix=SUFFIXES[task],
+            suffix=_suffix(task, grader_version),
             extra_body={"trainingType": os.getenv("MAI_RFT_TRAINING_TYPE", "globalStandard")},
             method={
                 "type": "reinforcement",
@@ -308,7 +329,8 @@ def submit(
     return {
         "task": task,
         "model": model_id,
-        "suffix": SUFFIXES[task],
+        "suffix": _suffix(task, grader_version),
+        "grader_version": grader_version,
         "job_id": job_id,
         "status": status,
         "training_file": train_file.id,
@@ -331,6 +353,7 @@ def main() -> None:
     parser.add_argument("--allow-low-signal", action="store_true")
     parser.add_argument("--minimal-payload", action="store_true")
     parser.add_argument("--private-preview", action="store_true")
+    parser.add_argument("--grader-version", choices=GRADER_VERSIONS, default="v1")
     parser.add_argument("--pass-threshold", type=float)
     parser.add_argument("--confirm-submit", action="store_true")
     args = parser.parse_args()
@@ -352,6 +375,7 @@ def main() -> None:
         ),
         minimal_payload=args.minimal_payload,
         private_preview=args.private_preview,
+        grader_version=args.grader_version,
     )
     rendered = json.dumps(result, indent=2)
     if args.output:

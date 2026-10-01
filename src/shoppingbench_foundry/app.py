@@ -10,6 +10,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from .rft_grading import endpoint_grade
+from .rft_grading_v2 import endpoint_grade as endpoint_grade_v2
 from .store import INFORMATION_FIELDS, ProductStore, create_store
 
 app = FastAPI(title="ShoppingBench Foundry Runtime", version="0.1.0")
@@ -134,3 +135,10 @@ def grade(
     request: GradeRequest,
 ) -> dict[str, float]:
     return endpoint_grade(request.model_dump())
+
+
+@app.post("/grade/v2", dependencies=[Depends(require_token)])
+def grade_v2(
+    request: GradeRequest,
+) -> dict[str, float]:
+    return endpoint_grade_v2(request.model_dump())
