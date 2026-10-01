@@ -39,7 +39,7 @@ python -m rft.scripts.calibrate `
   --output rft\results\web-calibration.json
 ```
 
-Web produced a 40% base failure rate at canonical threshold `1.0`, providing
+Web produced a 40% base failure rate at calibrated threshold `0.9`, providing
 useful training signal. Product produced only 15% failures over 60 repeated
 rollouts and is intentionally gated pending a harder curriculum.
 

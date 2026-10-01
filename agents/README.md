@@ -40,7 +40,11 @@ and token values come from the active environment rather than committed files.
 
 ## Local import check
 
+Run this from the repository root after setting the model and tool environment
+variables:
+
 ```powershell
+Set-Location ..
 python -c "from agents.shared.runtime import TASK; print(TASK)"
 ```
 

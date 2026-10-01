@@ -1,6 +1,6 @@
-.azure/*.env
-.azure/*.lock
-.env
+.azure/
+.env*
+!.env.example
 .venv/
 __pycache__/
 *.py[cod]
@@ -14,8 +14,3 @@ build/
 optimization/work/
 rft/results/*-events.jsonl
 rft/results/*-status.json
-
-# Azure Developer CLI local state
-.azure/config.json
-.azure/.state-change
-.azure/*/

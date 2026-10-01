@@ -52,7 +52,9 @@ StoreDependency = Annotated[ProductStore, Depends(get_store)]
 def require_token(authorization: str | None = Header(default=None)) -> None:
     expected = os.getenv("SHOPPINGBENCH_API_TOKEN")
     if not expected:
-        return
+        if os.getenv("SHOPPINGBENCH_ALLOW_ANONYMOUS", "").lower() in {"1", "true", "yes"}:
+            return
+        raise HTTPException(status_code=503, detail="Bearer authentication is not configured")
     supplied = authorization.removeprefix("Bearer ").strip() if authorization else ""
     if not secrets.compare_digest(supplied, expected):
         raise HTTPException(status_code=401, detail="Invalid bearer token")

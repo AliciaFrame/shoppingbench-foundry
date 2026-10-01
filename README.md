@@ -44,7 +44,8 @@ flowchart LR
 ```
 
 See [docs/architecture.md](docs/architecture.md) for component and data-flow
-details.
+details. See [docs/reproducibility.md](docs/reproducibility.md) for the
+clean-clone verification path and the complete cloud rerun sequence.
 
 ## Measured results
 
@@ -107,6 +108,10 @@ The prepared search corpus contains 1,818 benchmark gold products plus one
 deterministic distractor per gold product (3,636 documents). This controlled
 corpus supports reproducible behavior comparisons; it is intentionally smaller
 than the original ShoppingBench production-scale catalog.
+
+For expected counts, exact model checkpoints, baseline/final configuration
+selection, and cloud rerun caveats, follow
+[docs/reproducibility.md](docs/reproducibility.md).
 
 ### 3. Provision the Azure tool runtime
 

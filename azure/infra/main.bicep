@@ -6,6 +6,7 @@ param location string = resourceGroup().location
 param searchLocation string = location
 
 @secure()
+@minLength(32)
 param shoppingbenchApiToken string
 
 var token = uniqueString(subscription().id, resourceGroup().id, location, environmentName)
