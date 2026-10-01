@@ -44,7 +44,7 @@ Web produced a 40% base failure rate at calibrated threshold `0.9`, providing
 useful training signal. Product produced only 15% failures over 60 repeated
 rollouts and is intentionally gated pending a harder curriculum.
 
-### Candidate Web grader v2
+### Web grader v2
 
 The active `rft2` job continues to use the immutable v1 scoring contract:
 
@@ -56,9 +56,8 @@ The active `rft2` job continues to use the immutable v1 scoring contract:
 - 10% one-to-limit distinct searches
 
 That contract can reward repeated searching because its literal-knowledge bonus
-is larger than its all-or-nothing efficiency bonus. The candidate v2 grader in
-`src/shoppingbench_foundry/rft_grading_v2.py` is isolated from the active
-endpoint and is intended for a future run:
+is larger than its all-or-nothing efficiency bonus. The v2 grader in
+`src/shoppingbench_foundry/rft_grading_v2.py` is isolated from the v1 endpoint:
 
 - 65% exact product ID
 - 10% viewed before recommendation
@@ -81,9 +80,14 @@ python -m rft.scripts.recalibrate_step0 `
   --output rft\results\web-step0-calibration-v2.json
 ```
 
-The v2 endpoint is `/grade/v2`; `/grade` remains v1 so the active job is not
-changed mid-run. A future v2 submission must pass `--grader-version v2` and
-uses suffix `mai-sb-web-rft3`.
+The v2 endpoint is `/grade/v2`; `/grade` remains v1 so the `rft2` job was not
+changed mid-run. The separately submitted `developerTier` job uses:
+
+- job `ftjob-8978aa9f7a7d40eea2fa3854babb72da`
+- suffix `mai-sb-web-rft3`
+- model `mai-code-1.1-flash-2026-08-27`
+- pass threshold `0.9`
+- receipt `rft/results/web-job-rft3.json`
 
 ## Submit
 

@@ -42,3 +42,10 @@ August 27 MAI-Code-1.1-Flash checkpoint with suffix `mai-sb-web-rft2`. Its
 committed job JSON preserves the submission receipt; live status is monitored
 separately. Checkpoint and final-model results will be added after every
 checkpoint is evaluated on the canonical holdout.
+
+A second `developerTier` job, `ftjob-8978aa9f7a7d40eea2fa3854babb72da`,
+was submitted with suffix `mai-sb-web-rft3` against the isolated v2 grader.
+The revised reward makes exact product selection dominant, limits the
+knowledge-query bonus to the first two searches, and penalizes excess and
+duplicate searches. Recalibration on the authoritative 20-case Step 0 run
+produced a 50% base failure rate at threshold `0.9`.

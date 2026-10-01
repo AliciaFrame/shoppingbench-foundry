@@ -1,0 +1,15 @@
+{
+  "task": "web",
+  "model": "mai-code-1.1-flash-2026-08-27",
+  "suffix": "mai-sb-web-rft3",
+  "grader_version": "v2",
+  "job_id": "ftjob-8978aa9f7a7d40eea2fa3854babb72da",
+  "status": "pending",
+  "training_file": "file-13b866044466449ab3a91185e4645c9a",
+  "validation_file": "file-a56c6de866ee4a9c83f981101c317f9b",
+  "pass_threshold": 0.9,
+  "submission_mode": "public-v1",
+  "requested_recipe": null,
+  "server_returned_recipe": null,
+  "recipe_confirmed": null
+}
