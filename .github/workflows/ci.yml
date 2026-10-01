@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: python -m pip install -e ".[agents,dev]"
+
+      - name: Regenerate deterministic artifacts
+        run: |
+          python data/scripts/prepare.py
+          python rft/scripts/prepare_data.py
+          git diff --exit-code -- data/prepared evaluations/datasets rft/data
+
+      - name: Test
+        run: python -m pytest
+
+      - name: Lint
+        run: python -m ruff check .
+
+      - name: Smoke-test agent configurations
+        env:
+          MAI_OPENAI_BASE_URL: https://example.openai.azure.com/openai/v1
+          OTEL_SDK_DISABLED: "true"
+          SHOPPINGBENCH_API_TOKEN: test-token
+          SHOPPINGBENCH_TOOL_URL: http://localhost:8000
+        run: |
+          for task in product shop voucher web; do
+            python -c "import agents.${task}.main; from agents.shared.runtime import config, TOOLS; assert config.source == 'local'; assert len(TOOLS) == 4"
+          done
+
+      - name: Materialize optimizer configuration
+        run: |
+          python optimization/run.py product \
+            --round 1 \
+            --agent-version 1 \
+            --eval-model judge \
+            --optimization-model optimizer \
+            --dry-run
+
+      - name: Compile Bicep
+        run: az bicep build --file azure/infra/main.bicep --stdout > /dev/null

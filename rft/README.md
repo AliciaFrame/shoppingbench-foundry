@@ -71,5 +71,6 @@ python -m rft.scripts.monitor <job-id> `
 ```
 
 Result receipts are kept under `results/`; the README will be updated with
-checkpoint comparisons when training and evaluation complete. The current
-receipt records the accepted pending job.
+checkpoint comparisons when training and evaluation complete. `web-job.json`
+records the state returned at submission. Live `*-status.json` and
+`*-events.jsonl` files are generated locally and ignored.
