@@ -8,6 +8,7 @@ known agent behavior.
 ## Workflow
 
 1. Generate disjoint train/validation rows while excluding canonical holdouts.
+   Every row includes the same four function schemas used during calibration.
 2. Run base-model rollouts through the same live tools.
 3. Calibrate a pass threshold targeting a 25–50% failure rate.
 4. Submit one independently suffixed job per task.
@@ -52,16 +53,23 @@ variables in `.env.example`, then:
 python -m rft.scripts.submit web `
   --calibration rft\results\web-calibration.json `
   --confirm-submit `
-  --output rft\results\web-job.json
+  --output rft\results\web-job-rft2.json
 ```
 
-The accepted Web job uses:
+The corrected Web job uses:
 
-- suffix `mai-sb-web-rft1`
+- suffix `mai-sb-web-rft2`
 - model checkpoint `mai-code-1.1-flash-2026-08-27`
 - public `/openai/v1` reinforcement fine-tuning API
 - calibrated pass threshold `0.9`
 - authenticated live tools and canonical endpoint grader
+
+The first receipt, `web-job.json`, records a failed wiring attempt. Its uploaded
+rows omitted the per-example function schemas required by agentic RFT. The
+platform reached the grader 260 times but made zero tool calls, then rejected
+all 160 validation attempts as hard before step 1 and billed 0.000 training
+hours. Submission now validates that every row contains the exact tool names
+and schemas used by the job configuration.
 
 Monitor:
 
@@ -71,6 +79,6 @@ python -m rft.scripts.monitor <job-id> `
 ```
 
 Result receipts are kept under `results/`; the README will be updated with
-checkpoint comparisons when training and evaluation complete. `web-job.json`
-records the state returned at submission. Live `*-status.json` and
-`*-events.jsonl` files are generated locally and ignored.
+checkpoint comparisons when training and evaluation complete. Each
+`web-job*.json` records the immutable state returned at submission. Live
+`*-status.json` and `*-events.jsonl` files are generated locally and ignored.

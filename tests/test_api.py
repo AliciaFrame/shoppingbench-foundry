@@ -44,6 +44,18 @@ def test_original_tool_contracts_and_grader_endpoint(monkeypatch):
         json={
             "sample": {
                 "output_tools": [
+                    {
+                        "function": {
+                            "name": "find_product",
+                            "arguments": {"q": "calculator", "page": 1},
+                        }
+                    },
+                    {
+                        "function": {
+                            "name": "view_product_information",
+                            "arguments": {"product_ids": "p1"},
+                        }
+                    },
                     {"function": {"name": "recommend_product", "arguments": {"product_ids": "p1"}}},
                     {"function": {"name": "terminate", "arguments": {}}},
                 ]

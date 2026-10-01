@@ -7,6 +7,7 @@ from rft.scripts.submit import (
     _private_preview_payload,
     _private_preview_url,
     _recipe_from_job,
+    _validate_agentic_dataset,
 )
 
 
@@ -73,6 +74,28 @@ def test_prepare_task_excludes_holdout_and_uses_developer_message(tmp_path: Path
     assert [message["role"] for message in first["messages"]] == ["developer", "user"]
     assert "Skill instructions" in first["messages"][0]["content"]
     assert first["messages"][-1]["content"] != "query-0"
+    assert [tool["function"]["name"] for tool in first["tools"]] == [
+        "find_product",
+        "view_product_information",
+        "recommend_product",
+        "terminate",
+    ]
+    _validate_agentic_dataset(output_dir / "web-train.jsonl")
+
+
+def test_agentic_dataset_validation_rejects_missing_tool_schemas(tmp_path: Path):
+    path = tmp_path / "invalid.jsonl"
+    path.write_text(
+        json.dumps({"messages": [{"role": "user", "content": "Find an item"}]}) + "\n",
+        encoding="utf-8",
+    )
+
+    try:
+        _validate_agentic_dataset(path)
+    except TypeError as exc:
+        assert "missing per-example tools" in str(exc)
+    else:
+        raise AssertionError("Dataset without tool schemas should be rejected")
 
 
 def test_private_preview_payload_matches_blossom_contract(monkeypatch):
@@ -92,7 +115,7 @@ def test_private_preview_payload_matches_blossom_contract(monkeypatch):
     assert payload["fineTuningJobType"] == "fineTuning"
     assert creation["model"] == "MAI-Code-1.1-Flash"
     assert creation["trainingType"] == "GlobalStandard"
-    assert creation["suffix"] == "mai-sb-web-rft1"
+    assert creation["suffix"] == "mai-sb-web-rft2"
     assert reinforcement["grader"]["type"] == "endpoint"
     assert reinforcement["grader"]["pass_threshold"] == 1.0
     assert [tool["name"] for tool in reinforcement["tools"]] == [

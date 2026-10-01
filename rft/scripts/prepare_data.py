@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from shoppingbench_foundry.datasets import TASK_FILES, load_task_rows
+from shoppingbench_foundry.tool_definitions import chat_completions_tools
 
 VALIDATION_COUNTS = {"product": 20, "shop": 20, "voucher": 20, "web": 20}
 CALIBRATION_ROLLOUTS = 3
@@ -46,6 +47,7 @@ def _rft_item(
             {"role": "developer", "content": developer_message},
             {"role": "user", "content": row["query"]},
         ],
+        "tools": chat_completions_tools(),
         "case_name": case_name,
         "task": task,
         "reward": reward,

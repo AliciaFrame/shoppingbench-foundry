@@ -17,7 +17,7 @@ SUFFIXES = {
     "product": "mai-sb-prod-rft1",
     "shop": "mai-sb-shop-rft1",
     "voucher": "mai-sb-vouch-rft1",
-    "web": "mai-sb-web-rft1",
+    "web": "mai-sb-web-rft2",
 }
 TOOL_NAMES = ["find_product", "view_product_information", "recommend_product", "terminate"]
 
@@ -73,6 +73,36 @@ def _wait_for_file(client: OpenAI, file_id: str) -> None:
         if file.status in {"error", "failed"}:
             raise RuntimeError(f"File processing failed for {file_id}: {file.status_details}")
         time.sleep(2)
+
+
+def _validate_agentic_dataset(path: Path) -> None:
+    with path.open(encoding="utf-8") as handle:
+        rows = [json.loads(line) for line in handle if line.strip()]
+    if not rows:
+        raise ValueError(f"{path} is empty")
+    for index, row in enumerate(rows, start=1):
+        if not isinstance(row.get("messages"), list) or not row["messages"]:
+            raise ValueError(f"{path}:{index} must contain non-empty messages")
+        tools = row.get("tools")
+        if not isinstance(tools, list):
+            raise TypeError(
+                f"{path}:{index} is missing per-example tools required by agentic RFT"
+            )
+        names = [
+            tool.get("function", {}).get("name")
+            for tool in tools
+            if isinstance(tool, dict)
+        ]
+        if names != TOOL_NAMES:
+            raise ValueError(
+                f"{path}:{index} tool names must exactly match the job config: {TOOL_NAMES}"
+            )
+        if any(
+            tool.get("type") != "function"
+            or not isinstance(tool.get("function", {}).get("parameters"), dict)
+            for tool in tools
+        ):
+            raise ValueError(f"{path}:{index} contains an invalid function tool schema")
 
 
 def _tools() -> list[dict[str, Any]]:
@@ -213,6 +243,8 @@ def submit(
         _validate_model(client, model_id)
     train_path = data_dir / f"{task}-train.jsonl"
     validation_path = data_dir / f"{task}-validation.jsonl"
+    _validate_agentic_dataset(train_path)
+    _validate_agentic_dataset(validation_path)
     with train_path.open("rb") as handle:
         train_file = client.files.create(file=handle, purpose="fine-tune")
     with validation_path.open("rb") as handle:

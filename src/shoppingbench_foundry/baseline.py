@@ -11,59 +11,13 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import OpenAI
 
 from .datasets import load_task_rows
+from .tool_definitions import RESPONSES_TOOLS
 
 SYSTEM_PROMPT = """You are a shopping agent. Use the provided tools to satisfy every constraint.
 Search broadly, inspect product details before recommending, preserve requested product order,
 call recommend_product exactly once, and call terminate when finished."""
 
-TOOLS = [
-    {
-        "type": "function",
-        "name": "find_product",
-        "description": "Search products and return up to ten results.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "q": {"type": "string"},
-                "page": {"type": "integer", "minimum": 1, "maximum": 5},
-                "shop_id": {"type": "string"},
-                "price": {"type": "string"},
-                "sort": {"type": "string", "enum": ["default", "order", "priceasc", "pricedesc"]},
-                "service": {"type": "string"},
-            },
-            "required": ["q", "page"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "type": "function",
-        "name": "view_product_information",
-        "description": "Fetch detailed information for comma-separated product IDs.",
-        "parameters": {
-            "type": "object",
-            "properties": {"product_ids": {"type": "string"}},
-            "required": ["product_ids"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "type": "function",
-        "name": "recommend_product",
-        "description": "Recommend ordered comma-separated product IDs. Use once.",
-        "parameters": {
-            "type": "object",
-            "properties": {"product_ids": {"type": "string"}},
-            "required": ["product_ids"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "type": "function",
-        "name": "terminate",
-        "description": "End the shopping episode.",
-        "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
-    },
-]
+TOOLS = RESPONSES_TOOLS
 
 
 def create_client(base_url: str) -> OpenAI:

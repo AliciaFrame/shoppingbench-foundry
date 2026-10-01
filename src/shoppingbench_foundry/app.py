@@ -9,7 +9,7 @@ from typing import Annotated, Any
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
-from .grading import endpoint_grade
+from .rft_grading import endpoint_grade
 from .store import INFORMATION_FIELDS, ProductStore, create_store
 
 app = FastAPI(title="ShoppingBench Foundry Runtime", version="0.1.0")
@@ -132,6 +132,5 @@ def rft_tool(
 @app.post("/grade", dependencies=[Depends(require_token)])
 def grade(
     request: GradeRequest,
-    store: StoreDependency,
 ) -> dict[str, float]:
-    return endpoint_grade(request.model_dump(), store)
+    return endpoint_grade(request.model_dump())

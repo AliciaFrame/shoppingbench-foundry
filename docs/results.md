@@ -30,7 +30,15 @@ enough room to learn. Product remains a curriculum-design task: its 15%
 repeated-rollout failure rate is too close to ceiling for a strong first RFT
 experiment.
 
-The Web job was accepted on the August 27 MAI-Code-1.1-Flash checkpoint and
-entered training. The committed job JSON preserves the acceptance receipt;
-live status is monitored separately. Checkpoint and final-model results will
-be added after every checkpoint is evaluated on the canonical holdout.
+The first Web submission reached the endpoint grader but made zero tool calls
+because the uploaded rows omitted the per-example function schemas required by
+agentic RFT. The platform rejected all 160 validation attempts before step 1
+and billed 0.000 training hours. The generator and submit-time validation now
+enforce the four schemas, and the deployed endpoint uses the same reward
+function used during calibration.
+
+Corrected job `ftjob-e7e676861873489195e796bf622ee265` was accepted on the
+August 27 MAI-Code-1.1-Flash checkpoint with suffix `mai-sb-web-rft2`. Its
+committed job JSON preserves the submission receipt; live status is monitored
+separately. Checkpoint and final-model results will be added after every
+checkpoint is evaluated on the canonical holdout.
