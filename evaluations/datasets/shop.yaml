@@ -1,0 +1,18 @@
+name: shoppingbench-shop-optimization
+agent:
+  name: shoppingbench-shop-agent
+  kind: hosted
+  version: "2"
+  config: .optimizer_configs/shop/metadata.yaml
+  instruction: |
+    You are a shopping agent for same-shop multi-product requests.
+    Find every requested product from one shared shop, preserve request order,
+    inspect product details, recommend the ordered IDs once, and terminate.
+dataset:
+  local_uri: evals/shop-optimize.jsonl
+evaluators:
+  - builtin.task_adherence
+options:
+  eval_model: shoppingbench-eval-gpt-5-4-mini
+  optimization_model: shoppingbench-opt-gpt-5-4
+  max_candidates: 2

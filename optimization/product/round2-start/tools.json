@@ -1,0 +1,98 @@
+[
+  {
+    "function": {
+      "description": "Search the shopping catalog for candidate products that may satisfy the user’s request. Use this as the primary discovery step for product-shopping tasks. The tool supports keyword search plus coarse catalog filters such as page number, price range, service tags, shop restriction, and sort order. Typical workflow: issue a focused query based on the user’s requested product type/brand/model, apply explicit constraints that can be expressed in the available arguments (for example price range or delivery/COD-related service filters), inspect promising results with view_product_information, then only recommend products whose required attributes have been verified from tool results. Avoid excessive repeated searches with near-duplicate queries; instead, start with the most specific faithful query, broaden only when needed, and keep service values consistent with the user’s request. Do not assume unsupported attributes are satisfied unless confirmed by returned product data or subsequent product inspection. If the user asks for a filtered set (for example free delivery, pay on delivery, or a price threshold/range), prefer encoding those constraints here before recommending anything.",
+      "name": "find_product",
+      "parameters": {
+        "properties": {
+          "page": {
+            "description": "Results page number to retrieve. Valid pages are 1 through 5. Start with page 1, then move to later pages only if needed. Do not use values outside the supported range.",
+            "type": "integer"
+          },
+          "price": {
+            "description": "Price filter expressed as a string range for catalog search. Use this to encode user price constraints such as minimum/maximum or bounded ranges. The exact accepted delimiter/format may vary by backend, so keep usage consistent within a search strategy and match the user’s intent precisely (for example “more than 14 PHP”, “between 138 and 340 pesos”, or no price filter if none was requested). Only apply a price constraint when the user asked for one or when narrowing candidates is necessary.",
+            "type": "string"
+          },
+          "q": {
+            "description": "Product search text. This should be the main user-facing product intent in concise keyword form, such as brand + model + color/category (“xtep black1”), product type + benefit (“moisturizing body wash”), or item class (“African rose fertilizer”). Keep the query faithful to the request; start specific, then broaden carefully with close synonyms only if the initial search is too narrow. Do not leave this empty.",
+            "type": "string"
+          },
+          "service": {
+            "description": "Comma-separated service filters supported by the catalog. Use this for fulfillment/service constraints explicitly requested by the user, such as free delivery / delivery-related filters or pay-on-delivery / COD support when the catalog exposes them through service tags. If multiple service filters are needed, separate them with commas. Leave empty when the user did not request any service-related constraint or when no reliable service tag is known.",
+            "type": "string"
+          },
+          "shop_id": {
+            "description": "Optional restriction to a specific shop identifier. Use only when the user asks for a certain shop or when continuing an already shop-specific workflow. Otherwise leave empty rather than inserting placeholder values.",
+            "type": "string"
+          },
+          "sort": {
+            "description": "Optional result ordering. Use when sorting helps satisfy the request or improves efficiency, such as price-ascending for budget-constrained searches. If no special ordering is needed, use the catalog’s default ordering.",
+            "enum": [
+              "default",
+              "order",
+              "priceasc",
+              "pricedesc"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "q",
+          "page"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "Retrieve full details for one or more specific products returned by search before making a final recommendation. Use this to verify material requirements that may not be reliably captured by the search query alone, such as exact price, service support, variants/options, sizing, color, model/version, seller details, or other eligibility constraints mentioned by the user. This tool is especially important when the user request contains a decisive attribute that must be confirmed—e.g. EU size 43, free delivery, COD/pay on delivery, or a particular variant. Do not recommend a product unless the relevant required attributes have been checked here or were already clearly established by search results.",
+      "name": "view_product_information",
+      "parameters": {
+        "properties": {
+          "product_ids": {
+            "description": "Comma-separated list of product IDs to inspect in detail. Pass one or more candidate IDs exactly as returned by search. Use this to compare shortlisted products efficiently or to verify a single likely match before recommendation.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "Submit the final recommendation exactly once after you have finished searching and validating candidates. This tool is the authoritative final output channel for product selection and must contain the ordered product IDs you are recommending to the user. Use it only after confirming that the products satisfy the user’s explicit constraints as well as possible from available catalog data. If the user asked to “show” matching items, include the matching products you intend to present, in ranked order. If only one verified match exists, submit that single ID. Do not call this repeatedly, and do not omit it when a recommendation has been made.",
+      "name": "recommend_product",
+      "parameters": {
+        "properties": {
+          "product_ids": {
+            "description": "Comma-separated product IDs in the exact order you want to recommend them. Preserve ranking/order deliberately, because evaluation checks the requested order. Include the final selected IDs only, not exploratory candidates.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "End the shopping episode after the recommendation has been submitted or after you have completed the user-facing shopping response. This should be called to mark the workflow as finished. In successful product recommendation tasks, terminate after recommend_product. Do not leave the episode open once the answer is complete.\n(no parameters)",
+      "name": "terminate",
+      "parameters": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "samples": 20,
+  "mean_score": 0.7725,
+  "recommended_pass_threshold": 0.9,
+  "base_failure_rate": 0.4,
+  "score_distribution": {
+    "0.1": 1,
+    "0.2": 1,
+    "0.45": 2,
+    "0.7": 1,
+    "0.75": 1,
+    "0.85": 2,
+    "0.9": 7,
+    "0.95": 4,
+    "1.0": 1
+  },
+  "sufficient_signal": true
+}

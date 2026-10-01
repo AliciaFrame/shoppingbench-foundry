@@ -1,0 +1,10 @@
+version: 1
+defaultEnvironment: dev
+environments:
+  dev:
+    projectEndpoint: ${FOUNDRY_PROJECT_ENDPOINT}
+    agentName: shoppingbench-product-agent
+    evaluationSuites:
+      - name: product-canonical
+        datasetFile: ../../../evaluations/datasets/product-holdout.jsonl
+        tags: {tier: regression}

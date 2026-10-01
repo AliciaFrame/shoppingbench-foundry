@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shoppingbench-foundry"
+version = "0.1.0"
+description = "Reproducible ShoppingBench agents, evaluations, optimization, and RFT on Microsoft Foundry"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.11"
+dependencies = [
+  "azure-identity>=1.25.0",
+  "azure-search-documents>=11.6.0",
+  "fastapi>=0.115.0",
+  "httpx>=0.28.0,<1",
+  "openai>=1.75.0,<3",
+  "pydantic>=2.10.0",
+  "uvicorn[standard]>=0.34.0",
+]
+
+[project.optional-dependencies]
+agents = [
+  "azure-ai-agentserver-optimization>=1.0.0b1",
+  "azure-ai-agentserver-responses==2.1.0",
+]
+dev = [
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.25.0",
+  "ruff>=0.11.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = [".", "src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["shoppingbench_foundry*"]

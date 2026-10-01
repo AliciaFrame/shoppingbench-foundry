@@ -1,0 +1,98 @@
+[
+  {
+    "function": {
+      "description": "Search the marketplace catalog for candidate products that match a user’s requested item, attributes, and shopping constraints. Use this as the primary retrieval tool for shop-building tasks where the goal is to find one shop that sells all requested products. This tool can search globally or be restricted to a single shop via shop_id, which is critical for verifying the “same shop” requirement after identifying a promising seller. Good practice is to first search each requested item broadly, inspect promising results to learn product IDs and shop associations, then rerun searches with a shared shop_id to confirm that every required item is available from the same shop. Encode hard filters directly when possible: price thresholds, brand names, model/variation text, color, version, classification terms, and service flags such as LazMall or cash on delivery if those are represented in search. Use multiple targeted queries when needed because users often express attributes in free text, for example waterproof, glue-free, 02# length, d curl, natural volume, masstige, silver color, black color family, variation 6000, make moto, hose water component, or upgrade version color. Search may need iterative reformulation to cover synonyms and attribute combinations.",
+      "name": "find_product",
+      "parameters": {
+        "properties": {
+          "page": {
+            "description": "Result page number to retrieve. Valid pages are 1 through 5. Use page 1 first, then expand to later pages when the first page does not surface enough candidates or when trying to find a shop overlap across multiple requested products.",
+            "type": "integer"
+          },
+          "price": {
+            "description": "Price range filter as a string, typically formatted like min-max. Use this to encode user constraints such as “above 43 PHP” as 44-9999, “more than 2 PHP” as 3-9999, “above 84 PHP” as 85-9999, “more than 15 PHP” as 16-9999, or “priced above 886 PHP” as 887-9999. Leave empty when no explicit price restriction is requested.",
+            "type": "string"
+          },
+          "q": {
+            "description": "Free-text product query. Include the core product name plus the user’s required attributes, variants, and disambiguators in compact searchable form. This field should carry details such as brand, model, variation, size/length, curl, color, color family, version, component, make, classification, and other distinguishing terms when they materially affect matching. For multi-item requests, search each item separately rather than combining all requested products into one query.",
+            "type": "string"
+          },
+          "service": {
+            "description": "Comma-separated marketplace service filters to apply during search. Use this for explicit service requirements such as lazmall, cash on delivery, or other supported service flags. If the user requests multiple service constraints, include all applicable values in comma-separated form when supported by the marketplace.",
+            "type": "string"
+          },
+          "shop_id": {
+            "description": "Restrict results to a specific shop. This is the main mechanism for proving that all recommended products come from one seller. After finding one candidate product from a promising shop, rerun searches for the other requested items with the same shop_id to verify the shop carries the full bundle before recommending anything.",
+            "type": "string"
+          },
+          "sort": {
+            "description": "Result ordering preference. Use the marketplace-supported sort key if a particular ordering is helpful; otherwise use the default sort. Default ordering is often appropriate for initial discovery, but alternative sorts may help surface more relevant or cheaper candidates when exploration is needed.",
+            "enum": [
+              "default",
+              "order",
+              "priceasc",
+              "pricedesc"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "q",
+          "page"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "Retrieve detailed information for one or more known product IDs so you can verify that each candidate truly satisfies the user’s constraints before recommending it. Use this to inspect attributes that may not be reliably enforced by keyword search alone, such as price, shop identity, brand, exact variation, color/color family, version labels, technical descriptors, and whether multiple selected products belong to the same shop. This tool is especially important in shop-finding tasks because evaluation strongly depends on proving that all returned items come from one seller and actually match the requested specs.",
+      "name": "view_product_information",
+      "parameters": {
+        "properties": {
+          "product_ids": {
+            "description": "Comma-separated product IDs to inspect. Pass all candidate IDs you intend to compare or jointly recommend, ideally from the same suspected shop, so you can verify exact product details and confirm the shared-shop constraint before calling recommend_product.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "Submit the final ordered list of product IDs that best satisfies the user’s shopping request. All submitted IDs must come from one shop, because this tool is for finalizing a single-shop recommendation set rather than mixing sellers. Only use this after searching and verifying candidates with the other tools. Preserve the user’s requested item order exactly in the comma-separated output, since evaluation may check for the precise ordering of IDs corresponding to the sequence of requested products.",
+      "name": "recommend_product",
+      "parameters": {
+        "properties": {
+          "product_ids": {
+            "description": "Comma-separated final product IDs from one shared shop, ordered to match the user’s requested item sequence exactly. Include every required product and no extras. Do not call this with an empty list when the task expects a recommendation.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "End the shopping episode after you have finished the workflow. Call this after a successful final recommendation, or after you have otherwise completed the interaction according to task policy. In recommendation tasks, termination is expected once the final product set has been submitted.\n(no parameters)",
+      "name": "terminate",
+      "parameters": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  }
+]

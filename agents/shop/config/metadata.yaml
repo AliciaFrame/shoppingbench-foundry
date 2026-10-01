@@ -1,0 +1,4 @@
+name: shoppingbench-shop-agent
+instruction_file: instructions.md
+skill_dir: skills
+tools_file: tools.json

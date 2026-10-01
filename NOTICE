@@ -1,0 +1,7 @@
+This repository includes an adaptation of ShoppingBench:
+https://github.com/yjwjy/ShoppingBench
+
+ShoppingBench is licensed under the Apache License 2.0. The original benchmark
+task data, task concepts, and adapted evaluation logic remain subject to that
+license. This repository adds Microsoft Foundry hosted-agent, Azure runtime,
+Agent Optimizer, and reinforcement fine-tuning workflows.

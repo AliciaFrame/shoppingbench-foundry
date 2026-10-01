@@ -1,0 +1,14 @@
+name: shoppingbench-shop-optimization-round2
+agent:
+  name: shoppingbench-shop-agent
+  kind: hosted
+  version: "3"
+  config: .optimizer_configs/shop-round2/metadata.yaml
+dataset:
+  local_uri: evals/shop-optimize-round2.jsonl
+evaluators:
+  - builtin.task_adherence
+options:
+  eval_model: shoppingbench-eval-gpt-5-4-mini
+  optimization_model: shoppingbench-opt-gpt-5-4
+  max_candidates: 4

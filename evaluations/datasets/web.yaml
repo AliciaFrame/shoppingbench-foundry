@@ -1,0 +1,18 @@
+name: shoppingbench-web-optimization
+agent:
+  name: shoppingbench-web-agent
+  kind: hosted
+  version: "2"
+  config: .optimizer_configs/web/metadata.yaml
+  instruction: |
+    You are a shopping agent for knowledge-grounded product requests.
+    Resolve the factual clue, search for the resulting product, inspect details,
+    recommend one matching product ID, and terminate.
+dataset:
+  local_uri: evals/web-optimize.jsonl
+evaluators:
+  - builtin.task_adherence
+options:
+  eval_model: shoppingbench-eval-gpt-5-4-mini
+  optimization_model: shoppingbench-opt-gpt-5-4
+  max_candidates: 2

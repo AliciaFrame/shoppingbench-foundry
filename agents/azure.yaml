@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+requiredVersions:
+  azd: ">=1.27.1"
+  extensions:
+    azure.ai.agents: ">=1.0.0-beta.17"
+name: shoppingbench-hosted-agents
+services:
+  ai-project:
+    host: azure.ai.project
+    endpoint: ${FOUNDRY_PROJECT_ENDPOINT}
+  shoppingbench-product-agent:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses: [ai-project]
+    env:
+      MAI_MODEL_DEPLOYMENT_NAME: ${MAI_MODEL_DEPLOYMENT_NAME}
+      MAI_OPENAI_BASE_URL: ${MAI_OPENAI_BASE_URL}
+      OPTIMIZATION_LOCAL_DIR: product/config
+      SHOPPINGBENCH_API_TOKEN: ${SHOPPINGBENCH_API_TOKEN}
+      SHOPPINGBENCH_TASK: product
+      SHOPPINGBENCH_TOOL_URL: ${SHOPPINGBENCH_TOOL_URL}
+    codeConfiguration:
+      entryPoint: product/main.py
+      runtime: python_3_13
+    container:
+      resources: {cpu: "1", memory: 2Gi}
+    description: Finds one product that satisfies product-level constraints.
+    displayName: ShoppingBench Product Agent
+    kind: hosted
+    name: shoppingbench-product-agent
+    protocols: [{protocol: responses, version: 2.0.0}]
+  shoppingbench-shop-agent:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses: [ai-project]
+    env:
+      MAI_MODEL_DEPLOYMENT_NAME: ${MAI_MODEL_DEPLOYMENT_NAME}
+      MAI_OPENAI_BASE_URL: ${MAI_OPENAI_BASE_URL}
+      OPTIMIZATION_LOCAL_DIR: shop/config
+      SHOPPINGBENCH_API_TOKEN: ${SHOPPINGBENCH_API_TOKEN}
+      SHOPPINGBENCH_TASK: shop
+      SHOPPINGBENCH_TOOL_URL: ${SHOPPINGBENCH_TOOL_URL}
+    codeConfiguration:
+      entryPoint: shop/main.py
+      runtime: python_3_13
+    container:
+      resources: {cpu: "1", memory: 2Gi}
+    description: Finds multiple constrained products sold by one shop.
+    displayName: ShoppingBench Shop Agent
+    kind: hosted
+    name: shoppingbench-shop-agent
+    protocols: [{protocol: responses, version: 2.0.0}]
+  shoppingbench-voucher-agent:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses: [ai-project]
+    env:
+      MAI_MODEL_DEPLOYMENT_NAME: ${MAI_MODEL_DEPLOYMENT_NAME}
+      MAI_OPENAI_BASE_URL: ${MAI_OPENAI_BASE_URL}
+      OPTIMIZATION_LOCAL_DIR: voucher/config
+      SHOPPINGBENCH_API_TOKEN: ${SHOPPINGBENCH_API_TOKEN}
+      SHOPPINGBENCH_TASK: voucher
+      SHOPPINGBENCH_TOOL_URL: ${SHOPPINGBENCH_TOOL_URL}
+    codeConfiguration:
+      entryPoint: voucher/main.py
+      runtime: python_3_13
+    container:
+      resources: {cpu: "1", memory: 2Gi}
+    description: Satisfies product constraints and voucher-adjusted budget.
+    displayName: ShoppingBench Voucher Agent
+    kind: hosted
+    name: shoppingbench-voucher-agent
+    protocols: [{protocol: responses, version: 2.0.0}]
+  shoppingbench-web-agent:
+    project: .
+    host: azure.ai.agent
+    language: python
+    uses: [ai-project]
+    env:
+      MAI_MODEL_DEPLOYMENT_NAME: ${MAI_MODEL_DEPLOYMENT_NAME}
+      MAI_OPENAI_BASE_URL: ${MAI_OPENAI_BASE_URL}
+      OPTIMIZATION_LOCAL_DIR: web/config
+      SHOPPINGBENCH_API_TOKEN: ${SHOPPINGBENCH_API_TOKEN}
+      SHOPPINGBENCH_TASK: web
+      SHOPPINGBENCH_TOOL_URL: ${SHOPPINGBENCH_TOOL_URL}
+    codeConfiguration:
+      entryPoint: web/main.py
+      runtime: python_3_13
+    container:
+      resources: {cpu: "1", memory: 2Gi}
+    description: Resolves a knowledge clue before recommending a product.
+    displayName: ShoppingBench Knowledge Agent
+    kind: hosted
+    name: shoppingbench-web-agent
+    protocols: [{protocol: responses, version: 2.0.0}]
+infra:
+  provider: microsoft.foundry

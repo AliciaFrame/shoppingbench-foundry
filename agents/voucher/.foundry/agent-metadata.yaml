@@ -1,0 +1,10 @@
+version: 1
+defaultEnvironment: dev
+environments:
+  dev:
+    projectEndpoint: ${FOUNDRY_PROJECT_ENDPOINT}
+    agentName: shoppingbench-voucher-agent
+    evaluationSuites:
+      - name: voucher-canonical
+        datasetFile: ../../../evaluations/datasets/voucher-holdout.jsonl
+        tags: {tier: regression}

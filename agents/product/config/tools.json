@@ -1,0 +1,98 @@
+[
+  {
+    "function": {
+      "description": "Search the product catalog.",
+      "name": "find_product",
+      "parameters": {
+        "properties": {
+          "page": {
+            "description": "Result page from 1 to 5.",
+            "type": "integer"
+          },
+          "price": {
+            "description": "Optional minimum-maximum price range.",
+            "type": "string"
+          },
+          "q": {
+            "description": "Product search text.",
+            "type": "string"
+          },
+          "service": {
+            "description": "Comma-separated service filters.",
+            "type": "string"
+          },
+          "shop_id": {
+            "description": "Optional shop filter.",
+            "type": "string"
+          },
+          "sort": {
+            "description": "",
+            "enum": [
+              "default",
+              "order",
+              "priceasc",
+              "pricedesc"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "q",
+          "page"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "Inspect full details for comma-separated product IDs.",
+      "name": "view_product_information",
+      "parameters": {
+        "properties": {
+          "product_ids": {
+            "description": "Comma-separated product IDs.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "Submit the final ordered product IDs exactly once.",
+      "name": "recommend_product",
+      "parameters": {
+        "properties": {
+          "product_ids": {
+            "description": "Comma-separated product IDs in requested order.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "End the shopping episode after recommendation.\n(no parameters)",
+      "name": "terminate",
+      "parameters": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  }
+]

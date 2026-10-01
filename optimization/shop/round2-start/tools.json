@@ -1,0 +1,57 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "find_product",
+      "description": "Search products, optionally within one shop.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "q": {"type": "string", "description": "Product search text."},
+          "page": {"type": "integer", "description": "Result page from 1 to 5."},
+          "shop_id": {"type": "string", "description": "Shop that every selected product must share."},
+          "price": {"type": "string", "description": "Optional minimum-maximum price range."},
+          "sort": {"type": "string", "enum": ["default", "order", "priceasc", "pricedesc"]},
+          "service": {"type": "string", "description": "Comma-separated service filters."}
+        },
+        "required": ["q", "page"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "view_product_information",
+      "description": "Inspect details for comma-separated product IDs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "product_ids": {"type": "string", "description": "Comma-separated product IDs."}
+        },
+        "required": ["product_ids"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recommend_product",
+      "description": "Submit all final product IDs in the user's requested order.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "product_ids": {"type": "string", "description": "Comma-separated ordered product IDs from one shop."}
+        },
+        "required": ["product_ids"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "terminate",
+      "description": "End the shopping episode after recommendation.",
+      "parameters": {"type": "object", "properties": {}}
+    }
+  }
+]

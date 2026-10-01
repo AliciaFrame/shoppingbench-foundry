@@ -1,0 +1,21 @@
+.azure/*.env
+.azure/*.lock
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Generated or resource-specific outputs
+.foundry/results/
+optimization/work/
+rft/results/*-events.jsonl
+rft/results/*-status.json
+
+# Azure Developer CLI local state
+.azure/config.json
+.azure/.state-change
+.azure/*/

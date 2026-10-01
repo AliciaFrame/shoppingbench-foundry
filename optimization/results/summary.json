@@ -1,0 +1,98 @@
+{
+  "benchmark": "controlled ShoppingBench corpus",
+  "canonical_holdout_cases_per_task": 50,
+  "tasks": {
+    "product": {
+      "baseline": {
+        "canonical_mean_score": 0.753,
+        "successes": 38,
+        "terminated": 31
+      },
+      "round1": {
+        "optimizer_score": {
+          "baseline": 0.801,
+          "candidate": 0.844
+        },
+        "canonical_mean_score": 0.895,
+        "successes": 45,
+        "terminated": 40,
+        "decision": "retained"
+      },
+      "round2": {
+        "optimizer_score": {
+          "baseline": 0.72,
+          "candidate": 0.875
+        },
+        "canonical_mean_score": 0.961,
+        "successes": 48,
+        "terminated": 49,
+        "optimized_surface": "tool definitions",
+        "decision": "retained"
+      }
+    },
+    "shop": {
+      "baseline": {
+        "canonical_mean_score": 0.859951,
+        "successes": 42,
+        "terminated": 39
+      },
+      "round2": {
+        "optimizer_score": {
+          "baseline": 0.636,
+          "candidate": 0.681
+        },
+        "canonical_mean_score": 0.998143,
+        "successes": 49,
+        "terminated": 50,
+        "optimized_surface": "instructions and tool definitions",
+        "decision": "retained"
+      }
+    },
+    "voucher": {
+      "baseline": {
+        "canonical_mean_score": 0.897583,
+        "successes": 45,
+        "terminated": 27
+      },
+      "round1": {
+        "optimizer_score": {
+          "baseline": 0.585,
+          "candidate": 0.645
+        },
+        "canonical_mean_score": 0.9545,
+        "successes": 46,
+        "terminated": 29,
+        "decision": "retained"
+      },
+      "round2": {
+        "optimizer_score": {
+          "baseline": 0.576,
+          "candidate": 0.597
+        },
+        "canonical_mean_score": 0.913125,
+        "successes": 38,
+        "terminated": 48,
+        "decision": "rejected"
+      }
+    },
+    "web": {
+      "baseline": {
+        "canonical_mean_score": 0.79,
+        "successes": 38,
+        "terminated": 40
+      },
+      "round2": {
+        "optimizer_score": {
+          "baseline": 0.54,
+          "candidate": 0.55
+        },
+        "canonical_mean_score": 0.79,
+        "successes": 38,
+        "terminated": 38,
+        "decision": "rejected"
+      }
+    }
+  },
+  "final_canonical_mean_across_tasks": 0.925911,
+  "evidence_directory": "optimization/results/raw"
+}

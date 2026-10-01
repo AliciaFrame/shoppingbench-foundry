@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: shoppingbench-foundry
+services:
+  shoppingbench-api:
+    project: .
+    host: containerapp
+    language: python
+    docker:
+      path: azure/tool-runtime/Dockerfile
+      context: .
+      remoteBuild: true
+infra:
+  provider: bicep
+  path: azure/infra
