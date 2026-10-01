@@ -274,8 +274,11 @@ def submit(
 
     server_recipe = None
     requested_recipe = None
+    training_type = os.getenv(
+        "MAI_RFT_TRAINING_TYPE",
+        "GlobalStandard" if private_preview else "globalStandard",
+    )
     if private_preview:
-        training_type = os.getenv("MAI_RFT_TRAINING_TYPE", "GlobalStandard")
         payload = _private_preview_payload(
             model=model_id,
             training_file_id=train_file.id,
@@ -318,7 +321,7 @@ def submit(
             training_file=train_file.id,
             validation_file=validation_file.id,
             suffix=_suffix(task, grader_version),
-            extra_body={"trainingType": os.getenv("MAI_RFT_TRAINING_TYPE", "globalStandard")},
+            extra_body={"trainingType": training_type},
             method={
                 "type": "reinforcement",
                 "reinforcement": reinforcement,
@@ -331,6 +334,7 @@ def submit(
         "model": model_id,
         "suffix": _suffix(task, grader_version),
         "grader_version": grader_version,
+        "training_type": training_type,
         "job_id": job_id,
         "status": status,
         "training_file": train_file.id,

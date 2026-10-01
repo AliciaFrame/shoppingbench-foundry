@@ -3,6 +3,7 @@
   "model": "mai-code-1.1-flash-2026-08-27",
   "suffix": "mai-sb-web-rft3",
   "grader_version": "v2",
+  "training_type": "developerTier",
   "job_id": "ftjob-8978aa9f7a7d40eea2fa3854babb72da",
   "status": "pending",
   "training_file": "file-13b866044466449ab3a91185e4645c9a",
