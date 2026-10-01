@@ -30,7 +30,6 @@ enough room to learn. Product remains a curriculum-design task: its 15%
 repeated-rollout failure rate is too close to ceiling for a strong first RFT
 experiment.
 
-The Web job is currently running. Data preprocessing completed, GPU training
-started, and the service created the validation evaluation used during
-fine-tuning. Checkpoint and final-model results will be added after every
+The Web job has been accepted and is pending on the August 27 MAI-Code-1.1-Flash
+checkpoint. Checkpoint and final-model results will be added after every
 checkpoint is evaluated on the canonical holdout.

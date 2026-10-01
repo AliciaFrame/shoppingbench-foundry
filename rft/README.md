@@ -51,8 +51,6 @@ variables in `.env.example`, then:
 ```powershell
 python -m rft.scripts.submit web `
   --calibration rft\results\web-calibration.json `
-  --private-preview `
-  --pass-threshold 1.0 `
   --confirm-submit `
   --output rft\results\web-job.json
 ```
@@ -60,9 +58,9 @@ python -m rft.scripts.submit web `
 The accepted Web job uses:
 
 - suffix `mai-sb-web-rft1`
-- model alias `mai-code-1.1-flash`
-- resolved checkpoint `MAI-Code-1.1-Flash-2026-09-15`
-- Blossom recipe `mai-code-1-flash`, version 11
+- model checkpoint `mai-code-1.1-flash-2026-08-27`
+- public `/openai/v1` reinforcement fine-tuning API
+- calibrated pass threshold `0.9`
 - authenticated live tools and canonical endpoint grader
 
 Monitor:
@@ -74,5 +72,4 @@ python -m rft.scripts.monitor <job-id> `
 
 Result receipts are kept under `results/`; the README will be updated with
 checkpoint comparisons when training and evaluation complete. The current
-receipt records that training has started and the validation evaluation has
-been created.
+receipt records the accepted pending job.

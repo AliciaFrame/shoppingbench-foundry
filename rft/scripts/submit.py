@@ -240,16 +240,8 @@ def submit(
         if not job_id:
             raise RuntimeError("Private-preview submission returned no job ID")
     else:
-        grader_source = (
-            Path(__file__).resolve().parents[2] / "evaluations" / "graders" / "rft_grader.py"
-        ).read_text(encoding="utf-8")
         reinforcement: dict[str, Any] = {
-            "grader": {
-                "type": "python",
-                "name": f"shoppingbench_{task}_grader",
-                "source": grader_source,
-                "pass_threshold": threshold,
-            },
+            "grader": _endpoint_grader(task, threshold),
             "tools": _tools(),
             "max_episode_steps": 12,
         }

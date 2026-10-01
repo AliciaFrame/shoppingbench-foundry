@@ -1,17 +1,14 @@
 {
   "task": "web",
-  "model": "mai-code-1.1-flash",
+  "model": "mai-code-1.1-flash-2026-08-27",
   "suffix": "mai-sb-web-rft1",
-  "job_id": "ftjob-e41d461cd39e4d289cb56fead591402a",
+  "job_id": "ftjob-27c89d4accac457ab7cbab06de91b46d",
   "status": "pending",
-  "training_file": "file-d74130be65db4f8a89a9d9cd3b709d2e",
-  "validation_file": "file-881ba253aa914472a3f9da121ab6b212",
-  "pass_threshold": 1.0,
-  "submission_mode": "exact-recipe-preview",
-  "requested_recipe": {
-    "name": "mai-code-1-flash",
-    "version": 11
-  },
+  "training_file": "file-76aa769ef8bb466f8b69c8c56c09597f",
+  "validation_file": "file-a14ef8f865f14148a3ef352377784e3e",
+  "pass_threshold": 0.9,
+  "submission_mode": "public-v1",
+  "requested_recipe": null,
   "server_returned_recipe": null,
   "recipe_confirmed": null
 }
