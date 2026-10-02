@@ -1,0 +1,4 @@
+model: mai-sb-rft3-step10
+instruction_file: instructions.md
+tools_file: tools.json
+skill_dir: skills

@@ -109,7 +109,7 @@ api_key: str | Any = os.getenv("MAI_API_KEY", "")
 if not api_key:
     api_key = get_bearer_token_provider(
         DefaultAzureCredential(),
-        "https://cognitiveservices.azure.com/.default",
+        "https://ai.azure.com/.default",
     )
 model_client = OpenAI(base_url=base_url, api_key=api_key)
 tool_client = httpx.Client(timeout=120)

@@ -173,6 +173,12 @@ def _private_preview_payload(
     training_type: str,
     threshold: float,
     grader_version: str = "v1",
+    n_epochs: int = 2,
+    batch_size: int = 8,
+    learning_rate_multiplier: float = 1.0,
+    eval_interval: int = 5,
+    eval_samples: int = 1,
+    max_episode_steps: int = 12,
 ) -> dict[str, Any]:
     return {
         "fineTuningJobType": "fineTuning",
@@ -187,14 +193,15 @@ def _private_preview_payload(
                 "reinforcement": {
                     "grader": _endpoint_grader(task, threshold, grader_version),
                     "tools": _tools(),
-                    "max_episode_steps": 12,
+                    "max_episode_steps": max_episode_steps,
                     "hyperparameters": {
-                        "eval_interval": 5,
-                        "eval_samples": 5,
+                        "eval_interval": eval_interval,
+                        "eval_samples": eval_samples,
                         "compute_multiplier": 1.0,
-                        "learning_rate_multiplier": 1.0,
+                        "learning_rate_multiplier": learning_rate_multiplier,
                         "reasoning_effort": "medium",
-                        "number_of_epochs": 1,
+                        "number_of_epochs": n_epochs,
+                        "batch_size": batch_size,
                     },
                 },
             },
@@ -256,6 +263,12 @@ def submit(
     minimal_payload: bool = False,
     private_preview: bool = False,
     grader_version: str = "v1",
+    n_epochs: int = 2,
+    batch_size: int = 8,
+    learning_rate_multiplier: float = 1.0,
+    eval_interval: int = 5,
+    eval_samples: int = 1,
+    max_episode_steps: int = 12,
 ) -> dict[str, Any]:
     client = _client()
     model_id = _model()
@@ -287,6 +300,12 @@ def submit(
             training_type=training_type,
             threshold=threshold,
             grader_version=grader_version,
+            n_epochs=n_epochs,
+            batch_size=batch_size,
+            learning_rate_multiplier=learning_rate_multiplier,
+            eval_interval=eval_interval,
+            eval_samples=eval_samples,
+            max_episode_steps=max_episode_steps,
         )
         requested_recipe = payload["execution_config"]["blossom"]["recipe"]
         job_data = _post_private_preview(payload)
@@ -299,18 +318,18 @@ def submit(
         reinforcement: dict[str, Any] = {
             "grader": _endpoint_grader(task, threshold, grader_version),
             "tools": _tools(),
-            "max_episode_steps": 12,
+            "max_episode_steps": max_episode_steps,
         }
         if not minimal_payload:
             reinforcement.update(
                 {
                     "pass_threshold": threshold,
                     "hyperparameters": {
-                        "n_epochs": 2,
-                        "batch_size": 8,
-                        "learning_rate_multiplier": 1.0,
-                        "eval_interval": 5,
-                        "eval_samples": 1,
+                        "n_epochs": n_epochs,
+                        "batch_size": batch_size,
+                        "learning_rate_multiplier": learning_rate_multiplier,
+                        "eval_interval": eval_interval,
+                        "eval_samples": eval_samples,
                         "compute_multiplier": 1.0,
                         "reasoning_effort": "medium",
                     },
@@ -341,6 +360,20 @@ def submit(
         "validation_file": validation_file.id,
         "pass_threshold": threshold,
         "submission_mode": "exact-recipe-preview" if private_preview else "public-v1",
+        "max_episode_steps": (
+            payload["fineTuningJobCreation"]["method"]["reinforcement"][
+                "max_episode_steps"
+            ]
+            if private_preview
+            else max_episode_steps
+        ),
+        "hyperparameters": (
+            payload["fineTuningJobCreation"]["method"]["reinforcement"][
+                "hyperparameters"
+            ]
+            if private_preview
+            else reinforcement.get("hyperparameters")
+        ),
         "requested_recipe": requested_recipe,
         "server_returned_recipe": server_recipe,
         "recipe_confirmed": (None if server_recipe is None else server_recipe == requested_recipe),
@@ -359,10 +392,26 @@ def main() -> None:
     parser.add_argument("--private-preview", action="store_true")
     parser.add_argument("--grader-version", choices=GRADER_VERSIONS, default="v1")
     parser.add_argument("--pass-threshold", type=float)
+    parser.add_argument("--n-epochs", type=int, default=2)
+    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--learning-rate-multiplier", type=float, default=1.0)
+    parser.add_argument("--eval-interval", type=int, default=5)
+    parser.add_argument("--eval-samples", type=int, default=1)
+    parser.add_argument("--max-episode-steps", type=int, default=12)
     parser.add_argument("--confirm-submit", action="store_true")
     args = parser.parse_args()
     if not args.confirm_submit:
         raise SystemExit("Submission is disabled unless --confirm-submit is supplied")
+    if min(
+        args.n_epochs,
+        args.batch_size,
+        args.eval_interval,
+        args.eval_samples,
+        args.max_episode_steps,
+    ) < 1:
+        raise SystemExit("Epochs, batch size, evaluation counts, and episode steps must be positive")
+    if args.learning_rate_multiplier <= 0:
+        raise SystemExit("Learning-rate multiplier must be positive")
     calibration = json.loads(args.calibration.read_text(encoding="utf-8"))
     if not calibration.get("sufficient_signal") and not args.allow_low_signal:
         raise SystemExit(
@@ -380,6 +429,12 @@ def main() -> None:
         minimal_payload=args.minimal_payload,
         private_preview=args.private_preview,
         grader_version=args.grader_version,
+        n_epochs=args.n_epochs,
+        batch_size=args.batch_size,
+        learning_rate_multiplier=args.learning_rate_multiplier,
+        eval_interval=args.eval_interval,
+        eval_samples=args.eval_samples,
+        max_episode_steps=args.max_episode_steps,
     )
     rendered = json.dumps(result, indent=2)
     if args.output:

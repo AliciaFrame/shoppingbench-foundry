@@ -90,12 +90,60 @@ Repeat with `shop`, `voucher`, and `web`. Compare the generated mean, perfect
 count, success count, termination count, and token usage with
 `optimization/results/summary.json` and the raw receipts.
 
+For the published Web RFT comparison, run the same command three times with
+`MAI_MODEL_DEPLOYMENT_NAME` set to `mai-sb-rft3-step10`,
+`mai-sb-rft3-step15`, and `mai-sb-rft3-final`. Then regenerate the tracked
+receipt:
+
+```powershell
+python -m rft.scripts.summarize_checkpoints `
+  --baseline optimization\results\raw\web-round2-baseline-heldout.jsonl `
+  --candidate step10 .foundry\results\web-rft3-step10-holdout.jsonl `
+  --candidate step15 .foundry\results\web-rft3-step15-holdout.jsonl `
+  --candidate final .foundry\results\web-rft3-final-holdout.jsonl `
+  --output rft\results\web-rft3-holdout-comparison.json
+```
+
+For Voucher, evaluate deployments `mai-sb-vouch-rft1-step3` and
+`mai-sb-vouch-rft1-step12` with the Voucher task/config, then regenerate:
+
+```powershell
+python -m rft.scripts.summarize_checkpoints `
+  --task voucher `
+  --baseline optimization\results\raw\voucher-candidate-heldout.jsonl `
+  --candidate step3 .foundry\results\voucher-rft1-step3-holdout.jsonl `
+  --candidate step12 .foundry\results\voucher-rft1-step12-holdout.jsonl `
+  --output rft\results\voucher-rft1-holdout-comparison.json
+```
+
 ## Rerun Agent Optimizer
 
 Deploy the matching hosted agent first, then run the command in
 `optimization/README.md`. Use the provided round-specific dataset and seed
 configuration. Optimizer judge scores nominate candidates; always rerun the
 canonical holdout before retaining one.
+
+The post-RFT Web experiment uses
+`optimization/web/post-rft-step10-start/metadata.yaml`, whose model is the
+selected `mai-sb-rft3-step10` deployment. It deliberately reuses the 40-case
+round-two optimization set and keeps the canonical holdout out of candidate
+generation.
+
+The completed operation nominated Candidate 1. To reproduce its canonical
+decision, apply it locally without deployment, set `OPTIMIZATION_LOCAL_DIR` to
+the generated candidate folder, evaluate `web-holdout.jsonl` with
+`MAI_MODEL_DEPLOYMENT_NAME=mai-sb-rft3-step10`, then compare:
+
+```powershell
+python -m rft.scripts.summarize_checkpoints `
+  --task web `
+  --baseline rft\results\raw\web-rft3-step10-holdout.jsonl `
+  --candidate candidate1 rft\results\raw\web-rft3-step10-post-opt-candidate1-holdout.jsonl `
+  --output optimization\results\web-post-rft-step10-comparison.json
+```
+
+The candidate is rejected because its mean is `0.871` and exact selection is
+41/50, below the Step 10 gates of `0.901` and 44/50.
 
 ## Rerun RFT
 
@@ -110,3 +158,9 @@ Follow `rft/README.md` in this order:
 
 The Web configuration uses one endpoint grader, four authenticated live tools,
 a calibrated pass threshold of `0.9`, and `max_episode_steps=12`.
+
+The public submission runner exposes epochs, batch size, learning-rate
+multiplier, evaluation interval/sample count, and episode-step cap as explicit
+arguments. Submission receipts persist these values. The Voucher follow-up
+demonstrates the conservative configuration used after observing Web
+overtraining: one epoch and a `0.5` learning-rate multiplier.

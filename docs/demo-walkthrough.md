@@ -51,4 +51,22 @@ Open `rft/README.md`, `rft/scripts/prepare_data.py`, and
 - canonical holdouts remain untouched
 - each task has a distinct suffix
 
-Close with the active Web job receipt and, once available, checkpoint results.
+Close with `rft/results/web-rft3-holdout-comparison.json`. Emphasize that Step
+10 reached `0.901`, while Step 15 fell to `0.836` and the final artifact to
+`0.795`; checkpoint selection preserved the gain that final-only deployment
+would have lost.
+
+## 7. Tell the hill-climb story
+
+Open `docs/shoppingbench-hill-climb-deck.html` in a browser. The final
+cross-task narrative is:
+
+- Product: `0.753 -> 0.961` with Agent Optimizer
+- Shop: `0.860 -> 0.998` with Agent Optimizer
+- Voucher: `0.898 -> 0.955` with Agent Optimizer, then `0.995` with RFT
+- Web: `0.790 -> 0.901` with agentic RFT
+- cross-task mean: `0.825 -> 0.964`
+
+End on the operating principle: use the cheapest effective improvement lever,
+but keep one deterministic evaluation spine across prompt optimization,
+training, checkpoint selection, and deployment.

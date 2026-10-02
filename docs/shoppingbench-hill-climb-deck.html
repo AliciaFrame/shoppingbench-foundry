@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ShoppingBench: Hill-Climbing Tool-Using Agents on Microsoft Foundry</title>
+  <style>
+    :root {
+      --ink: #10233f;
+      --muted: #5c6f86;
+      --paper: #f5f8fc;
+      --panel: rgba(255,255,255,.88);
+      --blue: #1769e0;
+      --cyan: #12a8bd;
+      --green: #15976a;
+      --amber: #ef9d25;
+      --red: #d45151;
+      --line: #dce5f0;
+      --shadow: 0 24px 70px rgba(16,35,63,.16);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #07172c; font-family: Inter, "Segoe UI", Arial, sans-serif; color: var(--ink); }
+    body { overflow: hidden; }
+    .deck { position: relative; width: 100vw; height: 100vh; }
+    .slide {
+      position: absolute; inset: 0; display: none; overflow: auto;
+      padding: clamp(28px, 4.8vw, 76px);
+      background:
+        radial-gradient(circle at 92% 8%, rgba(18,168,189,.13), transparent 26%),
+        radial-gradient(circle at 5% 95%, rgba(23,105,224,.12), transparent 27%),
+        var(--paper);
+    }
+    .slide.active { display: block; }
+    .slide.dark {
+      color: white;
+      background:
+        radial-gradient(circle at 78% 22%, rgba(18,168,189,.35), transparent 28%),
+        radial-gradient(circle at 18% 85%, rgba(23,105,224,.42), transparent 30%),
+        linear-gradient(135deg, #061326 0%, #102a52 55%, #07384a 100%);
+    }
+    .eyebrow { color: var(--blue); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; }
+    .dark .eyebrow { color: #75e3ee; }
+    h1 { font-size: clamp(44px, 6vw, 88px); line-height: .98; letter-spacing: -.055em; margin: 18px 0 24px; max-width: 1120px; }
+    h2 { font-size: clamp(34px, 4.2vw, 62px); line-height: 1.02; letter-spacing: -.04em; margin: 14px 0 28px; max-width: 1100px; }
+    h3 { font-size: 19px; margin: 0 0 8px; }
+    p { font-size: clamp(17px, 1.55vw, 23px); line-height: 1.48; color: var(--muted); max-width: 1080px; }
+    .dark p { color: #ccdaea; }
+    .lede { font-size: clamp(23px, 2.25vw, 34px); line-height: 1.35; max-width: 1000px; }
+    .grid { display: grid; gap: 20px; }
+    .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      background: var(--panel); border: 1px solid rgba(220,229,240,.9); border-radius: 20px;
+      padding: 24px; box-shadow: 0 12px 34px rgba(16,35,63,.08);
+    }
+    .dark .card { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.15); box-shadow: none; }
+    .card p, .card li { font-size: 16px; line-height: 1.45; }
+    .metric { font-size: clamp(38px, 4vw, 64px); font-weight: 850; letter-spacing: -.05em; line-height: 1; margin: 9px 0; }
+    .metric.blue { color: var(--blue); } .metric.green { color: var(--green); } .metric.amber { color: var(--amber); }
+    .dark .metric.blue { color: #78b5ff; } .dark .metric.green { color: #72e6b6; }
+    .label { color: var(--muted); font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+    .dark .label { color: #acc0d8; }
+    .pill { display: inline-flex; align-items: center; padding: 7px 11px; border-radius: 999px; font-size: 13px; font-weight: 750; background: #e7f0fe; color: #155dbd; margin: 4px 5px 4px 0; }
+    .pill.good { background: #e1f6ed; color: #087653; } .pill.warn { background: #fff0d6; color: #9b5b00; }
+    .callout { border-left: 5px solid var(--blue); background: #eaf2ff; border-radius: 0 16px 16px 0; padding: 18px 22px; margin-top: 22px; color: #27405f; font-size: 18px; line-height: 1.45; }
+    .callout.green { border-color: var(--green); background: #e7f7f0; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: clamp(14px, 1.3vw, 19px); background: white; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: 0 10px 30px rgba(16,35,63,.07); }
+    th, td { text-align: left; padding: 15px 18px; border-bottom: 1px solid var(--line); }
+    th { background: #edf3fa; font-size: .78em; letter-spacing: .05em; text-transform: uppercase; color: #48627f; }
+    tr:last-child td { border-bottom: 0; }
+    td strong { color: var(--green); }
+    .bar-row { display: grid; grid-template-columns: 145px 1fr 72px; align-items: center; gap: 14px; margin: 17px 0; font-weight: 700; }
+    .track { height: 18px; background: #dfe8f3; border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+    .fill.green { background: linear-gradient(90deg, #0b8c63, #55c998); }
+    .fill.amber { background: linear-gradient(90deg, #d67c00, #ffc45d); }
+    .flow { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 32px 0; }
+    .node { min-width: 145px; text-align: center; padding: 18px; border-radius: 16px; background: white; border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(16,35,63,.07); font-weight: 750; }
+    .arrow { font-size: 28px; color: var(--blue); }
+    .timeline { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 34px; }
+    .step { position: relative; padding-top: 25px; }
+    .step:before { content: ""; position: absolute; top: 4px; left: 0; width: 15px; height: 15px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 6px #dbe9fd; }
+    .step:after { content: ""; position: absolute; top: 11px; left: 18px; right: -18px; height: 2px; background: #c8d8ea; }
+    .step:last-child:after { display: none; }
+    .small { font-size: 14px; line-height: 1.45; }
+    .foot { position: fixed; left: 24px; bottom: 18px; color: #7e91a8; font-size: 12px; z-index: 5; }
+    .counter { position: fixed; right: 28px; bottom: 18px; color: #7e91a8; font-weight: 700; font-size: 13px; z-index: 5; }
+    .nav { position: fixed; top: 50%; right: 17px; transform: translateY(-50%); z-index: 6; display: grid; gap: 7px; }
+    .dot { width: 8px; height: 8px; border: 0; border-radius: 50%; background: #9cafc5; opacity: .55; cursor: pointer; padding: 0; }
+    .dot.active { opacity: 1; transform: scale(1.45); background: #2a7de1; }
+    .accent { color: var(--blue); } .dark .accent { color: #6fe4ef; }
+    .split { display: grid; grid-template-columns: 1.05fr .95fr; gap: 38px; align-items: center; }
+    ul { padding-left: 20px; } li { margin: 8px 0; color: var(--muted); font-size: 18px; line-height: 1.4; }
+    .dark li { color: #ccdaea; }
+    .stamp { display: inline-block; border: 1px solid rgba(255,255,255,.3); border-radius: 12px; padding: 10px 14px; color: #d8e8f7; font-size: 14px; }
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .deck { height: auto; }
+      .slide { position: relative; display: block; min-height: 100vh; }
+      .g2,.g3,.g4,.split,.timeline { grid-template-columns: 1fr; }
+      .nav,.counter { display: none; }
+      .step:after { display: none; }
+    }
+    @media print {
+      body { overflow: visible; background: white; }
+      .deck { height: auto; }
+      .slide { position: relative; display: block !important; width: 13.333in; height: 7.5in; page-break-after: always; overflow: hidden; }
+      .nav,.counter,.foot { display: none; }
+    }
+  </style>
+</head>
+<body>
+<main class="deck">
+  <section class="slide dark active">
+    <div class="eyebrow">Microsoft Foundry + MAI-Code-1.1-Flash</div>
+    <h1>Hill-climbing a tool-using agent from <span class="accent">0.825</span> to <span class="accent">0.964</span></h1>
+    <p class="lede">A controlled ShoppingBench experiment showing when prompt-and-tool optimization is enough, when model weights must change, and why deterministic checkpoint gates matter.</p>
+    <div class="grid g3" style="margin-top:42px;max-width:1050px">
+      <div class="card"><div class="label">Task families</div><div class="metric blue">4</div><p>Product, same-shop, voucher, and knowledge-grounded Web shopping.</p></div>
+      <div class="card"><div class="label">Canonical gain</div><div class="metric green">+12.9</div><p>Percentage points in cross-task mean.</p></div>
+      <div class="card"><div class="label">Winning pattern</div><div class="metric blue">3 + 1</div><p>Three tasks via Agent Optimizer; one bridged with agentic RFT.</p></div>
+    </div>
+    <p class="stamp">Controlled 3,636-document catalog &middot; 50-case holdout per task &middot; live multi-step tools</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">The scenario</div>
+    <h2>Fluent answers are not enough. The agent has to act correctly.</h2>
+    <div class="grid g4">
+      <div class="card"><span class="pill">Product</span><h3>Constraint satisfaction</h3><p>Find one item matching title, price, service, SKU, and attribute rules.</p></div>
+      <div class="card"><span class="pill">Shop</span><h3>Cross-item planning</h3><p>Find several requested products while preserving a same-shop invariant.</p></div>
+      <div class="card"><span class="pill">Voucher</span><h3>Policy + arithmetic</h3><p>Apply threshold, scope, discount, and final-budget rules correctly.</p></div>
+      <div class="card"><span class="pill">Web</span><h3>Knowledge to action</h3><p>Resolve a factual clue, translate it into search, inspect, recommend, terminate.</p></div>
+    </div>
+    <div class="flow">
+      <div class="node">User query</div><div class="arrow">&rarr;</div>
+      <div class="node">MAI agent</div><div class="arrow">&rarr;</div>
+      <div class="node">Search</div><div class="arrow">&rarr;</div>
+      <div class="node">Inspect</div><div class="arrow">&rarr;</div>
+      <div class="node">Recommend</div><div class="arrow">&rarr;</div>
+      <div class="node">Terminate</div>
+    </div>
+    <div class="callout">The grader checks retrieved product IDs, catalog constraints, task invariants, recommendation order, and protocol completion. A polished explanation cannot hide a wrong action.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Foundry architecture</div>
+    <h2>One evaluation spine; two improvement levers.</h2>
+    <div class="split">
+      <div>
+        <div class="flow" style="display:grid;grid-template-columns:1fr auto 1fr">
+          <div class="node">Foundry hosted agent</div><div class="arrow">&rarr;</div><div class="node">MAI-Code model</div>
+          <div class="node">Container Apps tools</div><div class="arrow">&rarr;</div><div class="node">Azure AI Search</div>
+          <div class="node">Deterministic grader</div><div class="arrow">&rarr;</div><div class="node">Canonical holdout</div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="label">Lever 1</div><div class="metric blue">Agent Optimizer</div><p>Changes instructions, skills, and tool descriptions. Fast, lower cost, no weight update.</p></div>
+        <div class="card"><div class="label">Lever 2</div><div class="metric green">Agentic RFT</div><p>Changes model policy through live tool episodes and calibrated reward.</p></div>
+      </div>
+    </div>
+    <div class="callout green"><strong>Design principle:</strong> nominate with optimizer or training metrics; decide with deterministic, untouched holdout behavior.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Experiment design</div>
+    <h2>Every climb had a gate.</h2>
+    <div class="timeline">
+      <div class="step"><h3>1. Baseline</h3><p class="small">Freeze data, tools, model, and canonical grader.</p></div>
+      <div class="step"><h3>2. Optimize</h3><p class="small">Generate candidates on disjoint optimization cases.</p></div>
+      <div class="step"><h3>3. Gate</h3><p class="small">Reject candidates that do not improve the 50-case deterministic holdout.</p></div>
+      <div class="step"><h3>4. Train selectively</h3><p class="small">Use RFT only when base failure is 25-50% and a calibrated reward exists.</p></div>
+    </div>
+    <div class="grid g3" style="margin-top:42px">
+      <div class="card"><div class="metric blue">900</div><p>Frozen public task rows across four families.</p></div>
+      <div class="card"><div class="metric blue">50</div><p>Canonical holdout cases per task.</p></div>
+      <div class="card"><div class="metric blue">3,636</div><p>Gold + deterministic distractor catalog documents.</p></div>
+    </div>
+    <p class="small">Caveat: this is a reproducible controlled catalog, not the original 2.5M-product production environment.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Agent Optimizer</div>
+    <h2>Configuration optimization solved two tasks and created the training baseline for a third.</h2>
+    <table>
+      <thead><tr><th>Task</th><th>Initial</th><th>Retained</th><th>Gain</th><th>What changed</th></tr></thead>
+      <tbody>
+        <tr><td>Product</td><td>0.753</td><td><strong>0.961</strong></td><td>+0.208</td><td>Tool definitions</td></tr>
+        <tr><td>Shop</td><td>0.860</td><td><strong>0.998</strong></td><td>+0.138</td><td>Instructions + tool definitions</td></tr>
+        <tr><td>Voucher</td><td>0.898</td><td><strong>0.955</strong></td><td>+0.057</td><td>Round-one skills/config</td></tr>
+        <tr><td>Web</td><td>0.790</td><td>0.790</td><td>0.000</td><td>Candidate rejected</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">Optimizer judge scores rose for some rejected candidates. The deterministic gate caught the difference: Voucher round two harmed recommendation correctness; Web round two tied mean quality and reduced termination.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Why Web was different</div>
+    <h2>The failure was policy-level, not just prompt-level.</h2>
+    <div class="grid g3">
+      <div class="card"><div class="label">Retrieval translation</div><div class="metric amber">Hard</div><p>Convert an inferred fact into the right product noun and search query.</p></div>
+      <div class="card"><div class="label">Ambiguity</div><div class="metric amber">High</div><p>Dates, issue names, numeric identifiers, surnames, countries, model numbers.</p></div>
+      <div class="card"><div class="label">Optimizer outcome</div><div class="metric amber">Flat</div><p>0.790 baseline and candidate; 11 cases regressed in the rejected round.</p></div>
+    </div>
+    <div class="bar-row"><span>Base pass signal</span><div class="track"><div class="fill amber" style="width:50%"></div></div><strong>50%</strong></div>
+    <p>The calibrated RFT grader produced the right learning regime: enough failures to teach, but not so many that the task was out of reach.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Reward engineering</div>
+    <h2>Reward the outcome. Constrain the path. Penalize gaming.</h2>
+    <div class="grid g2">
+      <div class="card">
+        <div class="label">Grader v1 failure mode</div>
+        <div class="metric" style="color:var(--red)">+15%</div>
+        <p>Literal knowledge anywhere in search outweighed the efficiency bonus, encouraging extra searches until the keyword appeared.</p>
+        <span class="pill warn">Reward hacking</span><span class="pill warn">Late keyword insertion</span>
+      </div>
+      <div class="card">
+        <div class="label">Grader v2</div>
+        <div class="metric green">65%</div>
+        <p>Exact product dominates. Grounding only counts in the first two searches; excess and duplicate searches are penalized.</p>
+        <span class="pill good">Exact outcome</span><span class="pill good">Protocol</span><span class="pill good">Efficiency</span>
+      </div>
+    </div>
+    <div class="callout green">Calibration at threshold 0.90 produced a 50% base failure rate. The grader was isolated at <code>/grade/v2</code>, preserving historical job reproducibility.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Checkpoint selection</div>
+    <h2>The final model was not the best model.</h2>
+    <div class="bar-row"><span>Base</span><div class="track"><div class="fill" style="width:79%"></div></div><strong>0.790</strong></div>
+    <div class="bar-row"><span>Step 10</span><div class="track"><div class="fill green" style="width:90.1%"></div></div><strong>0.901</strong></div>
+    <div class="bar-row"><span>Step 15</span><div class="track"><div class="fill amber" style="width:83.6%"></div></div><strong>0.836</strong></div>
+    <div class="bar-row"><span>Final</span><div class="track"><div class="fill amber" style="width:79.5%"></div></div><strong>0.795</strong></div>
+    <div class="grid g3" style="margin-top:34px">
+      <div class="card"><div class="label">Step 10 exact</div><div class="metric green">44/50</div><p>Up from 38/50.</p></div>
+      <div class="card"><div class="label">Step 10 perfect</div><div class="metric green">43/50</div><p>Up from 32/50.</p></div>
+      <div class="card"><div class="label">Step 10 protocol</div><div class="metric green">47/50</div><p>Up from 40/50 termination.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Quality and efficiency</div>
+    <h2>Step 10 improved the answer while doing less work.</h2>
+    <div class="grid g3">
+      <div class="card"><div class="label">Mean searches</div><div class="metric green">16.82 &rarr; 6.24</div><p>63% fewer search calls.</p></div>
+      <div class="card"><div class="label">Mean tokens</div><div class="metric green">142K &rarr; 49K</div><p>65% lower token use.</p></div>
+      <div class="card"><div class="label">Case movement</div><div class="metric green">13 / 34 / 3</div><p>Wins / ties / losses versus base.</p></div>
+    </div>
+    <div class="callout">Step 15 searched even less, but exact accuracy fell. Efficiency is a constraint, not the objective: the best operating point balances both.</div>
+  </section>
+
+  <section class="slide dark">
+    <div class="eyebrow">The hill climb</div>
+    <h2>Different bottlenecks required different levers.</h2>
+    <div class="grid g4">
+      <div class="card"><div class="label">Product</div><div class="metric green">0.753 &rarr; 0.961</div><p>Agent Optimizer</p></div>
+      <div class="card"><div class="label">Shop</div><div class="metric green">0.860 &rarr; 0.998</div><p>Agent Optimizer</p></div>
+      <div class="card"><div class="label">Voucher</div><div class="metric green">0.898 &rarr; 0.995</div><p>Optimizer + RFT Step 12</p></div>
+      <div class="card"><div class="label">Web</div><div class="metric green">0.790 &rarr; 0.901</div><p>Agentic RFT</p></div>
+    </div>
+    <div class="grid g2" style="margin-top:34px">
+      <div class="card"><div class="label">Cross-task mean</div><div class="metric blue">0.825 &rarr; 0.964</div></div>
+      <div class="card"><div class="label">Playbook</div><div class="metric blue">Optimize, gate, train</div><p>Use the cheapest effective lever, escalate only with evidence.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">What we learned</div>
+    <h2>Five operating principles for agent improvement.</h2>
+    <div class="grid g2">
+      <div class="card"><h3>1. Deterministic gates beat vibes</h3><p>LLM judges nominate. Task-specific invariants decide.</p></div>
+      <div class="card"><h3>2. Calibrate before training</h3><p>RFT needs a measurable 25-50% base failure regime.</p></div>
+      <div class="card"><h3>3. Reward design is product design</h3><p>Small weights can reshape tool behavior and create unintended strategies.</p></div>
+      <div class="card"><h3>4. Evaluate checkpoints, not just finals</h3><p>The final Web artifact erased almost all of the Step 10 gain.</p></div>
+      <div class="card"><h3>5. Preserve lineage</h3><p>Datasets, graders, configs, receipts, and raw holdouts make the story reproducible.</p></div>
+      <div class="card"><h3>6. Know when to stop</h3><p>Without new hard cases, another Web run would recycle evidence rather than create it.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Next experiments</div>
+    <h2>Push where the evidence says there is still room.</h2>
+    <div class="grid g3">
+      <div class="card"><span class="pill warn">Rejected</span><h3>Step 10 + Agent Optimizer</h3><p>Judge improved, but canonical quality fell 0.901 &rarr; 0.871 and exact accuracy fell 44 &rarr; 41.</p></div>
+      <div class="card"><span class="pill good">Retained</span><h3>Voucher RFT Step 12</h3><p>0.955 &rarr; 0.995; 24 wins, 26 ties, zero regressions on the canonical holdout.</p></div>
+      <div class="card"><span class="pill warn">Future curriculum</span><h3>Web vNext</h3><p>Add disjoint hard cases for dates, model numbers, ambiguous names, compatibility lists, and hard negatives.</p></div>
+    </div>
+    <div class="callout green"><strong>North star:</strong> keep the full loop executable from the repository: provision, deploy, evaluate, optimize, train, select, and reproduce the evidence.</div>
+  </section>
+
+  <section class="slide dark">
+    <div class="eyebrow">The takeaway</div>
+    <h1>Foundry gives teams a disciplined path from prompt tuning to policy learning.</h1>
+    <p class="lede">Agent Optimizer fixed the configuration bottlenecks. Agentic RFT fixed the policy bottleneck. Deterministic evaluation kept both honest.</p>
+    <div class="grid g3" style="margin-top:42px">
+      <div class="card"><div class="label">Start</div><div class="metric blue">0.825</div></div>
+      <div class="card"><div class="label">Finish</div><div class="metric green">0.964</div></div>
+      <div class="card"><div class="label">Method</div><div class="metric blue">Evidence first</div></div>
+    </div>
+    <p class="stamp">Repository: github.com/AliciaFrame/shoppingbench-foundry</p>
+  </section>
+</main>
+<div class="nav" aria-label="Slide navigation"></div>
+<div class="counter"></div>
+<div class="foot">ShoppingBench on Microsoft Foundry &middot; October 2026</div>
+<script>
+  const slides = [...document.querySelectorAll(".slide")];
+  const nav = document.querySelector(".nav");
+  const counter = document.querySelector(".counter");
+  let current = 0;
+  slides.forEach((_, i) => {
+    const dot = document.createElement("button");
+    dot.className = "dot";
+    dot.title = `Slide ${i + 1}`;
+    dot.onclick = () => show(i);
+    nav.appendChild(dot);
+  });
+  const dots = [...nav.children];
+  function show(index) {
+    current = Math.max(0, Math.min(slides.length - 1, index));
+    slides.forEach((slide, i) => slide.classList.toggle("active", i === current));
+    dots.forEach((dot, i) => dot.classList.toggle("active", i === current));
+    counter.textContent = `${current + 1} / ${slides.length}`;
+  }
+  addEventListener("keydown", event => {
+    if (["ArrowRight", "PageDown", " "].includes(event.key)) show(current + 1);
+    if (["ArrowLeft", "PageUp"].includes(event.key)) show(current - 1);
+    if (event.key === "Home") show(0);
+    if (event.key === "End") show(slides.length - 1);
+  });
+  show(0);
+</script>
+</body>
+</html>

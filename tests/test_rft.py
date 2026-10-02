@@ -4,6 +4,11 @@ from pathlib import Path
 from evaluations.graders.rft_grader import grade
 from evaluations.graders.rft_grader_v2 import grade as grade_v2
 from evaluations.graders.rft_grader_v2 import grade_with_details as grade_v2_with_details
+from rft.scripts.monitor import (
+    COGNITIVE_SERVICES_TOKEN_SCOPE,
+    FOUNDRY_TOKEN_SCOPE,
+    _token_scope,
+)
 from rft.scripts.prepare_data import prepare_task
 from rft.scripts.submit import (
     _endpoint_grader,
@@ -12,6 +17,19 @@ from rft.scripts.submit import (
     _recipe_from_job,
     _validate_agentic_dataset,
 )
+
+
+def test_monitor_uses_foundry_token_scope():
+    assert (
+        _token_scope(
+            "https://resource.services.ai.azure.com/api/projects/project/openai/v1/"
+        )
+        == FOUNDRY_TOKEN_SCOPE
+    )
+    assert (
+        _token_scope("https://resource.openai.azure.com/openai/v1/")
+        == COGNITIVE_SERVICES_TOKEN_SCOPE
+    )
 
 
 def test_rft_grader_rewards_exact_order_and_complete_process():
@@ -187,6 +205,12 @@ def test_private_preview_payload_matches_blossom_contract(monkeypatch):
         task="web",
         training_type="GlobalStandard",
         threshold=1.0,
+        n_epochs=3,
+        batch_size=4,
+        learning_rate_multiplier=0.5,
+        eval_interval=7,
+        eval_samples=2,
+        max_episode_steps=9,
     )
 
     creation = payload["fineTuningJobCreation"]
@@ -204,7 +228,16 @@ def test_private_preview_payload_matches_blossom_contract(monkeypatch):
         "terminate",
     ]
     assert "pass_threshold" not in reinforcement
-    assert reinforcement["hyperparameters"]["number_of_epochs"] == 1
+    assert reinforcement["max_episode_steps"] == 9
+    assert reinforcement["hyperparameters"] == {
+        "eval_interval": 7,
+        "eval_samples": 2,
+        "compute_multiplier": 1.0,
+        "learning_rate_multiplier": 0.5,
+        "reasoning_effort": "medium",
+        "number_of_epochs": 3,
+        "batch_size": 4,
+    }
     assert payload["execution_config"] == {
         "type": "blossom",
         "blossom": {

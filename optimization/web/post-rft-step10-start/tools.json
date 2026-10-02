@@ -1,0 +1,57 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "find_product",
+      "description": "Search products after resolving the user's knowledge clue.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "q": {"type": "string", "description": "Product search text based on the resolved clue."},
+          "page": {"type": "integer", "description": "Result page from 1 to 5."},
+          "shop_id": {"type": "string", "description": "Optional shop filter."},
+          "price": {"type": "string", "description": "Optional minimum-maximum price range."},
+          "sort": {"type": "string", "enum": ["default", "order", "priceasc", "pricedesc"]},
+          "service": {"type": "string", "description": "Comma-separated service filters."}
+        },
+        "required": ["q", "page"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "view_product_information",
+      "description": "Inspect details and verify the resolved knowledge attribute.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "product_ids": {"type": "string", "description": "Comma-separated product IDs."}
+        },
+        "required": ["product_ids"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recommend_product",
+      "description": "Submit the final matching product ID.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "product_ids": {"type": "string", "description": "One product ID."}
+        },
+        "required": ["product_ids"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "terminate",
+      "description": "End the shopping episode after recommendation.",
+      "parameters": {"type": "object", "properties": {}}
+    }
+  }
+]

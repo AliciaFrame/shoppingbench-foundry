@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -12,6 +13,9 @@ from openai import RateLimitError
 
 from shoppingbench_foundry.grading import grade_sample
 from shoppingbench_foundry.store import InMemoryProductStore
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
 
 ResponsesAgentServerHost.run = lambda self: None
 
@@ -31,6 +35,7 @@ def _evaluate(
     row: dict[str, Any],
     store: InMemoryProductStore,
 ) -> dict[str, Any]:
+    started_at = time.perf_counter()
     for attempt in range(6):
         try:
             output_text, usage = runtime._run_episode(row["query"])
@@ -47,6 +52,7 @@ def _evaluate(
         "sample": sample,
         "grade": grade,
         "usage": usage,
+        "latency_seconds": round(time.perf_counter() - started_at, 6),
     }
 
 
@@ -70,7 +76,11 @@ def main_cli() -> None:
     for index, row in enumerate(rows):
         results[index] = existing.get(row["name"])
 
-    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with (
+        args.output.open("a", encoding="utf-8") as checkpoint,
+        ThreadPoolExecutor(max_workers=args.workers) as executor,
+    ):
         futures = {
             executor.submit(_evaluate, row, store): index
             for index, row in enumerate(rows)
@@ -79,11 +89,13 @@ def main_cli() -> None:
         for future in as_completed(futures):
             index = futures[future]
             try:
-                results[index] = future.result()
+                result = future.result()
+                results[index] = result
+                checkpoint.write(json.dumps(result, ensure_ascii=False) + "\n")
+                checkpoint.flush()
             except Exception as exc:  # noqa: BLE001
                 errors.append({"name": rows[index]["name"], "error": repr(exc)})
 
-    args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:
         for result in results:
             if result is not None:

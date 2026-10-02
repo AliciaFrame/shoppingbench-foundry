@@ -1,0 +1,26 @@
+{
+  "task": "voucher",
+  "model": "mai-code-1.1-flash-2026-08-27",
+  "suffix": "mai-sb-vouch-rft1",
+  "grader_version": "v1",
+  "training_type": "developerTier",
+  "job_id": "ftjob-3f87f6185a6a436b9255901810c63fee",
+  "status": "pending",
+  "training_file": "file-47bb0d34e04a4df18f9ff86b5ae4af55",
+  "validation_file": "file-b35dc8ef3d414e46b5ee2c4e8eb07063",
+  "pass_threshold": 0.975,
+  "submission_mode": "public-v1",
+  "max_episode_steps": 12,
+  "hyperparameters": {
+    "n_epochs": 1,
+    "batch_size": 8,
+    "learning_rate_multiplier": 0.5,
+    "eval_interval": 3,
+    "eval_samples": 3,
+    "compute_multiplier": 1.0,
+    "reasoning_effort": "medium"
+  },
+  "requested_recipe": null,
+  "server_returned_recipe": null,
+  "recipe_confirmed": null
+}

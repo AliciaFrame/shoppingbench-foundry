@@ -1,0 +1,55 @@
+{
+  "task": "web",
+  "holdout_cases": 50,
+  "baseline": {
+    "cases": 50,
+    "mean_score": 0.901,
+    "perfect": 43,
+    "exact_product": 44,
+    "terminated": 47,
+    "mean_searches": 6.24,
+    "mean_views": 1.24,
+    "mean_total_tokens": 49321.12,
+    "median_total_tokens": 35657.0,
+    "mean_latency_seconds": 39.985626,
+    "median_latency_seconds": 36.563379,
+    "p95_latency_seconds": 72.184939
+  },
+  "candidates": {
+    "candidate1": {
+      "metrics": {
+        "cases": 50,
+        "mean_score": 0.871,
+        "perfect": 40,
+        "exact_product": 41,
+        "terminated": 49,
+        "mean_searches": 4.64,
+        "mean_views": 1.44,
+        "mean_total_tokens": 44904.32,
+        "median_total_tokens": 32608.0,
+        "mean_latency_seconds": 37.796177,
+        "median_latency_seconds": 33.6863175,
+        "p95_latency_seconds": 74.195221
+      },
+      "versus_baseline": {
+        "wins": 3,
+        "ties": 43,
+        "losses": 4,
+        "improved_cases": [
+          "web-001",
+          "web-068",
+          "web-074"
+        ],
+        "regressed_cases": [
+          "web-026",
+          "web-051",
+          "web-075",
+          "web-085"
+        ]
+      }
+    }
+  },
+  "selected_checkpoint": "candidate1",
+  "retained_artifact": "baseline",
+  "decision": "rejected"
+}
