@@ -128,7 +128,7 @@
     }
   },
   "optimizer_only_canonical_mean_across_tasks": 0.925911,
-  "final_canonical_mean_across_tasks": 0.963703,
+  "final_canonical_mean_across_tasks": 0.9637025,
   "final_selection": {
     "product": "round2",
     "shop": "round2",

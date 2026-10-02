@@ -72,7 +72,7 @@ def test_documented_canonical_results_match_raw_receipts():
             assert final["mean"] == documented[final_round]["canonical_mean_score"]
 
     final_mean = sum(final["mean"] for _, final in evidence.values()) / 4
-    assert round(final_mean, 6) == SUMMARY["final_canonical_mean_across_tasks"]
+    assert abs(final_mean - SUMMARY["final_canonical_mean_across_tasks"]) < 1e-9
 
 
 def test_documented_rft_checkpoint_results_match_raw_receipts():
