@@ -222,6 +222,10 @@ For an executive-to-technical narrative, open the standalone
 [HTML slide deck](docs/shoppingbench-hill-climb-deck.html). Use the arrow keys
 to navigate or print it to PDF from a browser.
 
+For a single-slide summary that can be dropped into another presentation, use
+the editable [16:9 HTML slide](docs/shoppingbench-hill-climb-summary-slide.html)
+or the rendered [1600x900 PNG](docs/shoppingbench-hill-climb-summary-slide.png).
+
 ## Attribution
 
 This project adapts [ShoppingBench](https://github.com/yjwjy/ShoppingBench)
