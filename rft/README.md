@@ -7,38 +7,60 @@ known agent behavior.
 
 ## Workflow
 
-1. Generate disjoint train/validation rows while excluding canonical holdouts.
-   Every row includes the same four function schemas used during calibration.
-2. Run base-model rollouts through the same live tools.
-3. Calibrate a pass threshold targeting a 25–50% failure rate.
+1. Generate connected-group-disjoint training, validation, checkpoint
+   development, and sealed final-test rows. Every row includes the same four
+   function schemas used during calibration.
+2. Run five base-model rollouts per validation case through the same live tools.
+3. Calibrate a pass threshold targeting a 25–50% failure rate, with at least 60
+   clustered observations and a bootstrap interval.
 4. Submit one independently suffixed job per task.
 5. Monitor every checkpoint.
-6. Evaluate checkpoints on the untouched canonical holdout.
+6. Select checkpoints on the development set. Open the sealed final test once,
+   only after all model and agent choices are frozen.
 7. Combine the selected checkpoint with the retained optimized agent config.
 
 ## Prepare
 
 ```powershell
-python -m rft.scripts.prepare_data
+python -m rft.scripts.prepare_data --output-dir rft\data\v2
 ```
 
 Generated sizes:
 
 | Task | Train | Validation |
 |---|---:|---:|
-| Product | 180 | 20 |
-| Shop | 180 | 20 |
-| Voucher | 180 | 20 |
-| Web | 80 | 20 |
+| Product | 150 | 20 |
+| Shop | 150 | 20 |
+| Voucher | 150 | 20 |
+| Web | 50 | 20 |
 
 ## Calibration
 
 ```powershell
 python -m rft.scripts.calibrate `
-  --results rft\results\web-validation-results.jsonl `
-  --dataset rft\data\web-validation-eval.jsonl `
-  --output rft\results\web-calibration.json
+  --results rft\results\v2\web-calibration-results.jsonl `
+  --dataset rft\data\v2\web-calibration-eval.jsonl `
+  --grader-version v3 `
+  --output rft\results\v2\web-calibration.json
 ```
+
+### Hardened grader v3
+
+Historical `/grade` and `/grade/v2` endpoints remain unchanged for v1
+reproducibility. New jobs use `/grade/v3`:
+
+- 70% exact ordered selection
+- 8% proof that every selected ID was viewed before recommendation
+- 4% search tied to user constraints
+- 2% exactly one recommendation
+- 4% recommendation immediately followed by termination
+- 10% valid user-facing final answer
+- 2% efficient distinct searches, available only for exact selections
+
+Web final answers must state the resolved clue. Voucher final answers must
+contain the recomputed subtotal, threshold, discount, final payable, budget
+check, and shop consistency when applicable. Wrong products, dummy views, and
+empty final answers cannot reach the pass threshold.
 
 Web produced a 40% base failure rate at calibrated threshold `0.9`, providing
 useful training signal. Product produced only 15% failures over 60 repeated
@@ -94,7 +116,7 @@ The exact billable submission is preserved as
 and defaults to a new receipt path so the original immutable receipt is not
 overwritten.
 
-## Web RFT result
+## Historical v1 Web RFT result
 
 The job completed with checkpoints at Steps 10, 15, and 19/final. Every
 artifact was deployed separately and evaluated on the unchanged 50-case Web
@@ -135,7 +157,7 @@ The complete aggregate and case-level win/loss lists are in
 The three underlying 50-case receipts are preserved under
 [`results/raw`](results/raw) and are checked against the summary in CI.
 
-## What to train next
+## Historical v1 training interpretation
 
 The Web curve indicates saturation of the current curriculum rather than
 saturation of the model. Step 10 is the end-of-first-epoch winner; continuing
@@ -160,7 +182,85 @@ failures. Voucher is the only other task above the signal floor:
 The exact follow-up command is preserved as
 `scripts/submit_voucher_rft1.ps1`.
 
-### Voucher RFT result
+### Current v2 Voucher RFT result
+
+The v2 Voucher curriculum used grader v3, a `0.98` pass threshold, 12 maximum
+episode steps, and connected-group data. Calibration covered 20 cases with five
+rollouts each and measured a `29%` base failure rate (`95%` bootstrap interval
+`[16%, 44%]`), which met the predeclared signal gate.
+
+- job: `ftjob-df0cb6a4bf3649ea862b0988f6f6a9dc`
+- suffix: `mai-sb-vouch-rft2`
+- training type: `developerTier`
+- epochs: 2
+- batch size: 8
+- learning-rate multiplier: 1.0
+- evaluation interval/samples: 5/10
+- trained tokens: 573,336
+- submission receipt: [`results/v2/voucher-v3-submission.json`](results/v2/voucher-v3-submission.json)
+
+All published artifacts were evaluated on the same 30-case development split
+with three rollouts per case under the final sequential runtime.
+
+| Artifact | Mean | Exact | Success | Valid final answer | Mean tokens |
+|---|---:|---:|---:|---:|---:|
+| Historical Step 12 retained model | 0.9029 | 81/90 | 74/90 | 75/90 | 38,076 |
+| **v3 Step 10 (selected)** | **0.9248** | 83/90 | **78/90** | **78/90** | 29,610 |
+| v3 Step 15 | 0.8980 | 80/90 | 74/90 | 77/90 | **29,077** |
+| v3 final | **0.9253** | **84/90** | 71/90 | 71/90 | 30,950 |
+
+Step 10 was selected instead of the numerically highest-mean final checkpoint.
+The final checkpoint's one extra exact rollout was within uncertainty, while it
+lost seven complete successes and valid final answers, used more tokens, and
+was slower. The direct paired comparison is
+[`../evaluations/results/v2/voucher-v3-final-vs-step10.json`](../evaluations/results/v2/voucher-v3-final-vs-step10.json).
+
+### Current v2 Web RFT experiment
+
+The hardened Web calibration completed on 20 connected-group validation cases
+with five rollouts each:
+
+- samples: 100
+- mean score: `0.6832`
+- selected pass threshold: `0.90`
+- base failure rate: `37%`
+- clustered bootstrap interval: `[19%, 56%]`
+- sufficient signal: yes
+
+This meets the predeclared 25-50% failure gate. Job
+`ftjob-65084bb6362f47188077b95805058cc0` was submitted with suffix
+`mai-sb-web-rft4`, grader v3, two epochs, batch size 8, learning-rate
+multiplier `0.5`, evaluation every three steps with five validation samples,
+and a 12-step episode bound. The conservative learning rate responds to the
+historical Web run, where later checkpoints overfit after Step 10.
+
+Receipts:
+
+- [`results/v2/web-v3-calibration.json`](results/v2/web-v3-calibration.json)
+- [`results/v2/web-v3-submission.json`](results/v2/web-v3-submission.json)
+- [`scripts/submit_web_rft4.ps1`](scripts/submit_web_rft4.ps1)
+
+The job succeeded with deployable checkpoints at Steps 6, 9, and 12/final.
+All three were evaluated on the same 30-case, three-rollout development gate:
+
+| Artifact | Mean | Exact | Success | Mean tokens | Mean latency |
+|---|---:|---:|---:|---:|---:|
+| **Historical Step 10 (selected)** | **0.7381** | **64/90** | **61/90** | **59,853** | **41.91s** |
+| RFT4 Step 6 | 0.6500 | 59/90 | 45/90 | 68,757 | 49.25s |
+| RFT4 Step 9 | 0.6717 | 60/90 | 54/90 | 79,135 | 54.11s |
+| RFT4 final/Step 12 | 0.6669 | 59/90 | 57/90 | 88,009 | 59.97s |
+
+Every RFT4 checkpoint regressed on mean score, exact selection, complete
+success, cost, latency, and paired case outcomes. The historical Step 10
+deployment remains selected, and no new hosted Web version was promoted.
+
+Comparison receipts:
+
+- [`../evaluations/results/v2/web-v3-step6-vs-retained-step10.json`](../evaluations/results/v2/web-v3-step6-vs-retained-step10.json)
+- [`../evaluations/results/v2/web-v3-step9-vs-retained-step10.json`](../evaluations/results/v2/web-v3-step9-vs-retained-step10.json)
+- [`../evaluations/results/v2/web-v3-final-vs-retained-step10.json`](../evaluations/results/v2/web-v3-final-vs-retained-step10.json)
+
+### Historical v1 Voucher RFT result
 
 The job completed successfully with checkpoints at Steps 3, 12, and 15/final.
 Step 3 and Step 12 were deployed to the approved ShoppingBench resource and
@@ -172,8 +272,10 @@ evaluated on the unchanged 50-case holdout.
 | Step 3 | 0.96375 | 46 | 47 | 49 | 7.64 | 45,922 |
 | Step 12 | **0.994667** | **48** | **49** | **49** | **5.78** | **34,788** |
 
-Step 12 improved 24 cases, tied 26, and regressed none. It is the retained
-Voucher checkpoint. Step 3 regressed three cases and used more tokens; the
+Step 12 improved 24 cases, tied 26, and regressed none under the v1 score.
+Exact selection improved by three cases, while termination improved by 20 net
+cases; the evidence primarily supports protocol improvement, not improved
+communicated arithmetic. Step 3 regressed three cases and used more tokens; the
 lower-reward Step 15/final artifact was not deployed. The aggregate receipt is
 [`results/voucher-rft1-holdout-comparison.json`](results/voucher-rft1-holdout-comparison.json).
 

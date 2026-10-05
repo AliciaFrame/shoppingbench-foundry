@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .datasets import TASK_FILES, load_task_rows
+from .splits import group_disjoint_splits
 
 
 class DisjointSet:
@@ -105,9 +106,16 @@ def _merge_skus(target: dict[str, Any], reward: dict[str, Any]) -> None:
     sku_options = reward.get("sku_options")
     if not sku_options or isinstance(sku_options, dict):
         return
-    variant = target.setdefault("1", {})
+    variant: dict[str, Any] = {}
     for option in sku_options:
         variant.update(option)
+    if any(
+        all(existing.get(key) == value for key, value in variant.items())
+        for existing in target.values()
+    ):
+        return
+    numeric_keys = [int(key) for key in target if str(key).isdigit()]
+    target[str(max(numeric_keys, default=0) + 1)] = variant
 
 
 def _product_text(product: dict[str, Any]) -> str:
@@ -352,19 +360,91 @@ def write_eval_datasets(
     return counts
 
 
+def write_eval_datasets_v2(
+    data_dir: Path,
+    output_dir: Path,
+    development_count: int = 30,
+    final_test_count: int = 50,
+    optimize_count: int = 20,
+    round2_optimize_count: int = 40,
+) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest: dict[str, Any] = {
+        "version": "v2",
+        "policy": (
+            "Connected groups sharing target product IDs, and for Web normalized knowledge "
+            "answers, are assigned wholly to training-pool, development, or final-test."
+        ),
+        "tasks": {},
+    }
+    for task in TASK_FILES:
+        rows = load_task_rows(data_dir, task)
+        splits, task_manifest = group_disjoint_splits(
+            task,
+            rows,
+            development_count=development_count,
+            final_test_count=final_test_count,
+        )
+        training_indexes = list(splits["training-pool"])
+        random.Random(f"shoppingbench-{task}-v2-optimizer").shuffle(training_indexes)
+        derived = {
+            "optimize": training_indexes[:optimize_count],
+            "optimize-round2": training_indexes[
+                optimize_count : optimize_count + round2_optimize_count
+            ],
+        }
+        for split, selected in {**splits, **derived}.items():
+            path = output_dir / f"{task}-{split}.jsonl"
+            with path.open("w", encoding="utf-8") as handle:
+                for index in selected:
+                    row = rows[index]
+                    handle.write(
+                        json.dumps(
+                            {
+                                "name": f"{task}-{index:03d}",
+                                "query": row["query"],
+                                "criteria": _criteria(task, row),
+                                "item": row,
+                            },
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
+        task_manifest["derived_training_subsets"] = {
+            split: [f"{task}-{index:03d}" for index in indexes]
+            for split, indexes in derived.items()
+        }
+        manifest["tasks"][task] = task_manifest
+    manifest_path = output_dir / "split-manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return manifest
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     repo_root = Path(__file__).resolve().parents[2]
     parser.add_argument("--data-dir", type=Path, default=repo_root / "data" / "source")
     parser.add_argument("--documents", type=Path, required=True)
     parser.add_argument("--eval-dir", type=Path)
+    parser.add_argument("--split-version", choices=("v1", "v2"), default="v1")
     args = parser.parse_args()
 
     products = build_benchmark_subset(args.data_dir)
     write_documents(products, args.documents)
     result: dict[str, Any] = {"documents": len(products), "output": str(args.documents)}
     if args.eval_dir:
-        result["evals"] = write_eval_datasets(args.data_dir, args.eval_dir)
+        if args.split_version == "v2":
+            manifest = write_eval_datasets_v2(args.data_dir, args.eval_dir)
+            result["evals"] = {
+                "version": "v2",
+                "manifest": str(args.eval_dir / "split-manifest.json"),
+                "counts": {
+                    task: task_manifest["counts"]
+                    for task, task_manifest in manifest["tasks"].items()
+                },
+            }
+        else:
+            result["evals"] = write_eval_datasets(args.data_dir, args.eval_dir)
     print(json.dumps(result))
 
 

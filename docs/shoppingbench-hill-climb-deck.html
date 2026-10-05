@@ -94,11 +94,90 @@
     ul { padding-left: 20px; } li { margin: 8px 0; color: var(--muted); font-size: 18px; line-height: 1.4; }
     .dark li { color: #ccdaea; }
     .stamp { display: inline-block; border: 1px solid rgba(255,255,255,.3); border-radius: 12px; padding: 10px 14px; color: #d8e8f7; font-size: 14px; }
+    .frontier {
+      --ft-cream: #fef9ed;
+      --ft-sand: #efe2d1;
+      --ft-coral: #cc653c;
+      --ft-peach: #fbcfb9;
+      --ft-gold: #e5b85c;
+      --ft-teal: #628c8c;
+      --ft-green: #738c7b;
+      --ft-brown: #3b230f;
+      --ft-charcoal: #434d46;
+      background: var(--ft-cream);
+      color: var(--ft-brown);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .frontier h1, .frontier h2, .frontier h3, .frontier .ft-display {
+      font-family: "Bradford LL TT", "Bradford LL", Georgia, serif;
+      font-weight: 500;
+      letter-spacing: -.035em;
+    }
+    .frontier .eyebrow { color: var(--ft-coral); }
+    .frontier p { color: #5f4e41; }
+    .ft-definition {
+      max-width: 1180px;
+      font-size: clamp(21px, 2vw, 30px);
+      line-height: 1.38;
+      margin: -8px 0 30px;
+    }
+    .ft-stages { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .ft-stage {
+      min-height: 280px;
+      padding: 24px;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 10px 26px rgba(59,35,15,.07);
+    }
+    .ft-stage:nth-child(1) { background: var(--ft-sand); }
+    .ft-stage:nth-child(2) { background: var(--ft-peach); }
+    .ft-stage:nth-child(3) { background: var(--ft-gold); }
+    .ft-stage:nth-child(4) { background: var(--ft-teal); color: white; }
+    .ft-stage:nth-child(4) p, .ft-stage:nth-child(4) .ft-number { color: #edf6f4; }
+    .ft-number { color: var(--ft-coral); font-size: 13px; font-weight: 800; letter-spacing: .12em; }
+    .ft-stage h3 { font-size: clamp(25px, 2.4vw, 37px); line-height: 1.02; margin: 14px 0; }
+    .ft-stage p { font-size: 16px; line-height: 1.45; margin: 0; }
+    .ft-rule {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(59,35,15,.22);
+      color: var(--ft-brown);
+      font-size: 16px;
+      font-weight: 650;
+    }
+    .ft-rule strong { font-family: "Bradford LL TT", "Bradford LL", Georgia, serif; font-size: 22px; font-weight: 500; }
+    .ft-scenario-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 24px 0; }
+    .ft-scenario {
+      padding: 19px 20px;
+      min-height: 145px;
+      border-top: 8px solid var(--ft-coral);
+      background: white;
+      box-shadow: 0 8px 22px rgba(59,35,15,.06);
+    }
+    .ft-scenario:nth-child(2) { border-color: var(--ft-gold); }
+    .ft-scenario:nth-child(3) { border-color: var(--ft-green); }
+    .ft-scenario:nth-child(4) { border-color: var(--ft-teal); }
+    .ft-scenario h3 { font-size: 26px; margin-bottom: 7px; }
+    .ft-scenario p { font-size: 14px; line-height: 1.35; margin: 0; }
+    .ft-journey { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; margin-top: 18px; }
+    .ft-journey-step { padding: 17px 18px; min-height: 118px; background: #d7e6d6; }
+    .ft-journey-step:nth-child(2) { background: #aabfa9; }
+    .ft-journey-step:nth-child(3) { background: #99bfbf; }
+    .ft-journey-step:nth-child(4) { background: #628c8c; color: white; }
+    .ft-journey-step h3 { font-family: "Segoe UI", Arial, sans-serif; font-size: 15px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; margin: 0 0 8px; }
+    .ft-journey-step p { font-size: 14px; line-height: 1.35; margin: 0; color: #3f4b42; }
+    .ft-journey-step:nth-child(4) p { color: #edf6f4; }
     @media (max-width: 900px) {
       body { overflow: auto; }
       .deck { height: auto; }
       .slide { position: relative; display: block; min-height: 100vh; }
-      .g2,.g3,.g4,.split,.timeline { grid-template-columns: 1fr; }
+      .g2,.g3,.g4,.split,.timeline,.ft-stages,.ft-scenario-grid,.ft-journey { grid-template-columns: 1fr; }
       .nav,.counter { display: none; }
       .step:after { display: none; }
     }
@@ -122,6 +201,62 @@
       <div class="card"><div class="label">Winning pattern</div><div class="metric blue">3 + 1</div><p>Three tasks via Agent Optimizer; one bridged with agentic RFT.</p></div>
     </div>
     <p class="stamp">Controlled 3,636-document catalog &middot; 50-case holdout per task &middot; live multi-step tools</p>
+  </section>
+
+  <section class="slide frontier">
+    <div class="eyebrow">Frontier tuning</div>
+    <h1>Tune the whole agent system—then the model.</h1>
+    <p class="ft-definition"><strong>Frontier tuning</strong> is an evaluation-led path to higher agent performance: define what good means, measure the starting point, improve the agent surface, and change model weights only when a residual policy gap remains.</p>
+    <div class="ft-stages">
+      <div class="ft-stage">
+        <div>
+          <div class="ft-number">01 / DEFINE</div>
+          <h3>Define the evals</h3>
+        </div>
+        <p>Translate the user outcome into measurable correctness, process, grounding, safety, cost, and latency gates.</p>
+      </div>
+      <div class="ft-stage">
+        <div>
+          <div class="ft-number">02 / MEASURE</div>
+          <h3>Score the baseline</h3>
+        </div>
+        <p>Run a fixed development set, preserve every trace, and identify where the current agent fails before changing anything.</p>
+      </div>
+      <div class="ft-stage">
+        <div>
+          <div class="ft-number">03 / OPTIMIZE</div>
+          <h3>Optimize the agent</h3>
+        </div>
+        <p>Improve prompts, skills, tool definitions, schemas, and orchestration first—the fastest and least expensive levers.</p>
+      </div>
+      <div class="ft-stage">
+        <div>
+          <div class="ft-number">04 / ADAPT</div>
+          <h3>Fine-tune if needed</h3>
+        </div>
+        <p>Fine-tune only when calibrated evidence shows a learnable policy failure that agent configuration cannot clear.</p>
+      </div>
+    </div>
+    <div class="ft-rule"><span><strong>Operating principle</strong></span><span>Use the cheapest effective lever. Escalate only with evidence.</span></div>
+  </section>
+
+  <section class="slide frontier">
+    <div class="eyebrow">Frontier tuning in practice</div>
+    <h2>ShoppingBench: four agents, one model, different bottlenecks.</h2>
+    <p class="ft-definition">A controlled benchmark for agents that search a 3,636-document catalog, inspect evidence, select exact product IDs, preserve task-specific rules, recommend, and stop.</p>
+    <div class="ft-scenario-grid">
+      <div class="ft-scenario"><h3>Product</h3><p>Find one item matching title, price, service, SKU, and attribute constraints.</p></div>
+      <div class="ft-scenario"><h3>Shop</h3><p>Build a multi-item basket while preserving a strict same-shop invariant.</p></div>
+      <div class="ft-scenario"><h3>Voucher</h3><p>Apply scope, threshold, discount, cap, ordering, and final-budget rules.</p></div>
+      <div class="ft-scenario"><h3>Web</h3><p>Resolve a factual clue, translate it into product search, inspect, select, and stop.</p></div>
+    </div>
+    <div class="ft-journey">
+      <div class="ft-journey-step"><h3>Define the evals</h3><p>Exact IDs, constraints, task invariants, tool process, and grounded final answers.</p></div>
+      <div class="ft-journey-step"><h3>Score the baseline</h3><p><strong>0.825 mean</strong><br>Product .753 · Shop .860 · Voucher .898 · Web .790</p></div>
+      <div class="ft-journey-step"><h3>Optimize the agent</h3><p><strong>0.926 mean</strong><br>Prompts, skills, and tools improved three of four agents.</p></div>
+      <div class="ft-journey-step"><h3>Fine-tune where needed</h3><p><strong>0.964 mean</strong><br>Historical selected RFT checkpoints bridged the remaining policy gaps.</p></div>
+    </div>
+    <div class="ft-rule"><span><strong>The LLM judge proposes.</strong></span><span>The deterministic grader disposes.</span></div>
   </section>
 
   <section class="slide">
@@ -160,7 +295,7 @@
         <div class="card"><div class="label">Lever 2</div><div class="metric green">Agentic RFT</div><p>Changes model policy through live tool episodes and calibrated reward.</p></div>
       </div>
     </div>
-    <div class="callout green"><strong>Design principle:</strong> nominate with optimizer or training metrics; decide with deterministic, untouched holdout behavior.</div>
+    <div class="callout green"><strong>Remediated design principle:</strong> nominate with optimizer or training metrics, select on development data, then open a product/answer-disjoint sealed final test once.</div>
   </section>
 
   <section class="slide">
@@ -169,30 +304,51 @@
     <div class="timeline">
       <div class="step"><h3>1. Baseline</h3><p class="small">Freeze data, tools, model, and canonical grader.</p></div>
       <div class="step"><h3>2. Optimize</h3><p class="small">Generate candidates on disjoint optimization cases.</p></div>
-      <div class="step"><h3>3. Gate</h3><p class="small">Reject candidates that do not improve the 50-case deterministic holdout.</p></div>
+      <div class="step"><h3>3. Gate</h3><p class="small">Reject candidates that do not improve deterministic development metrics.</p></div>
       <div class="step"><h3>4. Train selectively</h3><p class="small">Use RFT only when base failure is 25-50% and a calibrated reward exists.</p></div>
     </div>
     <div class="grid g3" style="margin-top:42px">
       <div class="card"><div class="metric blue">900</div><p>Frozen public task rows across four families.</p></div>
-      <div class="card"><div class="metric blue">50</div><p>Canonical holdout cases per task.</p></div>
+      <div class="card"><div class="metric blue">50</div><p>Historical v1 selection cases per task; v2 reserves a sealed final test.</p></div>
       <div class="card"><div class="metric blue">3,636</div><p>Gold + deterministic distractor catalog documents.</p></div>
     </div>
     <p class="small">Caveat: this is a reproducible controlled catalog, not the original 2.5M-product production environment.</p>
   </section>
 
   <section class="slide">
-    <div class="eyebrow">Agent Optimizer</div>
-    <h2>Configuration optimization solved two tasks and created the training baseline for a third.</h2>
+    <div class="eyebrow">Baseline performance</div>
+    <h2>The starting agents averaged 0.825—and failed in different ways.</h2>
+    <div class="bar-row"><span>Product</span><div class="track"><div class="fill" style="width:75.3%"></div></div><strong>0.753</strong></div>
+    <div class="bar-row"><span>Shop</span><div class="track"><div class="fill" style="width:86.0%"></div></div><strong>0.860</strong></div>
+    <div class="bar-row"><span>Voucher</span><div class="track"><div class="fill" style="width:89.8%"></div></div><strong>0.898</strong></div>
+    <div class="bar-row"><span>Web</span><div class="track"><div class="fill" style="width:79.0%"></div></div><strong>0.790</strong></div>
+    <div class="grid g4" style="margin-top:34px">
+      <div class="card"><div class="label">Product</div><div class="metric blue">38/50</div><p>Successful cases; only 31 completed the termination protocol.</p></div>
+      <div class="card"><div class="label">Shop</div><div class="metric blue">42/50</div><p>Successful cases; same-shop planning was stronger but not yet reliable.</p></div>
+      <div class="card"><div class="label">Voucher</div><div class="metric blue">45/50</div><p>Successful cases, but only 27 terminated—policy execution was incomplete.</p></div>
+      <div class="card"><div class="label">Web</div><div class="metric blue">38/50</div><p>Successful cases; knowledge-to-search translation remained the core failure.</p></div>
+    </div>
+    <div class="callout"><strong>Measurement:</strong> each agent ran the same 50-case development gate. The deterministic grader scored exact selection, task constraints, tool process, and the final answer before any optimization began.</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Agent optimization results</div>
+    <h2>Changing the agent configuration improved three tasks—without changing model weights.</h2>
     <table>
-      <thead><tr><th>Task</th><th>Initial</th><th>Retained</th><th>Gain</th><th>What changed</th></tr></thead>
+      <thead><tr><th>Agent</th><th>What the optimizer changed</th><th>Baseline canonical</th><th>Post-optimization canonical</th><th>Decision</th></tr></thead>
       <tbody>
-        <tr><td>Product</td><td>0.753</td><td><strong>0.961</strong></td><td>+0.208</td><td>Tool definitions</td></tr>
-        <tr><td>Shop</td><td>0.860</td><td><strong>0.998</strong></td><td>+0.138</td><td>Instructions + tool definitions</td></tr>
-        <tr><td>Voucher</td><td>0.898</td><td><strong>0.955</strong></td><td>+0.057</td><td>Round-one skills/config</td></tr>
-        <tr><td>Web</td><td>0.790</td><td>0.790</td><td>0.000</td><td>Candidate rejected</td></tr>
+        <tr><td><strong>Product</strong></td><td>More precise tool descriptions and parameter schemas</td><td>0.753</td><td><strong>0.961</strong> <span class="pill good">+0.208</span></td><td>Retained</td></tr>
+        <tr><td><strong>Shop</strong></td><td>Same-shop planning instructions plus clearer tool definitions</td><td>0.860</td><td><strong>0.998</strong> <span class="pill good">+0.138</span></td><td>Retained</td></tr>
+        <tr><td><strong>Voucher</strong></td><td>Voucher policy skill and task-specific operating instructions</td><td>0.898</td><td><strong>0.955</strong> <span class="pill good">+0.057</span></td><td>Retained; RFT still justified</td></tr>
+        <tr><td><strong>Web</strong></td><td>Prompt, skill, and tool-description candidates</td><td>0.790</td><td><strong>0.790</strong> <span class="pill warn">No gain</span></td><td>Candidates rejected</td></tr>
       </tbody>
     </table>
-    <div class="callout">Optimizer judge scores rose for some rejected candidates. The deterministic gate caught the difference: Voucher round two harmed recommendation correctness; Web round two tied mean quality and reduced termination.</div>
+    <div class="grid g3" style="margin-top:28px">
+      <div class="card"><div class="label">Cross-task mean</div><div class="metric green">0.825 &rarr; 0.926</div><p>+10.1 points from agent configuration alone.</p></div>
+      <div class="card"><div class="label">Tasks improved</div><div class="metric blue">3 of 4</div><p>Product and Shop were effectively solved; Voucher established a stronger training baseline.</p></div>
+      <div class="card"><div class="label">Model weights changed</div><div class="metric blue">0</div><p>Only instructions, skills, and tool definitions changed.</p></div>
+    </div>
+    <div class="callout"><strong>Selection rule:</strong> the LLM judge proposed candidates, but the deterministic canonical evaluation decided what was retained. Voucher round two and every Web candidate were rejected.</div>
   </section>
 
   <section class="slide">
@@ -218,13 +374,13 @@
         <span class="pill warn">Reward hacking</span><span class="pill warn">Late keyword insertion</span>
       </div>
       <div class="card">
-        <div class="label">Grader v2</div>
-        <div class="metric green">65%</div>
-        <p>Exact product dominates. Grounding only counts in the first two searches; excess and duplicate searches are penalized.</p>
-        <span class="pill good">Exact outcome</span><span class="pill good">Protocol</span><span class="pill good">Efficiency</span>
+        <div class="label">Remediated grader v3</div>
+        <div class="metric green">70%</div>
+        <p>Exact selection gates reward. Viewed IDs must match recommendations, and Web/Voucher require a grounded final answer.</p>
+        <span class="pill good">Exact outcome</span><span class="pill good">Bound evidence</span><span class="pill good">Final answer</span>
       </div>
     </div>
-    <div class="callout green">Calibration at threshold 0.90 produced a 50% base failure rate. The grader was isolated at <code>/grade/v2</code>, preserving historical job reproducibility.</div>
+    <div class="callout green">Historical <code>/grade</code> and <code>/grade/v2</code> remain reproducible. New jobs use <code>/grade/v3</code>, five rollouts per case, and clustered uncertainty.</div>
   </section>
 
   <section class="slide">
@@ -252,6 +408,21 @@
     <div class="callout">Step 15 searched even less, but exact accuracy fell. Efficiency is a constraint, not the objective: the best operating point balances both.</div>
   </section>
 
+  <section class="slide">
+    <div class="eyebrow">Voucher v2 checkpoint selection</div>
+    <h2>The highest mean was not the best operating point.</h2>
+    <div class="bar-row"><span>Retained historical Step 12</span><div class="track"><div class="fill" style="width:90.29%"></div></div><strong>0.9029</strong></div>
+    <div class="bar-row"><span>v3 Step 10 — selected</span><div class="track"><div class="fill green" style="width:92.48%"></div></div><strong>0.9248</strong></div>
+    <div class="bar-row"><span>v3 Step 15</span><div class="track"><div class="fill amber" style="width:89.80%"></div></div><strong>0.8980</strong></div>
+    <div class="bar-row"><span>v3 final</span><div class="track"><div class="fill amber" style="width:92.53%"></div></div><strong>0.9253</strong></div>
+    <div class="grid g3" style="margin-top:34px">
+      <div class="card"><div class="label">Exact selection</div><div class="metric blue">83 vs 84</div><p>Step 10 versus final, out of 90. The one-rollout delta was inside the clustered confidence interval.</p></div>
+      <div class="card"><div class="label">Complete success</div><div class="metric green">78 vs 71</div><p>Step 10 retained seven more grounded, protocol-complete answers.</p></div>
+      <div class="card"><div class="label">Efficiency</div><div class="metric green">-1,340 tokens</div><p>Step 10 was also 2.14 seconds faster per episode.</p></div>
+    </div>
+    <div class="callout green"><strong>Decision:</strong> promote Step 10. Repeated evaluation prevented a numerically tiny mean-score edge from hiding a material regression in user-facing completion quality.</div>
+  </section>
+
   <section class="slide dark">
     <div class="eyebrow">The hill climb</div>
     <h2>Different bottlenecks required different levers.</h2>
@@ -265,6 +436,22 @@
       <div class="card"><div class="label">Cross-task mean</div><div class="metric blue">0.825 &rarr; 0.964</div></div>
       <div class="card"><div class="label">Playbook</div><div class="metric blue">Optimize, gate, train</div><p>Use the cheapest effective lever, escalate only with evidence.</p></div>
     </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">Sealed final test</div>
+    <h2>The final test preserved three gains—and exposed Web generalization.</h2>
+    <div class="grid g4">
+      <div class="card"><div class="label">Product</div><div class="metric green">0.9385</div><p>46/50 exact and complete successes.</p></div>
+      <div class="card"><div class="label">Shop</div><div class="metric green">0.9047</div><p>45/50 exact; one malformed-ID failure was scored zero.</p></div>
+      <div class="card"><div class="label">Voucher</div><div class="metric blue">0.8625</div><p>43/50 exact; two blocked episodes were scored zero.</p></div>
+      <div class="card"><div class="label">Web</div><div class="metric amber">0.6305</div><p>32/50 exact, but only 20/50 fully grounded and protocol-complete.</p></div>
+    </div>
+    <div class="grid g2" style="margin-top:34px">
+      <div class="card"><div class="label">Protocol</div><div class="metric blue">One attempt per case</div><p>Frozen configurations, disjoint 50-case sets, no rerolls, and no post-test tuning.</p></div>
+      <div class="card"><div class="label">Interpretation</div><div class="metric amber">Web is not solved</div><p>Checkpoint selection chose the best available policy, but new knowledge-grounded curriculum is still required.</p></div>
+    </div>
+    <div class="callout green"><strong>Why the sealed test matters:</strong> development gates select an operating point; the untouched test estimates how that choice generalizes.</div>
   </section>
 
   <section class="slide">
@@ -285,7 +472,7 @@
     <h2>Push where the evidence says there is still room.</h2>
     <div class="grid g3">
       <div class="card"><span class="pill warn">Rejected</span><h3>Step 10 + Agent Optimizer</h3><p>Judge improved, but canonical quality fell 0.901 &rarr; 0.871 and exact accuracy fell 44 &rarr; 41.</p></div>
-      <div class="card"><span class="pill good">Retained</span><h3>Voucher RFT Step 12</h3><p>0.955 &rarr; 0.995; 24 wins, 26 ties, zero regressions on the canonical holdout.</p></div>
+      <div class="card"><span class="pill good">Historical v1</span><h3>Voucher RFT Step 12</h3><p>3 new exact bundles and 20 net terminations. Most measured gain was protocol completion, not demonstrated arithmetic reasoning.</p></div>
       <div class="card"><span class="pill warn">Future curriculum</span><h3>Web vNext</h3><p>Add disjoint hard cases for dates, model numbers, ambiguous names, compatibility lists, and hard negatives.</p></div>
     </div>
     <div class="callout green"><strong>North star:</strong> keep the full loop executable from the repository: provision, deploy, evaluate, optimize, train, select, and reproduce the evidence.</div>
@@ -331,7 +518,8 @@
     if (event.key === "Home") show(0);
     if (event.key === "End") show(slides.length - 1);
   });
-  show(0);
+  const requestedSlide = Number(new URLSearchParams(location.search).get("slide"));
+  show(Number.isInteger(requestedSlide) && requestedSlide > 0 ? requestedSlide - 1 : 0);
 </script>
 </body>
 </html>

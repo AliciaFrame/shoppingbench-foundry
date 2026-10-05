@@ -24,11 +24,16 @@ The shared runtime in `shared/runtime.py`:
 2. Calls MAI-Code-1.1-Flash through the Responses API.
 3. Executes live ShoppingBench search/detail tools.
 4. Records the exact function-call trace.
-5. Returns structured IDs, termination state, assistant text, and usage.
+5. Allows at most 12 sequential model/tool steps and requires one tool call at
+   a time, so a single turn cannot bypass the bound with parallel searches.
+6. Exposes only `terminate` after recommendation, then makes a separate
+   tool-free request for the grounded user-facing answer.
+7. Returns structured IDs, termination state, assistant text, and usage.
 
 ## Deploy
 
-Set the values documented in `.env.example`, then:
+Set the values documented in `.env.example`, including the separate model
+deployment and endpoint pair for each task, then:
 
 ```powershell
 Set-Location agents
@@ -37,6 +42,15 @@ azd deploy
 
 The deployment manifest is environment-neutral: model, project, tool endpoint,
 and token values come from the active environment rather than committed files.
+Model settings are task-specific because base and fine-tuned deployments can
+use different endpoints and authentication scopes. The runtime automatically
+uses the Cognitive Services scope for classic Azure OpenAI endpoints and the
+Foundry scope for project endpoints.
+
+`OPTIMIZATION_LOCAL_DIR` is task-qualified in `azure.yaml` (for example,
+`voucher/config`). The shared runtime resolves relative configuration paths
+from the packaged agents root, so the same path works from a repository clone
+and from the `/app/<task>` hosted layout.
 
 ## Local import check
 

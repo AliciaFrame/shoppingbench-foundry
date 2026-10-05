@@ -5,6 +5,9 @@ environments:
     projectEndpoint: ${FOUNDRY_PROJECT_ENDPOINT}
     agentName: shoppingbench-shop-agent
     evaluationSuites:
-      - name: shop-canonical
-        datasetFile: ../../../evaluations/datasets/shop-holdout.jsonl
+      - name: shop-development-v2
+        datasetFile: ../../../evaluations/datasets/v2/shop-development.jsonl
         tags: {tier: regression}
+      - name: shop-final-v2
+        datasetFile: ../../../evaluations/datasets/v2/shop-final-test.jsonl
+        tags: {tier: sealed}

@@ -5,6 +5,9 @@ environments:
     projectEndpoint: ${FOUNDRY_PROJECT_ENDPOINT}
     agentName: shoppingbench-web-agent
     evaluationSuites:
-      - name: web-canonical
-        datasetFile: ../../../evaluations/datasets/web-holdout.jsonl
+      - name: web-development-v2
+        datasetFile: ../../../evaluations/datasets/v2/web-development.jsonl
         tags: {tier: regression}
+      - name: web-final-v2
+        datasetFile: ../../../evaluations/datasets/v2/web-final-test.jsonl
+        tags: {tier: sealed}

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import copy
+import importlib
 import json
 import sys
 import time
@@ -17,9 +19,12 @@ from shoppingbench_foundry.store import InMemoryProductStore
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-ResponsesAgentServerHost.run = lambda self: None
+runtime: Any = None
 
-from agents.shared import runtime
+
+def _load_runtime() -> Any:
+    ResponsesAgentServerHost.run = lambda self: None
+    return importlib.import_module("agents.shared.runtime")
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -29,6 +34,22 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
 
 def _load_products(path: Path) -> list[dict[str, Any]]:
     return [row["product"] for row in _read_jsonl(path)]
+
+
+def _expand_rollouts(
+    rows: list[dict[str, Any]],
+    rollouts: int,
+) -> list[dict[str, Any]]:
+    if rollouts == 1:
+        return rows
+    expanded = []
+    for row in rows:
+        for rollout in range(1, rollouts + 1):
+            duplicate = copy.deepcopy(row)
+            duplicate["name"] = f"{row['name']}-rollout-{rollout}"
+            duplicate["item"]["case_name"] = row["name"]
+            expanded.append(duplicate)
+    return expanded
 
 
 def _evaluate(
@@ -57,14 +78,25 @@ def _evaluate(
 
 
 def main_cli() -> None:
+    global runtime
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--documents", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--rollouts", type=int, default=1)
+    parser.add_argument("--limit", type=int)
     args = parser.parse_args()
+    if args.rollouts < 1:
+        raise ValueError("--rollouts must be at least 1")
+    if args.limit is not None and args.limit < 1:
+        raise ValueError("--limit must be at least 1")
+    runtime = _load_runtime()
 
     rows = _read_jsonl(args.dataset)
+    if args.limit is not None:
+        rows = rows[: args.limit]
+    rows = _expand_rollouts(rows, args.rollouts)
     store = InMemoryProductStore(_load_products(args.documents))
     results: list[dict[str, Any] | None] = [None] * len(rows)
     errors: list[dict[str, str]] = []
@@ -103,16 +135,39 @@ def main_cli() -> None:
 
     completed = [result for result in results if result is not None]
     scores = [float(result["grade"]["score"]) for result in completed]
+    exact = [
+        float(
+            result["grade"].get(
+                "ground_truth",
+                result["grade"].get("exact_selection", 0),
+            )
+        )
+        for result in completed
+    ]
+    total_tokens = [int(result["usage"]["total_tokens"]) for result in completed]
+    latencies = [float(result["latency_seconds"]) for result in completed]
     print(
         json.dumps(
             {
                 "config_source": runtime.config.source,
                 "candidate_id": runtime.config.candidate_id,
-                "cases": len(rows),
+                "cases": len(rows) // args.rollouts,
+                "rollouts": args.rollouts,
+                "episodes": len(rows),
                 "completed": len(completed),
                 "errors": errors,
                 "mean_score": sum(scores) / len(scores) if scores else 0,
                 "perfect": sum(score == 1 for score in scores),
+                "exact": int(sum(exact)),
+                "success": sum(bool(result["grade"].get("success")) for result in completed),
+                "valid_final_answer": sum(
+                    bool(result["grade"].get("valid_final_answer"))
+                    for result in completed
+                ),
+                "mean_tokens": sum(total_tokens) / len(total_tokens) if total_tokens else 0,
+                "mean_latency_seconds": (
+                    sum(latencies) / len(latencies) if latencies else 0
+                ),
                 "output": str(args.output),
             },
             ensure_ascii=False,

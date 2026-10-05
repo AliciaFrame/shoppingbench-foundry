@@ -5,6 +5,9 @@ environments:
     projectEndpoint: ${FOUNDRY_PROJECT_ENDPOINT}
     agentName: shoppingbench-voucher-agent
     evaluationSuites:
-      - name: voucher-canonical
-        datasetFile: ../../../evaluations/datasets/voucher-holdout.jsonl
+      - name: voucher-development-v2
+        datasetFile: ../../../evaluations/datasets/v2/voucher-development.jsonl
         tags: {tier: regression}
+      - name: voucher-final-v2
+        datasetFile: ../../../evaluations/datasets/v2/voucher-final-test.jsonl
+        tags: {tier: sealed}

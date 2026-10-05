@@ -181,7 +181,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
       activeRevisionsMode: 'Single'
       secrets: [
         {
-          name: 'shoppingbench-api-token'
+          name: 'sb-api-token'
           value: shoppingbenchApiToken
         }
       ]
@@ -235,7 +235,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'SHOPPINGBENCH_API_TOKEN'
-              secretRef: 'shoppingbench-api-token'
+              secretRef: 'sb-api-token'
             }
           ]
           probes: [

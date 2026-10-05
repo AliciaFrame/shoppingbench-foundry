@@ -40,12 +40,16 @@ Expected deterministic outputs:
 
 - 900 source cases
 - 3,636 search documents
-- 20 round-one, 40 round-two, and 50 holdout cases per task
+- connected-group v2 splits per task:
+  - training pool: 170 Product/Shop/Voucher, 70 Web
+  - checkpoint development: 30
+  - sealed final test: 50
 - RFT train/validation rows:
-  - Product, Shop, Voucher: 180/20
-  - Web: 80/20
-- all canonical holdouts excluded from RFT data
-- documented optimization metrics matching the raw receipts
+  - Product, Shop, Voucher: 150/20
+  - Web: 50/20
+- five calibration rollouts per validation case
+- zero product/answer leakage across training, development, and final test
+- documented v1 metrics matching the immutable raw receipts and manifest
 
 ## Deploy the tools
 
@@ -59,7 +63,7 @@ development process.
 After provisioning:
 
 1. Grant the indexing identity `Search Index Data Contributor`.
-2. Load `data/prepared/search-documents.jsonl`.
+2. Load `data/prepared/search-documents-v2.jsonl`.
 3. Confirm `/health` returns `{"status":"ok"}`.
 4. Confirm protected tool requests return `401` without the bearer token and
    succeed with it.
@@ -74,21 +78,72 @@ baseline, set `OPTIMIZATION_LOCAL_DIR` to
 `optimization/<task>/baseline` before invoking the evaluator. Round-two seeds
 are under `optimization/<task>/round2-start`.
 
-Run canonical evaluation with the unchanged 50-case holdout:
+Use `*-development.jsonl` while selecting configurations and checkpoints:
 
 ```powershell
 $env:SHOPPINGBENCH_TASK = "product"
 $env:OPTIMIZATION_LOCAL_DIR = "agents/product/config"
 python evaluations\scripts\evaluate_agent.py `
-  --dataset evaluations\datasets\product-holdout.jsonl `
-  --documents data\prepared\search-documents.jsonl `
-  --output .foundry\results\product-heldout.jsonl `
+  --dataset evaluations\datasets\v2\product-development.jsonl `
+  --documents data\prepared\search-documents-v2.jsonl `
+  --output .foundry\results\v2\product-development.jsonl `
   --workers 1
 ```
 
-Repeat with `shop`, `voucher`, and `web`. Compare the generated mean, perfect
-count, success count, termination count, and token usage with
-`optimization/results/summary.json` and the raw receipts.
+Repeat with `shop`, `voucher`, and `web`. Freeze all model, prompt, skill, tool,
+grader, and checkpoint choices before evaluating `*-final-test.jsonl`. Do not
+use final-test results to launch another optimization or training round.
+
+The current Voucher v2 checkpoint decision used three rollouts per development
+case. Evaluate `mai-sb-vouch-v3-step10`, `mai-sb-vouch-v3-step15`, and
+`mai-sb-vouch-v3-final` with `SHOPPINGBENCH_TASK=voucher`,
+`OPTIMIZATION_LOCAL_DIR=agents/voucher/config`, and `MAX_TOOL_STEPS=12`:
+
+```powershell
+python evaluations\scripts\evaluate_agent.py `
+  --dataset evaluations\datasets\v2\voucher-development.jsonl `
+  --documents data\prepared\search-documents-v2.jsonl `
+  --output evaluations\results\v2\voucher-v3-step10-development-3x.jsonl `
+  --rollouts 3 `
+  --workers 1
+```
+
+Then regenerate the direct promotion comparison:
+
+```powershell
+python evaluations\scripts\summarize_development.py `
+  --baseline evaluations\results\v2\voucher-v3-step10-development-3x.jsonl `
+  --candidate evaluations\results\v2\voucher-v3-final-development-3x.jsonl `
+  --output evaluations\results\v2\voucher-v3-final-vs-step10.json
+```
+
+Step 10 is retained because the final checkpoint's one-rollout exact advantage
+was inconclusive while complete success and grounded final-answer validity each
+fell by seven rollouts. The selected hosted deployment is
+`mai-sb-vouch-v3-step10`.
+
+The hardened Web RFT4 checkpoint gate uses the same command with
+`SHOPPINGBENCH_TASK=web`, `OPTIMIZATION_LOCAL_DIR=agents/web/config`, and
+`MAI_MODEL_DEPLOYMENT_NAME` set in turn to `mai-sb-web-v3-step6`,
+`mai-sb-web-v3-step9`, and `mai-sb-web-v3-final`. Compare each receipt against
+`evaluations/results/v2/web-step10-development-3x.jsonl` with
+`summarize_development.py`. All three candidates regressed, so the frozen Web
+model remains historical RFT3 Step 10. Its current deployment alias is
+`mai-sb-web-step10-retained`.
+
+The sealed final-test receipts are generated once with `--rollouts 1` and
+`--workers 1`, using each frozen task configuration and:
+
+- Product/Shop: `mai-code-1-1-flash-base`
+- Voucher: `mai-sb-vouch-v3-step10`
+- Web: `mai-sb-web-step10-retained`
+
+Do not reroll failed cases or use these receipts to trigger another selection
+round.
+
+The commands below reproduce the historical v1 experiment. They intentionally
+use the old case-held-out development sets and are retained for evidence
+verification, not as the v2 promotion protocol.
 
 For the published Web RFT comparison, run the same command three times with
 `MAI_MODEL_DEPLOYMENT_NAME` set to `mai-sb-rft3-step10`,
@@ -120,8 +175,8 @@ python -m rft.scripts.summarize_checkpoints `
 
 Deploy the matching hosted agent first, then run the command in
 `optimization/README.md`. Use the provided round-specific dataset and seed
-configuration. Optimizer judge scores nominate candidates; always rerun the
-canonical holdout before retaining one.
+configuration. Optimizer judge scores nominate candidates; always rerun the v2 development
+set before retaining one.
 
 The post-RFT Web experiment uses
 `optimization/web/post-rft-step10-start/metadata.yaml`, whose model is the
@@ -149,15 +204,16 @@ The candidate is rejected because its mean is `0.871` and exact selection is
 
 Follow `rft/README.md` in this order:
 
-1. regenerate holdout-safe data
+1. regenerate group-disjoint v2 data
 2. collect base-model validation rollouts
 3. calibrate the grader
 4. verify a 25–50% base failure rate
 5. submit one task-specific job
-6. evaluate every available checkpoint on the untouched canonical holdout
+6. evaluate every checkpoint on the development set
+7. freeze the winner and open the sealed final test once
 
-The Web configuration uses one endpoint grader, four authenticated live tools,
-a calibrated pass threshold of `0.9`, and `max_episode_steps=12`.
+New jobs use `/grade/v3`, four authenticated live tools, clustered calibration,
+at least ten internal evaluation samples, and `max_episode_steps=12`.
 
 The public submission runner exposes epochs, batch size, learning-rate
 multiplier, evaluation interval/sample count, and episode-step cap as explicit

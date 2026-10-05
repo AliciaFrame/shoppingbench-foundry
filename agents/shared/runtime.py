@@ -28,15 +28,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("shoppingbench-agent")
 
 TASK = os.getenv("SHOPPINGBENCH_TASK", "product")
-REPO_ROOT = Path(__file__).resolve().parents[2]
-CONFIG_DIR = Path(
-    os.getenv(
-        "OPTIMIZATION_LOCAL_DIR",
-        str(REPO_ROOT / "agents" / TASK / "config"),
-    )
-)
-MODEL = os.getenv("MAI_MODEL_DEPLOYMENT_NAME", "mai-code-1-1-flash-base")
-MAX_TOOL_STEPS = int(os.getenv("MAX_TOOL_STEPS", "30"))
+AGENTS_ROOT = Path(__file__).resolve().parents[1]
+configured_dir = Path(os.getenv("OPTIMIZATION_LOCAL_DIR", str(Path(TASK) / "config")))
+CONFIG_DIR = configured_dir if configured_dir.is_absolute() else AGENTS_ROOT / configured_dir
+MODEL_OVERRIDE = os.getenv("MAI_MODEL_DEPLOYMENT_NAME")
+MODEL = MODEL_OVERRIDE or "mai-code-1-1-flash-base"
+MAX_TOOL_STEPS = int(os.getenv("MAX_TOOL_STEPS", "12"))
 
 FALLBACK_INSTRUCTIONS = {
     "product": "Find one product that satisfies the user's constraints.",
@@ -44,6 +41,18 @@ FALLBACK_INSTRUCTIONS = {
     "voucher": "Find the requested products within the voucher-adjusted budget.",
     "web": "Resolve the knowledge clue and find the requested product.",
 }
+FINAL_RESPONSE_INSTRUCTION = (
+    "The shopping tools are complete. Return a concise user-facing answer now. "
+    "State the recommended product IDs and briefly explain why they satisfy the request. "
+    "Mention every recommended product ID and do not mention or suggest any other product IDs. "
+)
+if TASK == "web":
+    FINAL_RESPONSE_INSTRUCTION += "Explicitly state the resolved knowledge clue."
+elif TASK == "voucher":
+    FINAL_RESPONSE_INSTRUCTION += (
+        "Show shop consistency, subtotal, voucher threshold, discount or cap, "
+        "final payable, and budget fit."
+    )
 
 
 def _load_optimization_config() -> OptimizationConfig:
@@ -74,8 +83,14 @@ def _load_optimization_config() -> OptimizationConfig:
 
 
 config = _load_optimization_config()
-instructions = config.compose_instructions()
-model = config.model or MODEL
+instructions = (
+    config.compose_instructions()
+    + "\n\nDuring the tool phase, do not return user-facing prose. "
+    "When the final selection is ready, call recommend_product. The runtime "
+    "will then expose only terminate; call it on the next step. The runtime "
+    "will request the user-facing answer only after terminate succeeds."
+)
+model = MODEL_OVERRIDE or config.model or MODEL
 
 
 def _load_tool_definitions() -> list[dict[str, Any]]:
@@ -103,13 +118,24 @@ def _load_tool_definitions() -> list[dict[str, Any]]:
 
 
 TOOLS = _load_tool_definitions()
+TERMINATE_TOOLS = [tool for tool in TOOLS if tool["name"] == "terminate"]
+if len(TERMINATE_TOOLS) != 1:
+    raise ValueError("Exactly one terminate tool definition is required")
+SELECTION_TOOLS = [tool for tool in TOOLS if tool["name"] != "terminate"]
+
+
+def _credential_scope(endpoint: str) -> str:
+    if ".openai.azure.com" in endpoint:
+        return "https://cognitiveservices.azure.com/.default"
+    return "https://ai.azure.com/.default"
+
 
 base_url = os.environ["MAI_OPENAI_BASE_URL"].rstrip("/") + "/"
 api_key: str | Any = os.getenv("MAI_API_KEY", "")
 if not api_key:
     api_key = get_bearer_token_provider(
         DefaultAzureCredential(),
-        "https://ai.azure.com/.default",
+        _credential_scope(base_url),
     )
 model_client = OpenAI(base_url=base_url, api_key=api_key)
 tool_client = httpx.Client(timeout=120)
@@ -166,7 +192,9 @@ def _run_episode(query: str) -> tuple[str, dict[str, int]]:
         model=model,
         instructions=instructions,
         input=query,
-        tools=TOOLS,
+        tools=SELECTION_TOOLS,
+        tool_choice="required",
+        parallel_tool_calls=False,
     )
     usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     _add_usage(usage, response)
@@ -177,10 +205,18 @@ def _run_episode(query: str) -> tuple[str, dict[str, int]]:
     for _ in range(MAX_TOOL_STEPS):
         calls = [item for item in response.output if item.type == "function_call"]
         if not calls:
-            break
+            if recommended_ids:
+                raise RuntimeError(
+                    "The model returned a final answer without calling terminate"
+                )
+            raise RuntimeError(
+                "The model stopped before recommending products and calling terminate"
+            )
         outputs = []
         for call in calls:
             arguments = json.loads(call.arguments)
+            if call.name == "terminate" and not recommended_ids:
+                raise RuntimeError("The model called terminate before recommend_product")
             result = _execute_tool(call.name, arguments)
             trace.append(
                 {
@@ -205,22 +241,38 @@ def _run_episode(query: str) -> tuple[str, dict[str, int]]:
                     "output": json.dumps(result, ensure_ascii=False),
                 }
             )
+        request: dict[str, Any] = {
+            "model": model,
+            "previous_response_id": response.id,
+            "input": outputs,
+        }
+        if terminated:
+            request["instructions"] = FINAL_RESPONSE_INSTRUCTION
+        else:
+            request["tools"] = TERMINATE_TOOLS if recommended_ids else SELECTION_TOOLS
+            request["tool_choice"] = "required"
+            request["parallel_tool_calls"] = False
+        response = model_client.responses.create(**request)
+        _add_usage(usage, response)
         if terminated:
             break
-        response = model_client.responses.create(
-            model=model,
-            previous_response_id=response.id,
-            input=outputs,
-            tools=TOOLS,
+
+    if not terminated:
+        raise RuntimeError(
+            f"The model did not complete recommend_product then terminate "
+            f"within {MAX_TOOL_STEPS} tool steps"
         )
-        _add_usage(usage, response)
+
+    assistant_text = response.output_text or ""
+    if not assistant_text.strip():
+        raise RuntimeError("The model terminated without a final user-facing response")
 
     output = {
         "task": TASK,
         "recommended_product_ids": recommended_ids,
         "terminated": terminated,
         "output_tools": trace,
-        "assistant_text": response.output_text or "",
+        "assistant_text": assistant_text,
     }
     return json.dumps(output, ensure_ascii=False), usage
 

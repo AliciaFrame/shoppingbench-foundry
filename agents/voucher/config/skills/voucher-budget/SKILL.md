@@ -39,12 +39,14 @@ Required workflow:
    - Compute final payable = subtotal - actual discount.
    - Confirm final payable is within the user’s budget.
 6. Only then recommend the ordered product IDs.
-7. Terminate the episode after recommendation or after concluding no valid bundle exists.
+7. Call `recommend_product` after selecting a valid bundle, then call
+   `terminate` on the next tool step. Do not emit user-facing prose during the tool phase.
 
 Output requirements:
-- Return a usable result, not just a bare JSON stub.
-- Include the final recommended_product_ids in the exact order corresponding to the user’s requested product slots.
-- Also provide a concise voucher-check explanation showing:
+- After termination, the runtime requests a separate user-facing answer.
+- Include the final recommended product IDs in exact requested order and do
+  not mention alternative product IDs.
+- In that final answer, provide a concise voucher-check explanation showing:
   - shop consistency,
   - subtotal,
   - threshold check,
@@ -52,8 +54,8 @@ Output requirements:
   - capped discount,
   - final payable,
   - whether it fits the budget.
-- If no valid bundle exists, say so clearly and briefly explain which constraint failed (e.g. no same-shop match, threshold not met, budget exceeded after capped discount, missing requested attribute, etc.).
-- If the environment expects structured output, still include the recommendation and voucher reasoning in assistant_text or equivalent human-readable field, not only tool traces.
+- If no valid bundle exists, terminate without inventing a match. Explain the
+  blocking constraint only in the post-termination final answer.
 
 Tool-use expectations:
 - You must use shopping tools (e.g. search + product detail inspection) before recommending.
@@ -62,13 +64,13 @@ Tool-use expectations:
 - Inspect enough product details to confirm requested constraints and shop IDs.
 
 Important task-specific lessons from prior failures:
-- Do not output only product IDs and tool calls.
+- Do not return user-facing text before termination.
 - Do not omit prices, shop matching, or voucher math.
 - Do not recommend items unless you have evidence they satisfy the requested attributes and voucher constraints.
-- Do not terminate with an empty or unsupported answer when a justified partial conclusion is possible.
+- Do not recommend or terminate with unsupported product IDs.
 - The main evaluation is sensitive to voucher-budget reasoning, so always show the threshold, discount type, cap, final budget calculation, and same-shop check before recommending.
 
-Recommended response structure:
+Post-termination final-answer structure:
 1. Short summary of matched items.
 2. Voucher check:
    - Same shop: yes/no

@@ -20,7 +20,7 @@ SUFFIXES = {
     "web": "mai-sb-web-rft2",
 }
 TOOL_NAMES = ["find_product", "view_product_information", "recommend_product", "terminate"]
-GRADER_VERSIONS = ("v1", "v2")
+GRADER_VERSIONS = ("v1", "v2", "v3")
 
 
 def _required_env(name: str) -> str:
@@ -135,6 +135,13 @@ def _private_preview_url() -> str:
 
 
 def _suffix(task: str, grader_version: str) -> str:
+    if grader_version == "v3":
+        return {
+            "product": "mai-sb-prod-rft2",
+            "shop": "mai-sb-shop-rft2",
+            "voucher": "mai-sb-vouch-rft2",
+            "web": "mai-sb-web-rft4",
+        }[task]
     if grader_version == "v2":
         if task != "web":
             raise ValueError("The v2 grader currently supports only the Web task")
@@ -153,7 +160,11 @@ def _endpoint_grader(
         raise ValueError(f"Unknown grader version: {grader_version}")
     if grader_version == "v2" and task != "web":
         raise ValueError("The v2 grader currently supports only the Web task")
-    route = "/grade/v2" if grader_version == "v2" else "/grade"
+    route = {
+        "v1": "/grade",
+        "v2": "/grade/v2",
+        "v3": "/grade/v3",
+    }[grader_version]
     return {
         "type": "endpoint",
         "name": f"shoppingbench_{task}_{grader_version}",
@@ -177,7 +188,7 @@ def _private_preview_payload(
     batch_size: int = 8,
     learning_rate_multiplier: float = 1.0,
     eval_interval: int = 5,
-    eval_samples: int = 1,
+    eval_samples: int = 10,
     max_episode_steps: int = 12,
 ) -> dict[str, Any]:
     return {
@@ -267,7 +278,7 @@ def submit(
     batch_size: int = 8,
     learning_rate_multiplier: float = 1.0,
     eval_interval: int = 5,
-    eval_samples: int = 1,
+    eval_samples: int = 10,
     max_episode_steps: int = 12,
 ) -> dict[str, Any]:
     client = _client()
@@ -390,13 +401,13 @@ def main() -> None:
     parser.add_argument("--allow-low-signal", action="store_true")
     parser.add_argument("--minimal-payload", action="store_true")
     parser.add_argument("--private-preview", action="store_true")
-    parser.add_argument("--grader-version", choices=GRADER_VERSIONS, default="v1")
+    parser.add_argument("--grader-version", choices=GRADER_VERSIONS, default="v3")
     parser.add_argument("--pass-threshold", type=float)
     parser.add_argument("--n-epochs", type=int, default=2)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--learning-rate-multiplier", type=float, default=1.0)
     parser.add_argument("--eval-interval", type=int, default=5)
-    parser.add_argument("--eval-samples", type=int, default=1)
+    parser.add_argument("--eval-samples", type=int, default=10)
     parser.add_argument("--max-episode-steps", type=int, default=12)
     parser.add_argument("--confirm-submit", action="store_true")
     args = parser.parse_args()

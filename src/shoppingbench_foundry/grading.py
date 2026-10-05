@@ -6,6 +6,14 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from .store import ProductStore
+from .trajectory import (
+    grounded_final_answer,
+    meaningful_search,
+    recommend_then_terminate,
+    recommended_ids,
+    tool_calls,
+    viewed_before_recommendation,
+)
 
 
 def _normalize(value: Any) -> str:
@@ -93,8 +101,6 @@ def score_product(product: dict[str, Any] | None, reward: dict[str, Any]) -> Pro
     if not product:
         return ProductScore(0, 0, 0, 0, 0, 0)
     ground_truth = float(str(product.get("product_id")) == str(reward.get("product_id")))
-    if ground_truth:
-        return ProductScore(1, 1, 1, 1, 1, 1)
     title = _title_match(product, reward)
     price_hits, price_total = _price_match(product, reward)
     service_hits, service_total = _service_match(product, reward)
@@ -108,12 +114,12 @@ def score_product(product: dict[str, Any] | None, reward: dict[str, Any]) -> Pro
     hits = sum(hit for hit, _ in dimensions)
     total = sum(count for _, count in dimensions)
     return ProductScore(
-        ground_truth=0,
+        ground_truth=ground_truth,
         title=title if reward.get("title") else 1,
         price=price_hits / price_total if price_total else 1,
         service=service_hits / service_total if service_total else 1,
         sku_attributes=sku_hits / sku_total if sku_total else 1,
-        rule=hits / total if total else 0,
+        rule=hits / total if total else 1,
     )
 
 
@@ -177,11 +183,22 @@ def grade_sample(
     sample: dict[str, Any], item: dict[str, Any], store: ProductStore
 ) -> dict[str, Any]:
     task = item["task"]
-    product_ids, _tool_names, terminated = _extract_recommendation(sample)
+    calls = tool_calls(sample)
+    product_ids = recommended_ids(calls)
+    if not product_ids:
+        product_ids, _tool_names, _terminated = _extract_recommendation(sample)
     products = store.get_products(product_ids)
-    recommendation_score = float(bool(product_ids))
-    termination_score = float(terminated)
-    process_score = 0.5 * recommendation_score + 0.5 * termination_score
+    rewards = item["reward"] if isinstance(item["reward"], list) else [item["reward"]]
+    expected_ids = [str(reward["product_id"]) for reward in rewards]
+    exact_selection = float(product_ids == expected_ids)
+    process_components = {
+        "searched_for_constraints": meaningful_search(calls, item),
+        "viewed_selection": viewed_before_recommendation(calls, product_ids),
+        "single_recommendation": sum(name == "recommend_product" for name, _ in calls) == 1,
+        "completed_protocol": recommend_then_terminate(calls),
+    }
+    process_score = sum(process_components.values()) / len(process_components)
+    final_answer = grounded_final_answer(sample, item, product_ids)
 
     if task == "web":
         reward = item["reward"]
@@ -198,17 +215,24 @@ def grade_sample(
             else ""
         )
         knowledge = float(key_attribute in searchable)
-        score = 0.7 * max(exact, knowledge) + 0.3 * process_score
+        score = (
+            0.70 * exact
+            + 0.05 * knowledge
+            + 0.10 * process_score
+            + 0.15 * float(final_answer)
+        )
         return {
             "score": round(score, 6),
             "task": task,
             "ground_truth": exact,
             "knowledge": knowledge,
             "process": process_score,
+            "process_components": process_components,
+            "valid_final_answer": final_answer,
+            "success": bool(exact and knowledge and process_score == 1 and final_answer),
             "product_ids": product_ids,
         }
 
-    rewards = item["reward"] if isinstance(item["reward"], list) else [item["reward"]]
     product_metrics = _average_product_scores(products, rewards)
     task_invariant = 1.0
     if task == "shop":
@@ -220,19 +244,30 @@ def grade_sample(
         task_invariant = (
             _voucher_match(products, item["voucher"]) if len(products) == len(rewards) else 0
         )
-    invariant_weight = 0.25 if task in {"shop", "voucher"} else 0
-    rule_weight = 0.9 - invariant_weight
+    constraint_score = product_metrics["rule"]
+    if task in {"shop", "voucher"}:
+        constraint_score = 0.5 * product_metrics["rule"] + 0.5 * task_invariant
     score = (
-        rule_weight * product_metrics["rule"]
-        + invariant_weight * task_invariant
+        0.70 * exact_selection
+        + 0.10 * constraint_score
         + 0.1 * process_score
+        + 0.10 * float(final_answer)
     )
-    success = product_metrics["rule"] == 1 and task_invariant == 1
+    success = bool(
+        exact_selection
+        and constraint_score == 1
+        and process_score == 1
+        and final_answer
+    )
     return {
         "score": round(score, 6),
         "task": task,
         "success": success,
+        "exact_selection": exact_selection,
+        "constraint_score": constraint_score,
         "process": process_score,
+        "process_components": process_components,
+        "valid_final_answer": final_answer,
         "task_invariant": task_invariant,
         "product_ids": product_ids,
         "product_metrics": product_metrics,

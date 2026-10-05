@@ -1,0 +1,90 @@
+{
+  "cases": 30,
+  "rollouts_per_case": 3,
+  "metrics": {
+    "score": {
+      "baseline": 0.738056,
+      "candidate": 0.671667,
+      "delta": -0.066389,
+      "delta_clustered_95_ci": [
+        -0.117778,
+        -0.016667
+      ]
+    },
+    "exact": {
+      "baseline": 0.711111,
+      "candidate": 0.666667,
+      "delta": -0.044444,
+      "delta_clustered_95_ci": [
+        -0.1,
+        0.0
+      ]
+    },
+    "constraints": {
+      "baseline": 0.711111,
+      "candidate": 0.666667,
+      "delta": -0.044444
+    },
+    "viewed_selection": {
+      "baseline": 0.988889,
+      "candidate": 0.744444,
+      "delta": -0.244444
+    },
+    "protocol": {
+      "baseline": 0.944444,
+      "candidate": 0.7,
+      "delta": -0.244444
+    },
+    "valid_final_answer": {
+      "baseline": 0.711111,
+      "candidate": 0.611111,
+      "delta": -0.1
+    },
+    "success": {
+      "baseline": 0.677778,
+      "candidate": 0.6,
+      "delta": -0.077778,
+      "delta_clustered_95_ci": [
+        -0.133333,
+        -0.022222
+      ]
+    },
+    "tokens": {
+      "baseline": 59853.055556,
+      "candidate": 79135.377778,
+      "delta": 19282.322222
+    },
+    "latency_seconds": {
+      "baseline": 41.905762,
+      "candidate": 54.112743,
+      "delta": 12.206981
+    }
+  },
+  "paired_case_outcomes": {
+    "candidate_wins": 2,
+    "baseline_wins": 13,
+    "ties": 15
+  },
+  "rollout_variance": {
+    "score": {
+      "baseline": {
+        "mean_case_variance": 0.040227,
+        "unstable_cases": 10
+      },
+      "candidate": {
+        "mean_case_variance": 0.041486,
+        "unstable_cases": 11
+      }
+    },
+    "exact": {
+      "baseline": {
+        "mean_case_variance": 0.051852,
+        "unstable_cases": 7
+      },
+      "candidate": {
+        "mean_case_variance": 0.044444,
+        "unstable_cases": 6
+      }
+    }
+  }
+}

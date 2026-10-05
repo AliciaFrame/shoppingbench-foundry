@@ -1,0 +1,32 @@
+{
+  "baseline": {
+    "receipt": "optimization\\results\\raw\\voucher-candidate-heldout.jsonl",
+    "cases": 50,
+    "mean_score": 0.8305,
+    "exact": 46,
+    "success": 0,
+    "valid_final_answer": 0,
+    "viewed_selection": 49,
+    "completed_protocol": 29
+  },
+  "step3": {
+    "receipt": "rft\\results\\raw\\voucher-rft1-step3-holdout.jsonl",
+    "cases": 50,
+    "mean_score": 0.85275,
+    "exact": 47,
+    "success": 0,
+    "valid_final_answer": 0,
+    "viewed_selection": 49,
+    "completed_protocol": 48
+  },
+  "step12": {
+    "receipt": "rft\\results\\raw\\voucher-rft1-step12-holdout.jsonl",
+    "cases": 50,
+    "mean_score": 0.885167,
+    "exact": 49,
+    "success": 0,
+    "valid_final_answer": 0,
+    "viewed_selection": 50,
+    "completed_protocol": 49
+  }
+}

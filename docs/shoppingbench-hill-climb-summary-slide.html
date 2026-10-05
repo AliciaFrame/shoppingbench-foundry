@@ -324,7 +324,7 @@
       <div>
         <div class="eyebrow">ShoppingBench on Microsoft Foundry</div>
         <h1>Use the cheapest lever that clears the behavioral gate</h1>
-        <p class="subtitle">Four tool-using shopping scenarios expose different bottlenecks. Agent Optimizer changes instructions, skills, and tool definitions; agentic RFT changes the model policy. Every step is accepted or rejected on the same untouched deterministic holdout.</p>
+        <p class="subtitle">Four tool-using shopping scenarios expose different bottlenecks. Agent Optimizer changes configuration; agentic RFT changes policy. Frozen v2 configurations were then evaluated once on disjoint sealed final tests.</p>
       </div>
       <aside class="mean-card">
         <div class="label">Cross-task canonical mean</div>
@@ -342,7 +342,7 @@
     <section class="benchmark">
       <div class="definition"><strong>ShoppingBench</strong> A controlled benchmark for agents that must search a catalog, inspect evidence, select exact product IDs, preserve task-specific invariants, recommend, and terminate correctly.</div>
       <div><strong>4</strong><span>Scenario families</span></div>
-      <div><strong>200</strong><span>Frozen holdout cases</span></div>
+      <div><strong>200</strong><span>Historical v1 development cases</span></div>
       <div><strong>3,636</strong><span>Catalog documents</span></div>
     </section>
 
@@ -391,7 +391,7 @@
           <td class="score"><div class="score-box good">0.955</div></td>
           <td class="path-arrow">→</td>
           <td class="score"><div class="score-box good">0.995</div></td>
-          <td class="approach"><span class="tag opt">Optimizer helped</span><span class="tag rft">RFT finished</span><br>Configuration captured most behavior; Step 12 then delivered 24 wins, 26 ties, zero regressions.</td>
+          <td class="approach"><span class="tag opt">Optimizer helped</span><span class="tag rft">RFT protocol gain</span><br>Step 12 added 3 exact bundles and 20 net terminations. The traces do not demonstrate improved communicated arithmetic.</td>
           <td class="gain"><div class="gain-value">+0.097</div><div class="gain-label">+9.7 points</div></td>
         </tr>
         <tr>
@@ -409,8 +409,8 @@
     </table>
 
     <footer class="footer">
-      <div class="takeaway"><strong>Operating model:</strong> Agent Optimizer was sufficient for configuration bottlenecks; calibrated RFT was reserved for residual policy failures. Checkpoint-level deterministic evaluation—not optimizer score or final training artifact—selected every retained result.</div>
-      <div class="legend"><strong>Canonical score</strong><br>50-case untouched holdout per scenario<br>Exact task invariants + tool protocol</div>
+      <div class="takeaway"><strong>Operating model:</strong> Agent Optimizer was sufficient for configuration bottlenecks; calibrated RFT was reserved for residual policy failures. Deterministic development gates selected checkpoints, then one-shot sealed tests measured generalization: Product 0.9385, Shop 0.9047, Voucher 0.8625, Web 0.6305.</div>
+      <div class="legend"><strong>Historical hill climb shown above</strong><br>Sealed v2: 50 disjoint cases per task<br>No rerolls or post-test tuning</div>
     </footer>
   </main>
 </body>

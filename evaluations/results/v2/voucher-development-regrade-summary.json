@@ -1,0 +1,22 @@
+{
+  "voucher-base": {
+    "receipt": "evaluations\\results\\v2\\voucher-base-development-3x.jsonl",
+    "cases": 90,
+    "mean_score": 0.860625,
+    "exact": 81,
+    "success": 40,
+    "valid_final_answer": 43,
+    "viewed_selection": 88,
+    "completed_protocol": 42
+  },
+  "voucher-step12": {
+    "receipt": "evaluations\\results\\v2\\voucher-step12-development-3x.jsonl",
+    "cases": 90,
+    "mean_score": 0.948287,
+    "exact": 85,
+    "success": 80,
+    "valid_final_answer": 80,
+    "viewed_selection": 90,
+    "completed_protocol": 87
+  }
+}

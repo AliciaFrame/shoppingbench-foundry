@@ -1,0 +1,412 @@
+{
+  "version": "shoppingbench-v1",
+  "source_commit": "2922cdcce128ac9b93f050d4e35a52adb4fbd0d6",
+  "file_count": 81,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 10213,
+      "sha256": "f8575b255f4702669d4c651e7f474d34125fa4cbe76a260b725fc2291f84a5cb"
+    },
+    {
+      "path": "docs/results.md",
+      "bytes": 5271,
+      "sha256": "61aabf4565bf712d7c2f4b6f343b91b1cec681f8fbf0a038f8f2eeaf6d0b6415"
+    },
+    {
+      "path": "evaluations/datasets/product-holdout.jsonl",
+      "bytes": 47414,
+      "sha256": "85d0ad223e3eed5a718ab512cdb3d7a586a1ea3232d652550e37e78ed31f3eb0"
+    },
+    {
+      "path": "evaluations/datasets/product-optimize-round2.jsonl",
+      "bytes": 38713,
+      "sha256": "431692c310d990193372df9b6633093fb0b75a0f992837b93d9c1e59bafff3df"
+    },
+    {
+      "path": "evaluations/datasets/product-optimize.jsonl",
+      "bytes": 19092,
+      "sha256": "535a2133b023a498a38f7dae8ffe78ae416011c9ddafde76831f2db9be67097b"
+    },
+    {
+      "path": "evaluations/datasets/product-round2.yaml",
+      "bytes": 399,
+      "sha256": "5ff4c4bd5294b920e5acb82bbd04842977a5fe8ec023bf9989a136e633ae91f0"
+    },
+    {
+      "path": "evaluations/datasets/product.yaml",
+      "bytes": 598,
+      "sha256": "7251a323df2a9724c62c5c7a45db873d93c6bd234eaca810f8798f1416298b23"
+    },
+    {
+      "path": "evaluations/datasets/shop-holdout.jsonl",
+      "bytes": 101989,
+      "sha256": "9fbb6130ba4eb9d7235c1458415778fd77168074944b00c5ba4b9aa7b94c9d54"
+    },
+    {
+      "path": "evaluations/datasets/shop-optimize-round2.jsonl",
+      "bytes": 84230,
+      "sha256": "efb24b53a5217a59574c791560fd6541b736981a3156c9a224f834da3ac9eb54"
+    },
+    {
+      "path": "evaluations/datasets/shop-optimize.jsonl",
+      "bytes": 39511,
+      "sha256": "fec8aaa9a860f9242dce68a3205081e3d2ca079f0ab2220cccb10f4bfc019780"
+    },
+    {
+      "path": "evaluations/datasets/shop-round2.yaml",
+      "bytes": 387,
+      "sha256": "b291b2961747a31085c5983505e454f230a95fe27c5938ec3dee4abe359d965f"
+    },
+    {
+      "path": "evaluations/datasets/shop.yaml",
+      "bytes": 605,
+      "sha256": "5da5953329fc6c78567a2cd063b3436d2aa50a641fa897455203369ad3a20609"
+    },
+    {
+      "path": "evaluations/datasets/voucher-holdout.jsonl",
+      "bytes": 126639,
+      "sha256": "27a7f46174140f2b39e747983955f1a03ca451a26a9235253538d2c9bc0fe973"
+    },
+    {
+      "path": "evaluations/datasets/voucher-optimize-round2.jsonl",
+      "bytes": 101582,
+      "sha256": "62dc86aab355cb4331cc8ad46faee06e7ae037ca4131670f4bbe16192159597a"
+    },
+    {
+      "path": "evaluations/datasets/voucher-optimize.jsonl",
+      "bytes": 52646,
+      "sha256": "b439fd0141a087047a3855a66db21da6f12ceba5437e6800fb7895190aa62993"
+    },
+    {
+      "path": "evaluations/datasets/voucher-round2.yaml",
+      "bytes": 399,
+      "sha256": "3575e81e3b820e38c456ada336c144406f9bad745a870a6131263999a1b608b4"
+    },
+    {
+      "path": "evaluations/datasets/voucher.yaml",
+      "bytes": 602,
+      "sha256": "93075773b2d1b0c09307a7110972977a43a11984cffc3ccebd8ad4c9b1b9b33f"
+    },
+    {
+      "path": "evaluations/datasets/web-holdout.jsonl",
+      "bytes": 135187,
+      "sha256": "4da68a1ec080db88e971ef9d08328f315bcc849429a1273be34639be706163b6"
+    },
+    {
+      "path": "evaluations/datasets/web-optimize-round2.jsonl",
+      "bytes": 101704,
+      "sha256": "fee30361fab8f1cd0dc10f890bd6a012ff2b80b29aeaf650e151f10c39f7194e"
+    },
+    {
+      "path": "evaluations/datasets/web-optimize.jsonl",
+      "bytes": 54253,
+      "sha256": "ebb249c0747fcad495883667df50d51cb079549a1dc80a8b3aa11473c13dea47"
+    },
+    {
+      "path": "evaluations/datasets/web-round2.yaml",
+      "bytes": 383,
+      "sha256": "7454447adbb80c0d995e1b0afb1a80af63162bc381909d067753d36b9361c867"
+    },
+    {
+      "path": "evaluations/datasets/web.yaml",
+      "bytes": 584,
+      "sha256": "4899612b879bbc58ef5804a694636a1ea6cfc07a4c70f145324f77bd55f85d8f"
+    },
+    {
+      "path": "evaluations/scripts/evaluate_agent.py",
+      "bytes": 4121,
+      "sha256": "cb5e5275a751ba64ba705867533fd80900e8c2cd1d34f325f469a2239fc5e805"
+    },
+    {
+      "path": "optimization/results/raw/product-baseline-heldout.jsonl",
+      "bytes": 70122,
+      "sha256": "ea36e1a3f2adda757f13505adbebbc690b4c0e3d5f8d49b78fafb3e5f2e9e114"
+    },
+    {
+      "path": "optimization/results/raw/product-candidate-heldout.jsonl",
+      "bytes": 69767,
+      "sha256": "cb9a7befc88275a034fa6d86513fb2d4cdb35188fb61053512d56d98d6113e27"
+    },
+    {
+      "path": "optimization/results/raw/product-round2-candidate-heldout.jsonl",
+      "bytes": 69245,
+      "sha256": "4d47d85c3720c5caa840a3055413d1024255bf814913150de8d138b7f1e1080e"
+    },
+    {
+      "path": "optimization/results/raw/shop-round2-baseline-heldout.jsonl",
+      "bytes": 136374,
+      "sha256": "e2a99801ba0e2d684b2974de8aeb243739122ed2d139d5a1789e9acb60df9022"
+    },
+    {
+      "path": "optimization/results/raw/shop-round2-candidate-heldout.jsonl",
+      "bytes": 128156,
+      "sha256": "b9f84e4718ce81008159632958a5d0d44e649d414e261ebec607531d35ca58c7"
+    },
+    {
+      "path": "optimization/results/raw/voucher-baseline-heldout.jsonl",
+      "bytes": 188450,
+      "sha256": "a0d5020bf5f93e3e46d74c3344fc438828d91e89ae1bf49c35cd9dff551911b8"
+    },
+    {
+      "path": "optimization/results/raw/voucher-candidate-heldout.jsonl",
+      "bytes": 140870,
+      "sha256": "5c8452e42a40c1957aac7e00021149d884fbae6baf173fe3e2c5cd11125c5090"
+    },
+    {
+      "path": "optimization/results/raw/voucher-round2-candidate-heldout.jsonl",
+      "bytes": 180601,
+      "sha256": "45ba1e4a503711e29e0ca1bd364ea3ccabf2cb732d31e2a8d1c3d863b2805e32"
+    },
+    {
+      "path": "optimization/results/raw/web-round2-baseline-heldout.jsonl",
+      "bytes": 183972,
+      "sha256": "0e4f4ff034f55e65c5cf43c052bbac669ba78a54c0e68470abcc654cb7dbdcf2"
+    },
+    {
+      "path": "optimization/results/raw/web-round2-candidate-heldout.jsonl",
+      "bytes": 155402,
+      "sha256": "d0d11af596fe816f43e6b9f56ea95b403ca8fee2c7a2c8e97c2d19aa7d671f37"
+    },
+    {
+      "path": "optimization/results/summary.json",
+      "bytes": 3724,
+      "sha256": "46ea98f36cf4b3850628a723515cac780c0e2df7a80dc4def44c2a47e4733bfc"
+    },
+    {
+      "path": "optimization/results/web-post-rft-step10-comparison.json",
+      "bytes": 1302,
+      "sha256": "b9cc798f8420a777c1cfe89132443259a9db6b47b4dfba4b18badd801b38b522"
+    },
+    {
+      "path": "optimization/results/web-post-rft-step10-optimizer.json",
+      "bytes": 1524,
+      "sha256": "dd634bcf7ff50b53dbce08a4e05775f96cb503a903c9b44e311325eedcf0f4df"
+    },
+    {
+      "path": "rft/README.md",
+      "bytes": 8708,
+      "sha256": "f61381100d637db0f3bdaf47538a95410ee85e9a290bd22c78bfcc957c78e7ab"
+    },
+    {
+      "path": "rft/data/product-calibration-eval.jsonl",
+      "bytes": 323847,
+      "sha256": "4f626c48faedb64f3d404cde9e84e14acf13256718c9778a01d57c52fec94619"
+    },
+    {
+      "path": "rft/data/product-train.jsonl",
+      "bytes": 952442,
+      "sha256": "dec9043eb0d970cd11aedde7bc15a4bb97c94ed16dfeba6a5277d49d3600eccc"
+    },
+    {
+      "path": "rft/data/product-validation-eval.jsonl",
+      "bytes": 107749,
+      "sha256": "3b36e64ac540f9dbdb1f93e34ec69e7d162f1682125a631d02d7f0a50106a1b4"
+    },
+    {
+      "path": "rft/data/product-validation.jsonl",
+      "bytes": 104958,
+      "sha256": "98be93da84a20549ec9d29227348e96f6bc37a820a061ed2621eda530c22dd2b"
+    },
+    {
+      "path": "rft/data/shop-calibration-eval.jsonl",
+      "bytes": 500838,
+      "sha256": "e48aa1ac1a7d77cbb26ab756ca764fba811dc66e6aa7764124465e37aa696131"
+    },
+    {
+      "path": "rft/data/shop-train.jsonl",
+      "bytes": 1398960,
+      "sha256": "a93a41b51fcc501067086cb4521c0a734326acbf212fa36640b210a0dc5b59af"
+    },
+    {
+      "path": "rft/data/shop-validation-eval.jsonl",
+      "bytes": 166746,
+      "sha256": "c0f9b4796db7d9e1beca7e3c62a44cb1b303398e472005b44f81be5d1c5fb845"
+    },
+    {
+      "path": "rft/data/shop-validation.jsonl",
+      "bytes": 158174,
+      "sha256": "6d8e2e8a58d2a6a27c9736bdd10146bc6b0f3a42bae16897cadf99f54a9bd8aa"
+    },
+    {
+      "path": "rft/data/voucher-calibration-eval.jsonl",
+      "bytes": 463191,
+      "sha256": "bfe4619aa2562c8cf526c237b0d2e232371090592cdcc8490e5a527939b769d4"
+    },
+    {
+      "path": "rft/data/voucher-train.jsonl",
+      "bytes": 1319654,
+      "sha256": "2a45acdcb11e6428eee0e8bc4d0754edd45a9790381aeb8ad83a2a32c8322924"
+    },
+    {
+      "path": "rft/data/voucher-validation-eval.jsonl",
+      "bytes": 154197,
+      "sha256": "281b731ee502716459fb2d4ba177622706b67c4d6eebaed021d01406616583ba"
+    },
+    {
+      "path": "rft/data/voucher-validation.jsonl",
+      "bytes": 144068,
+      "sha256": "82b35a274dde43d54c453f4212631e037f88e002c93c00bf7e9a06b4cfe96da1"
+    },
+    {
+      "path": "rft/data/web-calibration-eval.jsonl",
+      "bytes": 254292,
+      "sha256": "6fb075cff1c8077b1ce60a2e49adb32c1bf33f0937a0b1e6906ce71c56719d5e"
+    },
+    {
+      "path": "rft/data/web-train.jsonl",
+      "bytes": 298694,
+      "sha256": "7819814f2e0fc75e0441e1667596dae2f7bb9204d19c2b471eede613af930644"
+    },
+    {
+      "path": "rft/data/web-validation-eval.jsonl",
+      "bytes": 84564,
+      "sha256": "98c2875aabb52a995c4c6cfa67b5a614b9024088f72b521902dc1efa929bbfac"
+    },
+    {
+      "path": "rft/data/web-validation.jsonl",
+      "bytes": 79903,
+      "sha256": "08c5666772eecd6b53a4827d067c830e6d3aefe6827a5438f2a7d5e98042dcb3"
+    },
+    {
+      "path": "rft/results/product-calibration-3x.json",
+      "bytes": 228,
+      "sha256": "0f2692fc6a82ef66570f4065d69bde5838d04d1b47d561462c71025ae089fbf9"
+    },
+    {
+      "path": "rft/results/product-calibration-results.jsonl",
+      "bytes": 69167,
+      "sha256": "464a8f4e413d7b2d983ec97fc87defbf847ffb0eda10eedf988c36e361d5045c"
+    },
+    {
+      "path": "rft/results/product-calibration.json",
+      "bytes": 228,
+      "sha256": "5e481479ed435d91457f025428e23acbb1d18c9d9e34eea77a2bb5803e8183ba"
+    },
+    {
+      "path": "rft/results/product-validation-results.jsonl",
+      "bytes": 25833,
+      "sha256": "3e2bbb7985a2cd1b5da7fa8ec5bc0f6de3a0921429ad631dbee110021995d90a"
+    },
+    {
+      "path": "rft/results/raw/voucher-rft1-step12-holdout.jsonl",
+      "bytes": 109715,
+      "sha256": "af83cc43f48acbc7bd54ebfe5a274ad07f3dc7b7b72f783c95a2c7a2195fb698"
+    },
+    {
+      "path": "rft/results/raw/voucher-rft1-step3-holdout.jsonl",
+      "bytes": 119733,
+      "sha256": "ee2852714f80a82b2c08f370a9ba94d626c312325e0a8333a9c72cd0e74b3fba"
+    },
+    {
+      "path": "rft/results/raw/web-rft3-final-holdout.jsonl",
+      "bytes": 71781,
+      "sha256": "f149dd65e1c673b962a633494b6bc82a5d9d2b4527cba468753e5f4b841596d3"
+    },
+    {
+      "path": "rft/results/raw/web-rft3-step10-holdout.jsonl",
+      "bytes": 77926,
+      "sha256": "657ff03df7dd671ddce5a5e5e97032a7196ed6e497731f17e998385f4afeb243"
+    },
+    {
+      "path": "rft/results/raw/web-rft3-step10-post-opt-candidate1-holdout.jsonl",
+      "bytes": 69575,
+      "sha256": "0e5b9093c217c48f508837d507e4234c11f69c13df57681083f2917617298d19"
+    },
+    {
+      "path": "rft/results/raw/web-rft3-step15-holdout.jsonl",
+      "bytes": 66686,
+      "sha256": "3f0ea828d20094b3693475957f650828adf41c37b6e2a96dd63e1711d7be9da1"
+    },
+    {
+      "path": "rft/results/shop-calibration.json",
+      "bytes": 199,
+      "sha256": "1ba21f8d65f9937fe9721c77e34ccd9cd57ff0aa23866e3077e00e56403d634b"
+    },
+    {
+      "path": "rft/results/shop-validation-results.jsonl",
+      "bytes": 50131,
+      "sha256": "f6b07128cb768aba0e3ef6aa05c5c6f7576a9e59e32bee31f0a883ba9da880b7"
+    },
+    {
+      "path": "rft/results/voucher-calibration.json",
+      "bytes": 216,
+      "sha256": "bcf0169c854eec34d256d9c788a8b7b473d36617d135313cde3250a28d0debe3"
+    },
+    {
+      "path": "rft/results/voucher-job-rft1.json",
+      "bytes": 756,
+      "sha256": "01b2ad55ee86e2bf70ec708a0577d11e5c30710c70f2e52bb0b783a2b9b0ffbe"
+    },
+    {
+      "path": "rft/results/voucher-rft1-holdout-comparison.json",
+      "bytes": 2912,
+      "sha256": "5db19f220553b4c466716253b124fdbd14abb8e06619ce6c7a8a11901214f065"
+    },
+    {
+      "path": "rft/results/voucher-validation-results.jsonl",
+      "bytes": 48642,
+      "sha256": "72290142a35cba559fddcb345a5a9d45334e0b4a562d5166383ce2abab72fa11"
+    },
+    {
+      "path": "rft/results/web-calibration.json",
+      "bytes": 298,
+      "sha256": "766111d9f004154ff2878ebc525869c360fe10a430ba83dbc6dac16e7093e9f8"
+    },
+    {
+      "path": "rft/results/web-job-rft1-final.json",
+      "bytes": 603,
+      "sha256": "42b56922f2c1d1c05db71b14b341d4fea64e29adf2a14be349745f829f432c8c"
+    },
+    {
+      "path": "rft/results/web-job-rft2.json",
+      "bytes": 443,
+      "sha256": "5642bf2915a35d97467326d7c0a901ba93f534f764e91b3251d4cfc38d384cd4"
+    },
+    {
+      "path": "rft/results/web-job-rft3.json",
+      "bytes": 505,
+      "sha256": "3839333eaf34264aa6873877494bf3782f3595e7e775f3e7259e8c35b645a221"
+    },
+    {
+      "path": "rft/results/web-job.json",
+      "bytes": 443,
+      "sha256": "9817e1c6eab47e453e8e46edc553657ef8cf754e3530df718f38b4b8033b7b8c"
+    },
+    {
+      "path": "rft/results/web-rft3-holdout-comparison.json",
+      "bytes": 3399,
+      "sha256": "694dae24f8fb90f21dbfbdf25fbf4137528456a5cc8d647bdd27d2f4357a3328"
+    },
+    {
+      "path": "rft/results/web-step0-calibration-v2.json",
+      "bytes": 8950,
+      "sha256": "d06e93676bf661a4128770e2d186746daae56b5dbc547dc98f6f4722473e3f9f"
+    },
+    {
+      "path": "rft/results/web-validation-results.jsonl",
+      "bytes": 58195,
+      "sha256": "116cdc26c2d0cef8283bbbc04d28af55049304a87daadb38dd8d2d50c719a3a7"
+    },
+    {
+      "path": "src/shoppingbench_foundry/benchmark_subset.py",
+      "bytes": 14609,
+      "sha256": "242d975d5af8bd57fb45ac0cb081676db07fdbcb0f95788924762dcc3bb89e89"
+    },
+    {
+      "path": "src/shoppingbench_foundry/grading.py",
+      "bytes": 9019,
+      "sha256": "795487f4effa524ed7348265133c74b50d68d7632197ea61d2badaa4523389f9"
+    },
+    {
+      "path": "src/shoppingbench_foundry/rft_grading.py",
+      "bytes": 6195,
+      "sha256": "0b0410897cbec015ec4b1cb97f50400e414e09a8312ce739750e3dc3545a0b58"
+    },
+    {
+      "path": "src/shoppingbench_foundry/rft_grading_v2.py",
+      "bytes": 2885,
+      "sha256": "ea638b1121b9c9f24a8dd64ed3b1ff0a956c86f00cb10950d08630b47c8a63d9"
+    }
+  ]
+}

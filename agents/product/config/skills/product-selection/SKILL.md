@@ -36,21 +36,13 @@ Your final answer must be supported by the tool workflow:
 - Ensure the recommended product is consistent with the user’s constraints based on the product information you checked.
 - The recommendation must be externally verifiable from the tool usage; avoid unsupported guesses.
 
-## Output requirements
-Return a structured result that:
-- identifies the task as a product task
-- includes the recommended product ID in `recommended_product_ids`
-- sets `terminated` to true
-- includes the tool calls used in `output_tools`
-- includes a non-empty `assistant_text`
-
-## assistant_text requirements
-`assistant_text` must not be empty. It should briefly state:
-- the selected product
-- why it matches the key constraints
-- any especially relevant verified attributes (for example size, color, price range, COD, LazMall, free/complimentary shipping, compatibility)
-
-Keep it concise, but include enough detail to make the recommendation usable and verifiable.
+## Completion protocol
+- During the tool phase, do not return user-facing prose.
+- Call `recommend_product` exactly once with the selected ID.
+- Then call `terminate` on the next tool step.
+- After termination, the runtime will request a separate concise final answer.
+- In that final answer, mention only the selected product ID and explain the
+  verified attributes that satisfy the request.
 
 ## Tool-use guidance
 - Start with `find_product` using the user’s main constraints.
@@ -58,15 +50,15 @@ Keep it concise, but include enough detail to make the recommendation usable and
 - Use `service` filters when applicable, such as COD.
 - Respect explicit price bounds using the tool’s price argument.
 - Inspect one or more candidates with `view_product_information`.
-- Only then call `recommend_product` for the single chosen item.
-- Finally call `terminate`.
+- Only then call `recommend_product` for the single chosen item, followed by
+  `terminate` on the next tool step.
 
 ## Selection rule
 Recommend exactly one product, choosing the best match among inspected candidates.
 If multiple products are close, prefer the one that most completely satisfies the user’s stated filters.
 
 ## Failure modes to avoid
-- Do not leave `assistant_text` empty.
+- Do not emit user-facing text before calling `terminate`.
 - Do not recommend an item without prior detail inspection.
 - Do not ignore important filters like size, price, COD, LazMall, shipping, or compatibility.
 - Do not provide a recommendation that cannot be justified from the inspected product details.
