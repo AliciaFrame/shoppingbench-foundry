@@ -309,58 +309,7 @@ def _criteria(task: str, row: dict[str, Any]) -> list[dict[str, str]]:
     return criteria
 
 
-def write_eval_datasets(
-    data_dir: Path,
-    output_dir: Path,
-    optimize_count: int = 20,
-    holdout_count: int = 50,
-    round2_optimize_count: int = 40,
-) -> dict[str, dict[str, int]]:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    counts: dict[str, dict[str, int]] = {}
-    for task in TASK_FILES:
-        rows = load_task_rows(data_dir, task)
-        indexes = list(range(len(rows)))
-        random.Random(f"shoppingbench-{task}-v1").shuffle(indexes)
-        optimize_indexes = indexes[:optimize_count]
-        task_holdout_count = min(holdout_count, len(rows) - optimize_count)
-        holdout_indexes = indexes[optimize_count : optimize_count + task_holdout_count]
-        round2_start = optimize_count + task_holdout_count
-        task_round2_count = min(
-            round2_optimize_count,
-            len(rows) - round2_start,
-        )
-        round2_indexes = indexes[round2_start : round2_start + task_round2_count]
-        for split, selected in (
-            ("optimize", optimize_indexes),
-            ("holdout", holdout_indexes),
-            ("optimize-round2", round2_indexes),
-        ):
-            path = output_dir / f"{task}-{split}.jsonl"
-            with path.open("w", encoding="utf-8") as handle:
-                for index in selected:
-                    row = rows[index]
-                    handle.write(
-                        json.dumps(
-                            {
-                                "name": f"{task}-{index:03d}",
-                                "query": row["query"],
-                                "criteria": _criteria(task, row),
-                                "item": row,
-                            },
-                            ensure_ascii=False,
-                        )
-                        + "\n"
-                    )
-        counts[task] = {
-            "optimize": len(optimize_indexes),
-            "holdout": len(holdout_indexes),
-            "optimize-round2": len(round2_indexes),
-        }
-    return counts
-
-
-def write_eval_datasets_v2(
+def write_lifecycle_datasets(
     data_dir: Path,
     output_dir: Path,
     development_count: int = 30,
@@ -369,8 +318,18 @@ def write_eval_datasets_v2(
     round2_optimize_count: int = 40,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
+    lifecycle_paths = {
+        "training-pool": lambda task: output_dir / "training" / f"{task}.jsonl",
+        "development": lambda task: output_dir / "development" / f"{task}.jsonl",
+        "final-test": lambda task: output_dir / "final" / f"{task}.jsonl",
+        "optimize": lambda task: output_dir / "optimization" / f"{task}-round1.jsonl",
+        "optimize-round2": lambda task: output_dir
+        / "optimization"
+        / f"{task}-round2.jsonl",
+    }
     manifest: dict[str, Any] = {
-        "version": "v2",
+        "schema_version": 1,
+        "split_strategy": "connected-group-disjoint",
         "policy": (
             "Connected groups sharing target product IDs, and for Web normalized knowledge "
             "answers, are assigned wholly to training-pool, development, or final-test."
@@ -386,6 +345,7 @@ def write_eval_datasets_v2(
             final_test_count=final_test_count,
         )
         training_indexes = list(splits["training-pool"])
+        # Keep the published seed stable so regenerated case assignments do not change.
         random.Random(f"shoppingbench-{task}-v2-optimizer").shuffle(training_indexes)
         derived = {
             "optimize": training_indexes[:optimize_count],
@@ -394,7 +354,8 @@ def write_eval_datasets_v2(
             ],
         }
         for split, selected in {**splits, **derived}.items():
-            path = output_dir / f"{task}-{split}.jsonl"
+            path = lifecycle_paths[split](task)
+            path.parent.mkdir(parents=True, exist_ok=True)
             with path.open("w", encoding="utf-8") as handle:
                 for index in selected:
                     row = rows[index]
@@ -415,7 +376,7 @@ def write_eval_datasets_v2(
             for split, indexes in derived.items()
         }
         manifest["tasks"][task] = task_manifest
-    manifest_path = output_dir / "split-manifest.json"
+    manifest_path = output_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return manifest
 
@@ -426,25 +387,21 @@ def main() -> None:
     parser.add_argument("--data-dir", type=Path, default=repo_root / "data" / "source")
     parser.add_argument("--documents", type=Path, required=True)
     parser.add_argument("--eval-dir", type=Path)
-    parser.add_argument("--split-version", choices=("v1", "v2"), default="v1")
     args = parser.parse_args()
 
     products = build_benchmark_subset(args.data_dir)
     write_documents(products, args.documents)
     result: dict[str, Any] = {"documents": len(products), "output": str(args.documents)}
     if args.eval_dir:
-        if args.split_version == "v2":
-            manifest = write_eval_datasets_v2(args.data_dir, args.eval_dir)
-            result["evals"] = {
-                "version": "v2",
-                "manifest": str(args.eval_dir / "split-manifest.json"),
-                "counts": {
-                    task: task_manifest["counts"]
-                    for task, task_manifest in manifest["tasks"].items()
-                },
-            }
-        else:
-            result["evals"] = write_eval_datasets(args.data_dir, args.eval_dir)
+        manifest = write_lifecycle_datasets(args.data_dir, args.eval_dir)
+        result["evals"] = {
+            "split_strategy": manifest["split_strategy"],
+            "manifest": str(args.eval_dir / "manifest.json"),
+            "counts": {
+                task: task_manifest["counts"]
+                for task, task_manifest in manifest["tasks"].items()
+            },
+        }
     print(json.dumps(result))
 
 

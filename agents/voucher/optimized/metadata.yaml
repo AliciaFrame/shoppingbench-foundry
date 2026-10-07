@@ -1,0 +1,5 @@
+name: shoppingbench-voucher-agent
+model: mai-code-1-1-flash-base
+instruction_file: instructions.md
+skill_dir: skills
+tools_file: tools.json

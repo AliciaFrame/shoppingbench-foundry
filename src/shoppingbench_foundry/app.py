@@ -10,9 +10,8 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from .rft_grading import endpoint_grade
-from .rft_grading_v2 import endpoint_grade as endpoint_grade_v2
-from .rft_grading_v3 import endpoint_grade as endpoint_grade_v3
 from .store import INFORMATION_FIELDS, ProductStore, create_store
+from .web_rft_grading_v5 import endpoint_grade as web_v5_endpoint_grade
 
 app = FastAPI(title="ShoppingBench Foundry Runtime", version="0.1.0")
 
@@ -120,7 +119,7 @@ def rft_tool(
     elif tool_name == "recommend_product":
         output = {"recommended": arguments.get("product_ids", "")}
     elif tool_name == "terminate":
-        output = {"terminated": True}
+        output = {"terminated": True, **arguments}
     else:
         raise HTTPException(status_code=404, detail=f"Unknown tool: {tool_name}")
     return {
@@ -131,22 +130,15 @@ def rft_tool(
     }
 
 
-@app.post("/grade", dependencies=[Depends(require_token)])
-def grade(
+@app.post("/grade/v3", dependencies=[Depends(require_token)])
+def grade_v3(
     request: GradeRequest,
 ) -> dict[str, float]:
     return endpoint_grade(request.model_dump())
 
 
-@app.post("/grade/v2", dependencies=[Depends(require_token)])
-def grade_v2(
+@app.post("/grade/web/v5", dependencies=[Depends(require_token)])
+def grade_web_v5(
     request: GradeRequest,
 ) -> dict[str, float]:
-    return endpoint_grade_v2(request.model_dump())
-
-
-@app.post("/grade/v3", dependencies=[Depends(require_token)])
-def grade_v3(
-    request: GradeRequest,
-) -> dict[str, float]:
-    return endpoint_grade_v3(request.model_dump())
+    return web_v5_endpoint_grade(request.model_dump())

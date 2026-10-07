@@ -1,0 +1,119 @@
+{
+  "split_strategy": "connected-group-disjoint",
+  "split_manifest": {
+    "path": "evals/datasets/manifest.json",
+    "sha256": "3d6b678f0e4fc642fea846d025a87567b2eb8eeb561ee1240ea95b27a4afb58a"
+  },
+  "tasks": [
+    {
+      "task": "product",
+      "train": 150,
+      "validation": 20,
+      "calibration_rollouts": 100,
+      "holdout_excluded": 50,
+      "split_manifest": "manifest.json",
+      "validation_groups": 20,
+      "training_groups": 150,
+      "developer_message_sha256": "e893935fbb14c55cb451a44500c8a03f99acaad1c95137fab792b6406d65c5d3"
+    },
+    {
+      "task": "shop",
+      "train": 150,
+      "validation": 20,
+      "calibration_rollouts": 100,
+      "holdout_excluded": 50,
+      "split_manifest": "manifest.json",
+      "validation_groups": 20,
+      "training_groups": 150,
+      "developer_message_sha256": "b9626b417ee56b562fa9b64ec69ba2812df8e240f0577d207d4f12a67dcabc2c"
+    },
+    {
+      "task": "voucher",
+      "train": 150,
+      "validation": 20,
+      "calibration_rollouts": 100,
+      "holdout_excluded": 50,
+      "split_manifest": "manifest.json",
+      "validation_groups": 20,
+      "training_groups": 150,
+      "developer_message_sha256": "db72d9bff91061a28b2598090e9c74fa06080d7b3ccc59e56aee19525fe1cd4f"
+    },
+    {
+      "task": "web",
+      "train": 49,
+      "validation": 21,
+      "calibration_rollouts": 105,
+      "holdout_excluded": 50,
+      "split_manifest": "manifest.json",
+      "validation_groups": 20,
+      "training_groups": 48,
+      "developer_message_sha256": "10e3f8722b9f1237a5991e79196a5cca9927da91ab5bdce57d6c421002e669a5"
+    }
+  ],
+  "files": {
+    "product-calibration-eval.jsonl": {
+      "bytes": 537175,
+      "sha256": "4488b1c87ff0521815d2be08876f6b1830e2475673bccc959c55fe306ba512b0"
+    },
+    "product-train.jsonl": {
+      "bytes": 777509,
+      "sha256": "deea01c35abe4c73263d128eba3b88d859b978aebedff2eb086f6036f1f9a5b3"
+    },
+    "product-validation-eval.jsonl": {
+      "bytes": 107235,
+      "sha256": "79c798406ee47e9524b2be93125408f50b945fac0d2c75d1183dd8d488cb85fa"
+    },
+    "product-validation.jsonl": {
+      "bytes": 104301,
+      "sha256": "1415f649582e66a6d377f3a0f813e79232937e9b322a718878e433d168cc88dd"
+    },
+    "shop-calibration-eval.jsonl": {
+      "bytes": 863600,
+      "sha256": "c48843e920f9e76073321acf70d4d6e63747882433580f2cc647d748f389f900"
+    },
+    "shop-train.jsonl": {
+      "bytes": 1245189,
+      "sha256": "2821a78583bd0d6846601143b4e607e628d2115923c6c557b9415ffa0d51a52b"
+    },
+    "shop-validation-eval.jsonl": {
+      "bytes": 172520,
+      "sha256": "c4682c31b0b934641b36ae550a6526011a1e5fc6f8e39da7a956cb52e95dc009"
+    },
+    "shop-validation.jsonl": {
+      "bytes": 164735,
+      "sha256": "40c703ca0f142bc47a9719a3388197dd6c0c8ca7b224e5a75c48986f69e0bc4e"
+    },
+    "voucher-calibration-eval.jsonl": {
+      "bytes": 840000,
+      "sha256": "639dfe1ef116a30d8fadbd7e36144d8b9efbaa492170438d2d2703f7b2eb4bd7"
+    },
+    "voucher-train.jsonl": {
+      "bytes": 1156273,
+      "sha256": "34528722d49fe3610627d19000800c24990cfad5cec0288ae00d8dc013773019"
+    },
+    "voucher-validation-eval.jsonl": {
+      "bytes": 167800,
+      "sha256": "d7a32be42635d3d0cdb1c7ace15e4d81752f7f7a2b4c212192bfe192d55ccf50"
+    },
+    "voucher-validation.jsonl": {
+      "bytes": 156375,
+      "sha256": "500c32240bb732af689440561cb039c77a377848256b93252c49709f4eff2a19"
+    },
+    "web-calibration-eval.jsonl": {
+      "bytes": 566015,
+      "sha256": "ba91c2b1507af82d6b77b993fea920b135aea395683c971dda106599b007adb2"
+    },
+    "web-train.jsonl": {
+      "bytes": 254717,
+      "sha256": "88914d95cf4075c62b97367c66e475d4e1cac1c0d4b286defa029ce44a0205a9"
+    },
+    "web-validation-eval.jsonl": {
+      "bytes": 112993,
+      "sha256": "605bef9c836aa591f7f9aa0582a21db2a25738a3e2e32e0e1c98acc793e270e8"
+    },
+    "web-validation.jsonl": {
+      "bytes": 108320,
+      "sha256": "cbf8fa17bac119aab989d66f020fc546e170603e6be3156ee1c76bdd585dcf25"
+    }
+  }
+}

@@ -38,6 +38,11 @@ def recommended_ids(calls: list[tuple[str, dict[str, Any]]]) -> list[str]:
     return ids(recommendations[-1]) if recommendations else []
 
 
+def terminal_arguments(calls: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
+    terminations = [arguments for name, arguments in calls if name == "terminate"]
+    return terminations[-1] if terminations else {}
+
+
 def recommendation_index(calls: list[tuple[str, dict[str, Any]]]) -> int | None:
     return next(
         (index for index, (name, _) in enumerate(calls) if name == "recommend_product"),
@@ -97,6 +102,22 @@ def assistant_text(sample: dict[str, Any]) -> str:
         if isinstance(value, str) and value.strip():
             return value.strip()
     return ""
+
+
+def resolved_clue(sample: dict[str, Any]) -> str:
+    calls = tool_calls(sample)
+    value = terminal_arguments(calls).get("resolved_clue")
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return ""
+
+
+def final_answer_text(sample: dict[str, Any]) -> str:
+    calls = tool_calls(sample)
+    value = terminal_arguments(calls).get("final_answer")
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return assistant_text(sample)
 
 
 def contains_amount(text: str, amount: Any) -> bool:
@@ -189,7 +210,7 @@ def grounded_final_answer(
     item: dict[str, Any],
     actual: list[str],
 ) -> bool:
-    text = assistant_text(sample)
+    text = final_answer_text(sample)
     if not text:
         return False
     normalized_text = normalized(text)

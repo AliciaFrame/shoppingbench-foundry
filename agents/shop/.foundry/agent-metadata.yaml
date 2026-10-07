@@ -6,8 +6,8 @@ environments:
     agentName: shoppingbench-shop-agent
     evaluationSuites:
       - name: shop-development-v2
-        datasetFile: ../../../evaluations/datasets/v2/shop-development.jsonl
+        datasetFile: ../../../evals/datasets/development/shop.jsonl
         tags: {tier: regression}
       - name: shop-final-v2
-        datasetFile: ../../../evaluations/datasets/v2/shop-final-test.jsonl
+        datasetFile: ../../../evals/datasets/final/shop.jsonl
         tags: {tier: sealed}

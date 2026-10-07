@@ -25,13 +25,13 @@ def _case_name(task: str, index: int) -> str:
 
 
 def _holdout_names(evals_dir: Path, task: str) -> set[str]:
-    path = evals_dir / f"{task}-holdout.jsonl"
+    path = evals_dir / "final" / f"{task}.jsonl"
     with path.open(encoding="utf-8") as handle:
         return {json.loads(line)["name"] for line in handle if line.strip()}
 
 
 def _compose_developer_message(config_root: Path, task: str) -> str:
-    config_dir = config_root / task / "config"
+    config_dir = config_root / task / "optimized"
     sections = [(config_dir / "instructions.md").read_text(encoding="utf-8").strip()]
     skills_dir = config_dir / "skills"
     if skills_dir.exists():
@@ -45,6 +45,7 @@ def _rft_item(
     case_name: str,
     row: dict[str, Any],
     developer_message: str,
+    case_group: str | None = None,
 ) -> dict[str, Any]:
     reward = row["reward"]
     reward_count = len(reward) if isinstance(reward, list) else 1
@@ -53,8 +54,9 @@ def _rft_item(
             {"role": "developer", "content": developer_message},
             {"role": "user", "content": row["query"]},
         ],
-        "tools": chat_completions_tools(),
+        "tools": chat_completions_tools(task),
         "case_name": case_name,
+        "case_group": case_group or case_name,
         "query": row["query"],
         "task": task,
         "reward": reward,
@@ -64,6 +66,7 @@ def _rft_item(
         item["voucher"] = row["voucher"]
     if task == "web":
         item["knowledge_attribute"] = row["knowledge_attribute"]
+        item["knowledge_aliases"] = row.get("knowledge_aliases", [])
     return item
 
 
@@ -119,9 +122,10 @@ def prepare_task(
             grouped.setdefault(case_groups[entry[0]], []).append(entry)
         groups = list(grouped.values())
         random.Random(f"shoppingbench-rft-{task}-v2").shuffle(groups)
-        validation: list[tuple[str, dict[str, Any]]] = []
-        while groups and len(validation) < VALIDATION_COUNTS[task]:
-            validation.extend(groups.pop())
+        validation_groups: list[list[tuple[str, dict[str, Any]]]] = []
+        while groups and len(validation_groups) < VALIDATION_COUNTS[task]:
+            validation_groups.append(groups.pop())
+        validation = [entry for group in validation_groups for entry in group]
         training = [entry for group in groups for entry in group]
         holdout_names = set(task_manifest["cases"]["final-test"])
     else:
@@ -137,13 +141,37 @@ def prepare_task(
         training = available[validation_count:]
     developer_message = _compose_developer_message(config_root, task)
 
-    train_rows = [_rft_item(task, name, row, developer_message) for name, row in training]
-    validation_rows = [_rft_item(task, name, row, developer_message) for name, row in validation]
+    train_rows = [
+        _rft_item(
+            task,
+            name,
+            row,
+            developer_message,
+            case_groups.get(name, name),
+        )
+        for name, row in training
+    ]
+    validation_rows = [
+        _rft_item(
+            task,
+            name,
+            row,
+            developer_message,
+            case_groups.get(name, name),
+        )
+        for name, row in validation
+    ]
     validation_eval_rows = [
         {
             "name": name,
             "query": row["query"],
-            "item": _rft_item(task, name, row, developer_message),
+            "item": _rft_item(
+                task,
+                name,
+                row,
+                developer_message,
+                case_groups.get(name, name),
+            ),
         }
         for name, row in validation
     ]
@@ -151,7 +179,13 @@ def prepare_task(
         {
             "name": f"{name}-rollout-{rollout}",
             "query": row["query"],
-            "item": _rft_item(task, name, row, developer_message),
+            "item": _rft_item(
+                task,
+                name,
+                row,
+                developer_message,
+                case_groups.get(name, name),
+            ),
         }
         for name, row in validation
         for rollout in range(1, CALIBRATION_ROLLOUTS + 1)
@@ -182,7 +216,7 @@ def main() -> None:
     parser.add_argument(
         "--evals-dir",
         type=Path,
-        default=repo_root / "evaluations" / "datasets",
+        default=repo_root / "evals" / "datasets",
     )
     parser.add_argument(
         "--config-root",
@@ -193,7 +227,7 @@ def main() -> None:
     parser.add_argument(
         "--split-manifest",
         type=Path,
-        default=repo_root / "evaluations" / "datasets" / "v2" / "split-manifest.json",
+        default=repo_root / "evals" / "datasets" / "manifest.json",
     )
     args = parser.parse_args()
 
@@ -211,7 +245,9 @@ def main() -> None:
     ]
     generated_files = _generated_files(args.output_dir, tasks)
     manifest = {
-        "version": "v2" if args.split_manifest.is_file() else "v1",
+        "split_strategy": (
+            "connected-group-disjoint" if args.split_manifest.is_file() else "row-random"
+        ),
         "split_manifest": (
             {
                 "path": _portable_path(args.split_manifest, repo_root),

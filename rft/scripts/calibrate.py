@@ -8,9 +8,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from evaluations.graders.rft_grader import grade as grade_v1
-from evaluations.graders.rft_grader_v2 import grade as grade_v2
-from evaluations.graders.rft_grader_v3 import grade as grade_v3
+from shoppingbench_foundry.rft_grading import grade
+from shoppingbench_foundry.web_rft_grading_v5 import grade as grade_web_v5
 
 
 def _load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -40,7 +39,8 @@ def _bootstrap_failure_interval(
 def calibrate(
     results_path: Path,
     dataset_path: Path,
-    grader: Callable[[dict[str, Any], dict[str, Any]], float] = grade_v3,
+    grader: Callable[[dict[str, Any], dict[str, Any]], float] = grade,
+    minimum_pass_threshold: float | None = None,
 ) -> dict[str, Any]:
     items = {row["name"]: row["item"] for row in _load_jsonl(dataset_path)}
     scored = []
@@ -51,11 +51,19 @@ def calibrate(
         item = items[result["name"]]
         score = grader(result["sample"], item)
         scored.append(score)
-        scores_by_case[str(item.get("case_name", result["name"]))].append(score)
+        scores_by_case[
+            str(item.get("case_group", item.get("case_name", result["name"])))
+        ].append(score)
     if not scored:
         raise ValueError("No result names matched the calibration dataset")
 
     candidates = sorted(set(scored + [round(index / 100, 2) for index in range(50, 101)]))
+    if minimum_pass_threshold is not None:
+        candidates = [
+            threshold
+            for threshold in candidates
+            if threshold >= minimum_pass_threshold
+        ]
     target_failure_rate = 0.375
     viable = []
     for threshold in candidates:
@@ -106,10 +114,24 @@ def main() -> None:
     parser.add_argument("--results", type=Path, required=True)
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--grader-version", choices=("v1", "v2", "v3"), default="v3")
+    parser.add_argument(
+        "--grader-version",
+        choices=("v3", "web-v5"),
+        default="v3",
+    )
     args = parser.parse_args()
-    graders = {"v1": grade_v1, "v2": grade_v2, "v3": grade_v3}
-    result = calibrate(args.results, args.dataset, graders[args.grader_version])
+    graders = {
+        "v3": grade,
+        "web-v5": grade_web_v5,
+    }
+    grader = graders[args.grader_version]
+    minimum_thresholds = {"web-v5": 0.49}
+    result = calibrate(
+        args.results,
+        args.dataset,
+        grader=grader,
+        minimum_pass_threshold=minimum_thresholds.get(args.grader_version),
+    )
     rendered = json.dumps(result, indent=2)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

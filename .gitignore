@@ -11,6 +11,7 @@ build/
 
 # Generated or resource-specific outputs
 .foundry/results/
-optimization/work/
-rft/results/*-events.jsonl
-rft/results/*-status.json
+optimize/work/
+rft/jobs/**/*-events.jsonl
+agents/.agent_configs/
+agents/azd-ai-*.log

@@ -6,8 +6,8 @@ environments:
     agentName: shoppingbench-product-agent
     evaluationSuites:
       - name: product-development-v2
-        datasetFile: ../../../evaluations/datasets/v2/product-development.jsonl
+        datasetFile: ../../../evals/datasets/development/product.jsonl
         tags: {tier: regression}
       - name: product-final-v2
-        datasetFile: ../../../evaluations/datasets/v2/product-final-test.jsonl
+        datasetFile: ../../../evals/datasets/final/product.jsonl
         tags: {tier: sealed}

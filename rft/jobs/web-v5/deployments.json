@@ -1,0 +1,40 @@
+{
+  "resource": "amf-mai-shoppingbench-resource",
+  "resource_group": "alicia-rl-demo",
+  "subscription_id": "507baf40-e783-4961-baf7-d7bc3109baab",
+  "region": "swedencentral",
+  "job_id": "ftjob-b057fdb754bd4034817b79ef32fc8680",
+  "deployments": [
+    {
+      "name": "mai-sb-web-v5-step6",
+      "checkpoint_id": "ftchkpt-aa853118f9e4494182f55611c3a1ffe9",
+      "model": "MAI-Code-1.1-Flash-2026-09-15.ft-b057fdb754bd4034817b79ef32fc8680-mai-sb-web-rft-v5:ckpt-step-6",
+      "model_format": "OpenAI",
+      "model_version": "1",
+      "sku": "DeveloperTier",
+      "capacity": 50,
+      "provisioning_state": "Succeeded"
+    },
+    {
+      "name": "mai-sb-web-v5-step8",
+      "checkpoint_id": "ftchkpt-0f25bb0b68164ed6a7edde30d6769991",
+      "model": "MAI-Code-1.1-Flash-2026-09-15.ft-b057fdb754bd4034817b79ef32fc8680-mai-sb-web-rft-v5:ckpt-step-8",
+      "model_format": "OpenAI",
+      "model_version": "1",
+      "sku": "DeveloperTier",
+      "capacity": 50,
+      "provisioning_state": "Succeeded"
+    },
+    {
+      "name": "mai-sb-web-v5-final",
+      "checkpoint_id": "ftchkpt-b7adb48f7281482cacc5c8733dc4a129",
+      "model": "MAI-Code-1.1-Flash-2026-09-15.ft-b057fdb754bd4034817b79ef32fc8680-mai-sb-web-rft-v5",
+      "model_format": "OpenAI",
+      "model_version": "1",
+      "sku": "DeveloperTier",
+      "capacity": 50,
+      "provisioning_state": "Succeeded"
+    }
+  ],
+  "selected_deployment": "mai-sb-web-v5-final"
+}

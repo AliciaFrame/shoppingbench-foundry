@@ -51,7 +51,8 @@ The Container App identity receives only `Search Index Data Reader`.
 | `GET /find_product` | Search |
 | `GET /view_product_information` | Detail inspection |
 | `POST /rft/tools/{tool_name}` | Foundry RFT function-call adapter |
-| `POST /grade` | Deterministic endpoint grader |
+| `POST /grade/v3` | Canonical RFT endpoint grader |
+| `POST /grade/web/v5` | Hardened catalog-Web RFT endpoint grader |
 
 Set `SHOPPINGBENCH_API_TOKEN` to require bearer authentication on all tool and
 grader calls.

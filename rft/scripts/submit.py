@@ -6,21 +6,20 @@ import os
 import time
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError
-from urllib.parse import urlparse
-from urllib.request import Request, urlopen
 
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import NotFoundError, OpenAI
 
+from shoppingbench_foundry.tool_definitions import chat_completions_tools
+
 SUFFIXES = {
-    "product": "mai-sb-prod-rft1",
-    "shop": "mai-sb-shop-rft1",
-    "voucher": "mai-sb-vouch-rft1",
-    "web": "mai-sb-web-rft2",
+    "product": "mai-sb-product-rft",
+    "shop": "mai-sb-shop-rft",
+    "voucher": "mai-sb-voucher-rft",
+    "web": "mai-sb-web-rft",
 }
 TOOL_NAMES = ["find_product", "view_product_information", "recommend_product", "terminate"]
-GRADER_VERSIONS = ("v1", "v2", "v3")
+WEB_SEARCH_TOOL_NAMES = ["web_search", *TOOL_NAMES]
 
 
 def _required_env(name: str) -> str:
@@ -76,11 +75,12 @@ def _wait_for_file(client: OpenAI, file_id: str) -> None:
         time.sleep(2)
 
 
-def _validate_agentic_dataset(path: Path) -> None:
+def _validate_agentic_dataset(path: Path, task: str = "web") -> list[str]:
     with path.open(encoding="utf-8") as handle:
         rows = [json.loads(line) for line in handle if line.strip()]
     if not rows:
         raise ValueError(f"{path} is empty")
+    expected_names: list[str] | None = None
     for index, row in enumerate(rows, start=1):
         if not isinstance(row.get("messages"), list) or not row["messages"]:
             raise ValueError(f"{path}:{index} must contain non-empty messages")
@@ -94,19 +94,29 @@ def _validate_agentic_dataset(path: Path) -> None:
             for tool in tools
             if isinstance(tool, dict)
         ]
-        if names != TOOL_NAMES:
+        if names not in (TOOL_NAMES, WEB_SEARCH_TOOL_NAMES):
             raise ValueError(
-                f"{path}:{index} tool names must exactly match the job config: {TOOL_NAMES}"
+                f"{path}:{index} tool names must match a supported job config"
             )
+        if expected_names is None:
+            expected_names = names
+        elif names != expected_names:
+            raise ValueError(f"{path}:{index} tool names differ from earlier rows")
         if any(
             tool.get("type") != "function"
             or not isinstance(tool.get("function", {}).get("parameters"), dict)
             for tool in tools
         ):
             raise ValueError(f"{path}:{index} contains an invalid function tool schema")
+        expected_tools = chat_completions_tools(task)
+        if names == TOOL_NAMES and tools != expected_tools:
+            raise ValueError(
+                f"{path}:{index} tool schemas do not match the canonical {task} contract"
+            )
+    return expected_names or []
 
 
-def _tools() -> list[dict[str, Any]]:
+def _tools(tool_names: list[str]) -> list[dict[str, Any]]:
     base_url = _required_env("SHOPPINGBENCH_TOOL_BASE_URL").rstrip("/")
     token = _required_env("SHOPPINGBENCH_API_TOKEN")
     return [
@@ -115,55 +125,32 @@ def _tools() -> list[dict[str, Any]]:
             "server_url": f"{base_url}/rft/tools/{name}",
             "headers": {"Authorization": f"Bearer {token}"},
         }
-        for name in TOOL_NAMES
+        for name in tool_names
     ]
 
 
-def _private_preview_url() -> str:
-    value = _required_env("RFT_PRIVATE_PREVIEW_JOBS_URL")
-    parsed = urlparse(value)
-    if (
-        parsed.scheme != "https"
-        or not parsed.hostname
-        or parsed.username
-        or parsed.password
-        or parsed.fragment
-        or not parsed.path.endswith("/openai/1p/jobs")
-    ):
-        raise RuntimeError("RFT_PRIVATE_PREVIEW_JOBS_URL must be an HTTPS /openai/1p/jobs URL")
-    return value
-
-
-def _suffix(task: str, grader_version: str) -> str:
+def _suffix(task: str, grader_version: str = "v3") -> str:
     if grader_version == "v3":
-        return {
-            "product": "mai-sb-prod-rft2",
-            "shop": "mai-sb-shop-rft2",
-            "voucher": "mai-sb-vouch-rft2",
-            "web": "mai-sb-web-rft4",
-        }[task]
-    if grader_version == "v2":
-        if task != "web":
-            raise ValueError("The v2 grader currently supports only the Web task")
-        return "mai-sb-web-rft3"
-    return SUFFIXES[task]
+        return SUFFIXES[task]
+    if task == "web" and grader_version == "web-v5":
+        return "mai-sb-web-rft-v5"
+    raise ValueError(f"Unsupported grader version for {task}: {grader_version}")
 
 
 def _endpoint_grader(
     task: str,
     threshold: float,
-    grader_version: str = "v1",
+    grader_version: str = "v3",
 ) -> dict[str, Any]:
     base_url = _required_env("SHOPPINGBENCH_TOOL_BASE_URL").rstrip("/")
     token = _required_env("SHOPPINGBENCH_API_TOKEN")
-    if grader_version not in GRADER_VERSIONS:
-        raise ValueError(f"Unknown grader version: {grader_version}")
-    if grader_version == "v2" and task != "web":
-        raise ValueError("The v2 grader currently supports only the Web task")
+    if grader_version not in {"v3", "web-v5"}:
+        raise ValueError(f"Unsupported grader version: {grader_version}")
+    if grader_version == "web-v5" and task != "web":
+        raise ValueError("The Web v5 grader is Web-specific")
     route = {
-        "v1": "/grade",
-        "v2": "/grade/v2",
         "v3": "/grade/v3",
+        "web-v5": "/grade/web/v5",
     }[grader_version]
     return {
         "type": "endpoint",
@@ -175,96 +162,36 @@ def _endpoint_grader(
     }
 
 
-def _private_preview_payload(
-    *,
-    model: str,
-    training_file_id: str,
-    validation_file_id: str,
+def _reinforcement_config(
     task: str,
-    training_type: str,
     threshold: float,
-    grader_version: str = "v1",
+    grader_version: str,
     n_epochs: int = 2,
     batch_size: int = 8,
     learning_rate_multiplier: float = 1.0,
     eval_interval: int = 5,
     eval_samples: int = 10,
     max_episode_steps: int = 12,
+    minimal_payload: bool = False,
+    tool_names: list[str] | None = None,
 ) -> dict[str, Any]:
-    return {
-        "fineTuningJobType": "fineTuning",
-        "fineTuningJobCreation": {
-            "model": model,
-            "training_file": training_file_id,
-            "validation_file": validation_file_id,
-            "trainingType": training_type,
-            "suffix": _suffix(task, grader_version),
-            "method": {
-                "type": "reinforcement",
-                "reinforcement": {
-                    "grader": _endpoint_grader(task, threshold, grader_version),
-                    "tools": _tools(),
-                    "max_episode_steps": max_episode_steps,
-                    "hyperparameters": {
-                        "eval_interval": eval_interval,
-                        "eval_samples": eval_samples,
-                        "compute_multiplier": 1.0,
-                        "learning_rate_multiplier": learning_rate_multiplier,
-                        "reasoning_effort": "medium",
-                        "number_of_epochs": n_epochs,
-                        "batch_size": batch_size,
-                    },
-                },
-            },
-        },
-        "execution_config": {
-            "type": "blossom",
-            "blossom": {
-                "recipe": {
-                    "name": os.getenv("MAI_RFT_RECIPE_NAME", "mai-code-1-flash"),
-                    "version": int(os.getenv("MAI_RFT_RECIPE_VERSION", "11")),
-                }
-            },
-        },
+    reinforcement: dict[str, Any] = {
+        "grader": _endpoint_grader(task, threshold, grader_version),
+        "tools": _tools(tool_names or TOOL_NAMES),
+        "max_episode_steps": max_episode_steps,
     }
-
-
-def _recipe_from_job(value: Any) -> dict[str, Any] | None:
-    if isinstance(value, dict):
-        recipe = value.get("recipe")
-        if isinstance(recipe, dict) and "name" in recipe and "version" in recipe:
-            return {"name": recipe["name"], "version": recipe["version"]}
-        for nested in value.values():
-            found = _recipe_from_job(nested)
-            if found is not None:
-                return found
-    elif isinstance(value, list):
-        for nested in value:
-            found = _recipe_from_job(nested)
-            if found is not None:
-                return found
-    return None
-
-
-def _post_private_preview(payload: dict[str, Any]) -> dict[str, Any]:
-    api_key = _required_env("AZURE_OPENAI_API_KEY")
-    request = Request(
-        _private_preview_url(),
-        data=json.dumps(payload, separators=(",", ":")).encode(),
-        headers={"api-key": api_key, "Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urlopen(request, timeout=120) as response:
-            result = json.load(response)
-    except HTTPError as error:
-        detail = error.read().decode("utf-8", errors="replace")
-        raise RuntimeError(
-            f"Private-preview submission failed with HTTP {error.code}: {detail}"
-        ) from error
-    if not isinstance(result, dict):
-        raise TypeError("Private-preview job response must be a JSON object")
-    return result
+    if not minimal_payload:
+        reinforcement["pass_threshold"] = threshold
+        reinforcement["hyperparameters"] = {
+            "n_epochs": n_epochs,
+            "batch_size": batch_size,
+            "learning_rate_multiplier": learning_rate_multiplier,
+            "eval_interval": eval_interval,
+            "eval_samples": eval_samples,
+            "compute_multiplier": 1.0,
+            "reasoning_effort": "medium",
+        }
+    return reinforcement
 
 
 def submit(
@@ -272,8 +199,7 @@ def submit(
     data_dir: Path,
     threshold: float,
     minimal_payload: bool = False,
-    private_preview: bool = False,
-    grader_version: str = "v1",
+    grader_version: str = "v3",
     n_epochs: int = 2,
     batch_size: int = 8,
     learning_rate_multiplier: float = 1.0,
@@ -283,12 +209,13 @@ def submit(
 ) -> dict[str, Any]:
     client = _client()
     model_id = _model()
-    if not private_preview:
-        _validate_model(client, model_id)
+    _validate_model(client, model_id)
     train_path = data_dir / f"{task}-train.jsonl"
     validation_path = data_dir / f"{task}-validation.jsonl"
-    _validate_agentic_dataset(train_path)
-    _validate_agentic_dataset(validation_path)
+    tool_names = _validate_agentic_dataset(train_path, task)
+    validation_tool_names = _validate_agentic_dataset(validation_path, task)
+    if validation_tool_names != tool_names:
+        raise ValueError("Training and validation datasets use different tool profiles")
     with train_path.open("rb") as handle:
         train_file = client.files.create(file=handle, purpose="fine-tune")
     with validation_path.open("rb") as handle:
@@ -296,98 +223,50 @@ def submit(
     _wait_for_file(client, train_file.id)
     _wait_for_file(client, validation_file.id)
 
-    server_recipe = None
-    requested_recipe = None
-    training_type = os.getenv(
-        "MAI_RFT_TRAINING_TYPE",
-        "GlobalStandard" if private_preview else "globalStandard",
+    training_type = os.getenv("MAI_RFT_TRAINING_TYPE", "").strip() or None
+    reinforcement = _reinforcement_config(
+        task,
+        threshold,
+        grader_version,
+        n_epochs,
+        batch_size,
+        learning_rate_multiplier,
+        eval_interval,
+        eval_samples,
+        max_episode_steps,
+        minimal_payload,
+        tool_names,
     )
-    if private_preview:
-        payload = _private_preview_payload(
-            model=model_id,
-            training_file_id=train_file.id,
-            validation_file_id=validation_file.id,
-            task=task,
-            training_type=training_type,
-            threshold=threshold,
-            grader_version=grader_version,
-            n_epochs=n_epochs,
-            batch_size=batch_size,
-            learning_rate_multiplier=learning_rate_multiplier,
-            eval_interval=eval_interval,
-            eval_samples=eval_samples,
-            max_episode_steps=max_episode_steps,
-        )
-        requested_recipe = payload["execution_config"]["blossom"]["recipe"]
-        job_data = _post_private_preview(payload)
-        server_recipe = _recipe_from_job(job_data)
-        job_id = str(job_data.get("id", ""))
-        status = str(job_data.get("status", ""))
-        if not job_id:
-            raise RuntimeError("Private-preview submission returned no job ID")
-    else:
-        reinforcement: dict[str, Any] = {
-            "grader": _endpoint_grader(task, threshold, grader_version),
-            "tools": _tools(),
-            "max_episode_steps": max_episode_steps,
-        }
-        if not minimal_payload:
-            reinforcement.update(
-                {
-                    "pass_threshold": threshold,
-                    "hyperparameters": {
-                        "n_epochs": n_epochs,
-                        "batch_size": batch_size,
-                        "learning_rate_multiplier": learning_rate_multiplier,
-                        "eval_interval": eval_interval,
-                        "eval_samples": eval_samples,
-                        "compute_multiplier": 1.0,
-                        "reasoning_effort": "medium",
-                    },
-                }
-            )
-        job = client.fine_tuning.jobs.create(
-            model=model_id,
-            training_file=train_file.id,
-            validation_file=validation_file.id,
-            suffix=_suffix(task, grader_version),
-            extra_body={"trainingType": training_type},
-            method={
-                "type": "reinforcement",
-                "reinforcement": reinforcement,
-            },
-        )
-        job_id = job.id
-        status = job.status
+    create_kwargs: dict[str, Any] = {
+        "model": model_id,
+        "training_file": train_file.id,
+        "validation_file": validation_file.id,
+        "suffix": _suffix(task, grader_version),
+        "method": {
+            "type": "reinforcement",
+            "reinforcement": reinforcement,
+        },
+    }
+    if training_type is not None:
+        create_kwargs["extra_body"] = {"trainingType": training_type}
+    job = client.fine_tuning.jobs.create(
+        **create_kwargs,
+    )
     return {
         "task": task,
         "model": model_id,
         "suffix": _suffix(task, grader_version),
         "grader_version": grader_version,
         "training_type": training_type,
-        "job_id": job_id,
-        "status": status,
+        "job_id": job.id,
+        "status": job.status,
         "training_file": train_file.id,
         "validation_file": validation_file.id,
         "pass_threshold": threshold,
-        "submission_mode": "exact-recipe-preview" if private_preview else "public-v1",
-        "max_episode_steps": (
-            payload["fineTuningJobCreation"]["method"]["reinforcement"][
-                "max_episode_steps"
-            ]
-            if private_preview
-            else max_episode_steps
-        ),
-        "hyperparameters": (
-            payload["fineTuningJobCreation"]["method"]["reinforcement"][
-                "hyperparameters"
-            ]
-            if private_preview
-            else reinforcement.get("hyperparameters")
-        ),
-        "requested_recipe": requested_recipe,
-        "server_returned_recipe": server_recipe,
-        "recipe_confirmed": (None if server_recipe is None else server_recipe == requested_recipe),
+        "submission_mode": "public-v1",
+        "max_episode_steps": max_episode_steps,
+        "hyperparameters": reinforcement.get("hyperparameters"),
+        "tools": tool_names,
     }
 
 
@@ -400,8 +279,11 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--allow-low-signal", action="store_true")
     parser.add_argument("--minimal-payload", action="store_true")
-    parser.add_argument("--private-preview", action="store_true")
-    parser.add_argument("--grader-version", choices=GRADER_VERSIONS, default="v3")
+    parser.add_argument(
+        "--grader-version",
+        choices=("v3", "web-v5"),
+        default="v3",
+    )
     parser.add_argument("--pass-threshold", type=float)
     parser.add_argument("--n-epochs", type=int, default=2)
     parser.add_argument("--batch-size", type=int, default=8)
@@ -438,7 +320,6 @@ def main() -> None:
             else float(calibration["recommended_pass_threshold"])
         ),
         minimal_payload=args.minimal_payload,
-        private_preview=args.private_preview,
         grader_version=args.grader_version,
         n_epochs=args.n_epochs,
         batch_size=args.batch_size,
@@ -452,11 +333,6 @@ def main() -> None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered + "\n", encoding="utf-8")
     print(rendered)
-    if result["recipe_confirmed"] is False:
-        raise SystemExit(
-            "The submitted job did not confirm the requested Blossom recipe; "
-            "inspect the saved job record before continuing"
-        )
 
 
 if __name__ == "__main__":

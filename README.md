@@ -1,306 +1,120 @@
-# ShoppingBench on Microsoft Foundry
+# ShoppingBench agent hardening on Microsoft Foundry
 
 [![CI](https://github.com/AliciaFrame/shoppingbench-foundry/actions/workflows/ci.yml/badge.svg)](https://github.com/AliciaFrame/shoppingbench-foundry/actions/workflows/ci.yml)
 
-An end-to-end, reproducible demo of improving tool-using shopping agents with
-deterministic evaluation, Microsoft Foundry Agent Optimizer, and agentic
-reinforcement fine-tuning (RFT).
+This repository is a reproducible end-to-end demonstration of improving
+tool-using shopping agents on Microsoft Foundry.
 
-This repository packages four ShoppingBench task families as hosted agents
-powered by MAI-Code-1.1-Flash. It includes the Azure tool runtime, controlled
-product corpus, agent configurations, fixed evaluation splits, raw experiment
-receipts, optimization workflows, and RFT submission code.
+ShoppingBench evaluates whether an agent can search a product catalog, inspect
+evidence, recommend the correct product IDs, terminate cleanly, and return a
+grounded user-facing answer. The included tasks cover:
 
-## What the benchmark tests
+- **Product:** select one item satisfying all constraints.
+- **Shop:** select multiple requested items from the same shop.
+- **Voucher:** apply shop scope, threshold, discount, and budget arithmetic.
+- **Catalog Web:** resolve a factual clue from model knowledge, then select the
+  matching catalog product.
+- **Live Web Search:** resolve the clue with native Responses API web search,
+  then select the matching catalog product.
 
-| Task | Agent must | Why it matters |
-|---|---|---|
-| **Product** | Find one item satisfying title, price, service, SKU, and attribute constraints | Tests precise retrieval, inspection, and constraint satisfaction |
-| **Shop** | Find several requested products sold by the same shop | Tests multi-item planning and a cross-product invariant |
-| **Voucher** | Select products that satisfy voucher threshold, discount, shop scope, and final budget | Tests tool use plus arithmetic and policy constraints |
-| **Web** | Resolve a factual clue, use it to search, inspect the result, and recommend the matching product | Tests knowledge-to-action grounding rather than answer-only recall |
+## What we did
 
-The agent interacts through four tools:
+Each task follows one evaluation spine:
 
-1. `find_product` searches the product index.
-2. `view_product_information` inspects full details.
-3. `recommend_product` submits ordered product IDs.
-4. `terminate` explicitly closes the episode.
+1. build leakage-safe, connected-group-disjoint datasets;
+2. measure an off-the-shelf baseline;
+3. run Agent Optimizer without changing model weights;
+4. use reinforcement fine-tuning only when calibration shows useful signal;
+5. evaluate every retained configuration on the same deterministic grader;
+6. report score, latency, and token cost together.
 
-These tasks are useful because a fluent final answer is not enough. The agent
-must retrieve the right objects, inspect evidence, preserve ordering, satisfy
-task-specific invariants, and follow a reliable tool protocol.
+Agent Optimizer produced the retained Product, Shop, and Live Web Search
+agents. Voucher improved further with RFT Step 10. Catalog Web uses the
+hardened v5 reward and its selected final checkpoint. Live Web Search RFT is
+still work in progress and is intentionally excluded from the published RFT
+configuration and results.
 
-## Architecture
+## Final development results
 
-```mermaid
-flowchart LR
-    User[Shopping request] --> Agent[Foundry hosted agent]
-    Agent --> Model[MAI-Code-1.1-Flash]
-    Agent --> Tools[Container Apps tool API]
-    Tools --> Search[Azure AI Search]
-    Eval[Deterministic graders] --> Tools
-    Optimizer[Foundry Agent Optimizer] --> Agent
-    RFT[Agentic RFT] --> Tools
-    RFT --> Eval
-```
+Every stage below uses the same 30-case development split for its task, three
+rollouts per case, and 90 total episodes. Values are mean deterministic score,
+seconds per episode, and total tokens per episode.
 
-See [docs/architecture.md](docs/architecture.md) for component and data-flow
-details. See [docs/reproducibility.md](docs/reproducibility.md) for the
-clean-clone verification path and the complete cloud rerun sequence.
+| Task | Stage | Mean score | Latency | Tokens |
+|---|---|---:|---:|---:|
+| **Product** | Base | 0.7529 | 31.80s | 16,227 |
+|  | **Agent Optimized** | **0.9408** | **16.22s** | **13,948** |
+|  | RFT | — | — | — |
+| **Shop** | Base | 0.7957 | 51.31s | **14,821** |
+|  | **Agent Optimized** | **0.9371** | **25.56s** | 33,799 |
+|  | RFT | — | — | — |
+| **Voucher** | Base | 0.8547 | 61.75s | **20,892** |
+|  | Agent Optimized | 0.8606 | 35.17s | 30,897 |
+|  | **RFT Step 10** | **0.9248** | **23.10s** | 29,610 |
+| **Catalog Web** | Base | 0.6911 | 99.74s | 77,709 |
+|  | Agent Optimized | **0.7286** | 100.97s | 97,156 |
+|  | **Hardened v5 RFT final** | 0.7175 | **48.75s** | **37,278** |
+| **Live Web Search** | Base | 0.7636 | **13.77s** | **13,586** |
+|  | **Agent Optimized** | **0.9047** | 15.23s | 17,779 |
+|  | RFT | **WIP** | **WIP** | **WIP** |
 
-## Historical v1 measured results
+### Selected result versus base
 
-These are the original published v1 results. The 50-case sets were excluded
-from training, but they were reused for candidate and checkpoint selection and
-therefore functioned as development sets rather than sealed final tests. Web
-also contained three holdout cases whose target product IDs appeared in RFT
-training. See the
-[v1 methodology audit](docs/audits/v1-methodology-audit.md) and immutable
-[evidence manifest](docs/audits/v1-evidence-manifest.json).
+| Task | Selected stage | Score gain | Latency change | Token change |
+|---|---|---:|---:|---:|
+| Product | Agent Optimized | **+0.1880** | **-49.0%** | **-14.0%** |
+| Shop | Agent Optimized | **+0.1414** | **-50.2%** | +128.0% |
+| Voucher | RFT Step 10 | **+0.0700** | **-62.6%** | +41.7% |
+| Catalog Web | Hardened v5 RFT final | **+0.0264** | **-51.1%** | **-52.0%** |
+| Live Web Search | Agent Optimized | **+0.1411** | +10.6% | +30.9% |
 
-| Task | Initial canonical | Final canonical | Final success | Final termination | Retained change |
-|---|---:|---:|---:|---:|---|
-| Product | 0.753 | **0.961** | 48/50 | 49/50 | Tool definitions |
-| Shop | 0.860 | **0.998** | 49/50 | 50/50 | Instructions + tool definitions |
-| Voucher | 0.898 | **0.995** | 49/50 | 49/50 | RFT Step 12 checkpoint |
-| Web | 0.790 | **0.901** | 44/50 | 47/50 | RFT Step 10 checkpoint |
-
-Under the v1 scoring contract, the mean canonical score increased from
-approximately **0.825 to 0.964**.
-Agent Optimizer supplied the retained improvement for Product and Shop and
-established the Voucher policy used for training. Agentic RFT supplied the
-final bridge for both Voucher (`0.955` to `0.995`) and Web (`0.790` to
-`0.901`).
-
-The Web RFT result came from checkpoint selection, not blindly deploying the
-final artifact:
-
-| Web model | Canonical score | Exact product | Perfect | Terminated |
-|---|---:|---:|---:|---:|
-| Base model + retained agent | 0.790 | 38/50 | 32/50 | 40/50 |
-| RFT Step 10 | **0.901** | **44/50** | **43/50** | **47/50** |
-| RFT Step 15 | 0.836 | 40/50 | 40/50 | 46/50 |
-| RFT final | 0.795 | 39/50 | 36/50 | 40/50 |
-
-The later checkpoints regressed, demonstrating why checkpoint evaluation is a
-required part of the workflow. The tracked comparison receipt is
-[`rft/results/web-rft3-holdout-comparison.json`](rft/results/web-rft3-holdout-comparison.json).
-
-Voucher showed the complementary outcome: Step 12 improved 24 cases, tied 26,
-and regressed none under the v1 aggregate score. Exact selection improved from
-46/50 to 49/50, while termination improved from 29/50 to 49/50, so most of the
-measured gain was protocol completion rather than demonstrated arithmetic
-reasoning. The tracked comparison is
-[`rft/results/voucher-rft1-holdout-comparison.json`](rft/results/voucher-rft1-holdout-comparison.json).
-
-A final Agent Optimizer pass around Web Step 10 also stopped at the
-deterministic gate. Its nominated system-prompt candidate raised the optimizer
-judge from `0.584625` to `0.5885` and reduced token use, but canonical quality
-fell from `0.901` to `0.871` and exact selection from 44/50 to 41/50. Step 10
-with the retained agent configuration remains final.
-
-## Current v2 remediation evidence
-
-All four retained task configurations have now been evaluated on their
-leakage-safe 30-case development splits with three rollouts per case, the final
-sequential tool protocol, and a 12-step bound. These are model-selection
-results, not sealed final-test estimates.
-
-| Task/artifact | Mean | Exact | Success | Valid final answer |
-|---|---:|---:|---:|---:|
-| Product retained agent | 0.9408 | 84/90 | 74/90 | 87/90 |
-| Shop retained agent | 0.9371 | 84/90 | 84/90 | 85/90 |
-| Voucher v3 Step 10 | 0.9248 | 83/90 | 78/90 | 78/90 |
-| **Web historical Step 10 (selected)** | **0.7347** | **64/90** | **61/90** | **64/90** |
-
-Web Step 10's mean and exact-selection changes versus the base model were
-inconclusive, but it materially improved complete success (`31/90` to `61/90`)
-and reduced mean token use from 97,156 to 59,853. A new grader-v3 Web RFT
-experiment completed, but all three deployable checkpoints regressed:
-
-| Web RFT4 artifact | Mean | Exact | Success | Mean tokens |
-|---|---:|---:|---:|---:|
-| Step 6 | 0.6500 | 59/90 | 45/90 | 68,757 |
-| Step 9 | 0.6717 | 60/90 | 54/90 | 79,135 |
-| Final/Step 12 | 0.6669 | 59/90 | 57/90 | 88,009 |
-
-Relative to retained Step 10, every RFT4 artifact had a lower mean, fewer
-exact selections and complete successes, higher token use, and higher latency.
-The retained historical Step 10 therefore remains the frozen Web operating
-point; no hosted-agent redeployment was made.
-
-### Sealed final-test results
-
-After every model, prompt, skill, tool, grader, and checkpoint choice was
-frozen, each disjoint 50-case final-test split was opened exactly once:
-
-| Task | Mean | Exact | Success | Valid final answer | Mean tokens |
-|---|---:|---:|---:|---:|---:|
-| Product | **0.9385** | 46/50 | 46/50 | 49/50 | 11,975 |
-| Shop | **0.9047** | 45/50 | 44/50 | 45/50 | 34,917 |
-| Voucher | **0.8625** | 43/50 | 40/50 | 41/50 | 31,349 |
-| Web | **0.6305** | 32/50 | 20/50 | 20/50 | 64,083 |
-
-Shop includes one malformed-ID tool failure scored as zero. Voucher includes
-one malformed-ID tool failure and one Azure content-filter rejection, both
-scored as zero. None was rerolled. Web's lower sealed result confirms that
-knowledge-to-search generalization remains the principal unresolved
-bottleneck; the final results were not used to launch another optimization or
-training round.
-
-### Voucher checkpoint selection
-
-| Voucher artifact | Mean | Exact | Success | Valid final answer | Mean tokens |
-|---|---:|---:|---:|---:|---:|
-| Historical Step 12 retained model | 0.9029 | 81/90 | 74/90 | 75/90 | 38,076 |
-| **v3 Step 10 (selected)** | **0.9248** | 83/90 | **78/90** | **78/90** | **29,610** |
-| v3 Step 15 | 0.8980 | 80/90 | 74/90 | 77/90 | 29,077 |
-| v3 final | **0.9253** | **84/90** | 71/90 | 71/90 | 30,950 |
-
-The final checkpoint's one-rollout exact advantage over Step 10 was inside the
-clustered confidence interval. It also lost seven complete successes, produced
-seven fewer valid final answers, used 1,340 more tokens per episode, and added
-2.14 seconds of mean latency. Step 10 is therefore the selected operating
-point. The direct paired receipt is
-[`evaluations/results/v2/voucher-v3-final-vs-step10.json`](evaluations/results/v2/voucher-v3-final-vs-step10.json).
-
-Raw 50-case receipts are in
-[`optimization/results/raw`](optimization/results/raw), with a machine-readable
-summary in
-[`optimization/results/summary.json`](optimization/results/summary.json).
-RFT status and results are tracked under [`rft/results`](rft/results).
-Committed job JSON files are immutable submission receipts; live status files
-are generated by the monitor and intentionally ignored to avoid publishing
-resource-specific operational churn. The first Web receipt documents a
-pre-training tool-schema validation failure. The successful `rft3` receipt
-records the calibrated v2 grader,
-`developerTier` training type, and exact uploaded files.
+The machine-readable source for these tables is
+[`evals/results/summary.json`](evals/results/summary.json), generated from the
+committed JSONL receipts by
+[`evals/scripts/build_release_summary.py`](evals/scripts/build_release_summary.py).
 
 ## Repository map
 
-| Directory | Contents |
+| Directory | Purpose |
 |---|---|
-| [`data`](data) | Frozen public tasks, controlled search corpus, deterministic preparation |
-| [`azure`](azure) | Bicep infrastructure and Container Apps tool/grader runtime |
-| [`agents`](agents) | Four task entry points, retained configurations, hosted-agent manifest |
-| [`evaluations`](evaluations) | Fixed datasets, canonical grader, RFT grader, evaluation runner |
-| [`optimization`](optimization) | Per-task seeds, Agent Optimizer runner, raw receipts, results |
-| [`rft`](rft) | Data preparation, calibration, submission, monitoring, receipts |
-| [`docs`](docs) | Architecture, results interpretation, and demo walkthrough |
+| [`agents`](agents) | Runnable baseline and optimized agents, including the native live-web-search runtime |
+| [`data`](data) | Frozen ShoppingBench rows and deterministic catalog generation |
+| [`evals`](evals) | Lifecycle datasets, evaluation scripts, receipts, comparisons, and release summary |
+| [`optimize`](optimize) | Agent Optimizer runner and reproducible seed configurations |
+| [`rft`](rft) | Voucher and hardened Catalog Web data preparation, calibration, submission, and job receipts |
+| [`src/shoppingbench_foundry`](src/shoppingbench_foundry) | Tool API, canonical grader, RFT graders, and catalog store |
+| [`azure`](azure) | Azure deployment infrastructure for the tool and grader API |
+| [`docs`](docs/README.md) | Architecture, results, reproducibility, and demo walkthrough |
+| [`CHANGELOG.md`](CHANGELOG.md) | Superseded experiments and methodology changes |
 
-## Quick start
-
-### 1. Install
+## Reproduce locally
 
 ```powershell
-git clone https://github.com/aliciaframe/shoppingbench-foundry.git
-Set-Location shoppingbench-foundry
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -e ".[agents,dev]"
-```
-
-Copy `.env.example` to `.env` and fill only the resources you intend to use.
-Use managed identity or `DefaultAzureCredential` wherever supported; do not
-commit keys or bearer tokens.
-
-### 2. Validate and regenerate local artifacts
-
-```powershell
 .\.venv\Scripts\python data\scripts\prepare.py
+.\.venv\Scripts\python rft\scripts\prepare_data.py
+.\.venv\Scripts\python evals\scripts\build_release_summary.py
 .\.venv\Scripts\python -m pytest
+.\.venv\Scripts\python -m ruff check .
 ```
 
-The default command now produces the v2 prepared corpus and connected-group
-splits under `data/prepared/search-documents-v2.jsonl` and
-`evaluations/datasets/v2`. Use `--version v1` only to reproduce the historical
-artifacts. The prepared search corpus contains 1,818 benchmark gold products plus one
-deterministic distractor per gold product (3,636 documents). This controlled
-corpus supports reproducible behavior comparisons; it is intentionally smaller
-than the original ShoppingBench production-scale catalog.
+Live evaluation additionally requires a compatible Responses API deployment,
+the ShoppingBench tool API, and the environment variables documented in
+[`.env.example`](.env.example). See
+[`docs/reproducibility.md`](docs/reproducibility.md) for the full baseline,
+Agent Optimizer, RFT, and comparison commands.
 
-For expected counts, exact model checkpoints, baseline/final configuration
-selection, and cloud rerun caveats, follow
-[docs/reproducibility.md](docs/reproducibility.md).
+## Azure and Foundry
 
-### 3. Provision the Azure tool runtime
+The Azure layer deploys the searchable catalog and authenticated tool/grader
+API. Hosted agents are deployed separately through the Microsoft Foundry
+agent manifest under [`agents/azure.yaml`](agents/azure.yaml).
 
-The included Bicep provisions the search, storage, observability, registry, and
-Container Apps layers. A Microsoft Foundry project and an accessible
-MAI-Code-1.1-Flash deployment are prerequisites supplied through environment
-configuration; they are not created implicitly.
-
-```powershell
-azd auth login
-azd env new shoppingbench-demo
-azd env set SHOPPINGBENCH_API_TOKEN "<generated-secret>"
-azd up
-```
-
-Then grant your indexing identity `Search Index Data Contributor` on the
-created Azure AI Search resource and load the corpus:
-
-```powershell
-python -m shoppingbench_foundry.index_documents `
-  --endpoint $env:AZURE_SEARCH_ENDPOINT `
-  --documents data\prepared\search-documents-v2.jsonl
-```
-
-Full details: [azure/README.md](azure/README.md).
-
-### 4. Deploy the four hosted agents
-
-Configure `FOUNDRY_PROJECT_ENDPOINT`, `SHOPPINGBENCH_TOOL_URL`,
-`SHOPPINGBENCH_API_TOKEN`, and each task's model pair:
-`PRODUCT_*`, `SHOP_*`, `VOUCHER_*`, and `WEB_*` as shown in
-`.env.example`. The task-specific values prevent a retained RFT deployment
-from being applied accidentally to all four agents. Then:
-
-```powershell
-Set-Location agents
-azd deploy
-```
-
-Each task has its own entry point and retained configuration under
-`agents/<task>`. Full details: [agents/README.md](agents/README.md).
-
-### 5. Evaluate, optimize, and train
-
-- Canonical evaluation: [evaluations/README.md](evaluations/README.md)
-- Agent Optimizer: [optimization/README.md](optimization/README.md)
-- Agentic RFT: [rft/README.md](rft/README.md)
-
-## Improvement mechanisms
-
-### Agent Optimizer
-
-Agent Optimizer improves the **agent configuration around the base model**:
-instructions, tool descriptions/schemas, and skills. It does not change model
-weights. Candidate selection is fast and comparatively cheap, but every
-candidate must still pass the deterministic holdout.
-
-### Reinforcement fine-tuning
-
-Agentic RFT updates the **model policy itself** using live multi-step tool
-episodes and a calibrated reward. The Web task was selected first because its
-base policy failed 40% of calibration episodes at the canonical pass threshold,
-providing enough learning signal. Product and Shop were held back because their
-calibrated failure rates were below the signal floor. Voucher produced a 35% failure rate. Its conservative one-epoch RFT run
-retained Step 12 after a no-regression canonical comparison.
-
-## Presenting the demo
-
-Use [docs/demo-walkthrough.md](docs/demo-walkthrough.md) for a presentation
-sequence that starts with the task, runs a tool episode, explains the grader,
-shows optimization evidence, and closes with the RFT experiment.
-
-For an executive-to-technical narrative, open the standalone
-[HTML slide deck](docs/shoppingbench-hill-climb-deck.html). Use the arrow keys
-to navigate or print it to PDF from a browser.
-
-For a single-slide summary that can be dropped into another presentation, use
-the editable [16:9 HTML slide](docs/shoppingbench-hill-climb-summary-slide.html)
-or the rendered [1600x900 PNG](docs/shoppingbench-hill-climb-summary-slide.png).
+RFT is optional, access-dependent, and billable. Published Voucher and Catalog
+Web receipts are under [`rft/jobs`](rft/jobs/README.md). Job, file, model, and
+checkpoint IDs are evidence from the original runs and must not be reused as
+configuration for a new environment.
 
 ## Attribution
 

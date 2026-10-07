@@ -1,0 +1,142 @@
+{
+  "methodology": {
+    "cases": 30,
+    "rollouts_per_case": 3,
+    "episodes_per_stage": 90,
+    "score": "canonical deterministic development score"
+  },
+  "tasks": {
+    "product": {
+      "label": "Product",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.75287,
+          "mean_latency_seconds": 31.800434,
+          "mean_total_tokens": 16227.2
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.940833,
+          "mean_latency_seconds": 16.215882,
+          "mean_total_tokens": 13947.533
+        }
+      },
+      "selected_stage": "optimized",
+      "rft_status": "not_run",
+      "selected_gain_vs_base": {
+        "mean_score": 0.187963,
+        "latency_fraction": -0.490074,
+        "tokens_fraction": -0.140484
+      }
+    },
+    "shop": {
+      "label": "Shop",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.795694,
+          "mean_latency_seconds": 51.312819,
+          "mean_total_tokens": 14821.333
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.937083,
+          "mean_latency_seconds": 25.559206,
+          "mean_total_tokens": 33798.733
+        }
+      },
+      "selected_stage": "optimized",
+      "rft_status": "not_run",
+      "selected_gain_vs_base": {
+        "mean_score": 0.141389,
+        "latency_fraction": -0.501894,
+        "tokens_fraction": 1.280411
+      }
+    },
+    "voucher": {
+      "label": "Voucher",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.854722,
+          "mean_latency_seconds": 61.74678,
+          "mean_total_tokens": 20891.756
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.860625,
+          "mean_latency_seconds": 35.173728,
+          "mean_total_tokens": 30896.778
+        },
+        "rft": {
+          "episodes": 90,
+          "mean_score": 0.924757,
+          "mean_latency_seconds": 23.098198,
+          "mean_total_tokens": 29609.611
+        }
+      },
+      "selected_stage": "rft",
+      "rft_status": "complete",
+      "selected_gain_vs_base": {
+        "mean_score": 0.070035,
+        "latency_fraction": -0.625921,
+        "tokens_fraction": 0.417287
+      }
+    },
+    "catalog_web": {
+      "label": "Catalog Web",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.691111,
+          "mean_latency_seconds": 99.736409,
+          "mean_total_tokens": 77708.767
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.728611,
+          "mean_latency_seconds": 100.970086,
+          "mean_total_tokens": 97156.222
+        },
+        "rft": {
+          "episodes": 90,
+          "mean_score": 0.7175,
+          "mean_latency_seconds": 48.75182,
+          "mean_total_tokens": 37277.933
+        }
+      },
+      "selected_stage": "rft",
+      "rft_status": "complete",
+      "selected_gain_vs_base": {
+        "mean_score": 0.026389,
+        "latency_fraction": -0.511193,
+        "tokens_fraction": -0.520287
+      }
+    },
+    "live_web_search": {
+      "label": "Live Web Search",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.763611,
+          "mean_latency_seconds": 13.765843,
+          "mean_total_tokens": 13585.533
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.904722,
+          "mean_latency_seconds": 15.225456,
+          "mean_total_tokens": 17778.956
+        }
+      },
+      "selected_stage": "optimized",
+      "rft_status": "wip",
+      "selected_gain_vs_base": {
+        "mean_score": 0.141111,
+        "latency_fraction": 0.106032,
+        "tokens_fraction": 0.308668
+      }
+    }
+  }
+}

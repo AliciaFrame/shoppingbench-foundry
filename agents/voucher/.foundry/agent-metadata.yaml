@@ -6,8 +6,8 @@ environments:
     agentName: shoppingbench-voucher-agent
     evaluationSuites:
       - name: voucher-development-v2
-        datasetFile: ../../../evaluations/datasets/v2/voucher-development.jsonl
+        datasetFile: ../../../evals/datasets/development/voucher.jsonl
         tags: {tier: regression}
       - name: voucher-final-v2
-        datasetFile: ../../../evaluations/datasets/v2/voucher-final-test.jsonl
+        datasetFile: ../../../evals/datasets/final/voucher.jsonl
         tags: {tier: sealed}

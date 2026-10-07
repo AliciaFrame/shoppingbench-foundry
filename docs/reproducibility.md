@@ -1,222 +1,184 @@
-# Reproducing the demo
+# Reproducibility
 
-This repository supports two reproducibility levels:
-
-1. **Evidence verification** reproduces every deterministic dataset, split, and
-   published result calculation without Azure access.
-2. **Cloud reruns** redeploy the tools and agents, rerun model episodes, launch
-   Agent Optimizer, and submit RFT jobs. Model sampling and preview services are
-   not bit-for-bit deterministic, so compare canonical metrics rather than raw
-   response text.
-
-## Prerequisites
-
-- Python 3.11 or newer
-- Azure CLI and Azure Developer CLI 1.27.1 or newer
-- An Azure subscription where you can create the resources in `azure/infra`
-- A Microsoft Foundry project with a MAI-Code deployment
-- Foundry Agent Optimizer access for optimization reruns
-- Reinforcement fine-tuning access for RFT reruns
-
-Use `MAI-Code-1.1-Flash-2026-09-15` for the agent and Agent Optimizer
-experiments documented in this repository. The current Web RFT experiment uses
-`mai-code-1.1-flash-2026-08-27`, the checkpoint that advertises fine-tuning
-capability in Sweden Central.
-
-## Verify the published evidence
-
-From a clean clone:
+## Install
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -e ".[agents,dev]"
-.\.venv\Scripts\python data\scripts\prepare.py
-.\.venv\Scripts\python rft\scripts\prepare_data.py
-.\.venv\Scripts\python -m pytest
-.\.venv\Scripts\python -m ruff check .
 ```
 
-Expected deterministic outputs:
+Cloud evaluation also requires the environment variables documented in
+`.env.example`, including the model endpoint, task model deployment, tool
+endpoint, and API token.
 
-- 900 source cases
-- 3,636 search documents
-- connected-group v2 splits per task:
-  - training pool: 170 Product/Shop/Voucher, 70 Web
-  - checkpoint development: 30
-  - sealed final test: 50
-- RFT train/validation rows:
-  - Product, Shop, Voucher: 150/20
-  - Web: 50/20
-- five calibration rollouts per validation case
-- zero product/answer leakage across training, development, and final test
-- documented v1 metrics matching the immutable raw receipts and manifest
+The commands below separate three levels of reproduction:
 
-## Deploy the tools
+1. deterministic local generation and tests;
+2. live evaluation against compatible model and tool deployments;
+3. optional Agent Optimizer and RFT runs that require separate Foundry access.
 
-Copy `.env.example` to `.env`, generate a bearer token of at least 32
-characters, then follow `azure/README.md`.
-
-The API fails closed when `SHOPPINGBENCH_API_TOKEN` is absent. Set
-`SHOPPINGBENCH_ALLOW_ANONYMOUS=true` only for an explicitly isolated local
-development process.
-
-After provisioning:
-
-1. Grant the indexing identity `Search Index Data Contributor`.
-2. Load `data/prepared/search-documents-v2.jsonl`.
-3. Confirm `/health` returns `{"status":"ok"}`.
-4. Confirm protected tool requests return `401` without the bearer token and
-   succeed with it.
-
-## Deploy and evaluate agents
-
-Set the model, project, and tool variables described in `.env.example`, then
-deploy from `agents/`.
-
-For final retained behavior, each agent uses `agents/<task>/config`. To rerun a
-baseline, set `OPTIMIZATION_LOCAL_DIR` to
-`optimization/<task>/baseline` before invoking the evaluator. Round-two seeds
-are under `optimization/<task>/round2-start`.
-
-Use `*-development.jsonl` while selecting configurations and checkpoints:
+## Regenerate deterministic artifacts
 
 ```powershell
-$env:SHOPPINGBENCH_TASK = "product"
-$env:OPTIMIZATION_LOCAL_DIR = "agents/product/config"
-python evaluations\scripts\evaluate_agent.py `
-  --dataset evaluations\datasets\v2\product-development.jsonl `
-  --documents data\prepared\search-documents-v2.jsonl `
-  --output .foundry\results\v2\product-development.jsonl `
-  --workers 1
+python data\scripts\prepare.py
+python rft\scripts\prepare_data.py
+git diff --exit-code -- data\prepared evals\datasets rft\data
 ```
 
-Repeat with `shop`, `voucher`, and `web`. Freeze all model, prompt, skill, tool,
-grader, and checkpoint choices before evaluating `*-final-test.jsonl`. Do not
-use final-test results to launch another optimization or training round.
+Expected split sizes per task are 20 optimizer round-one cases, 40 optimizer
+round-two cases, 30 development cases, and 50 final-test cases. RFT uses 20
+validation cases; Product, Shop, and Voucher have 150 training cases, while Web
+has 50.
 
-The current Voucher v2 checkpoint decision used three rollouts per development
-case. Evaluate `mai-sb-vouch-v3-step10`, `mai-sb-vouch-v3-step15`, and
-`mai-sb-vouch-v3-final` with `SHOPPINGBENCH_TASK=voucher`,
-`OPTIMIZATION_LOCAL_DIR=agents/voucher/config`, and `MAX_TOOL_STEPS=12`:
+## Evaluate off-the-shelf behavior
+
+Start or deploy the tool API first, then set the live endpoints. `.env.example`
+is a reference file; scripts read the process environment and do not load it
+automatically.
 
 ```powershell
-python evaluations\scripts\evaluate_agent.py `
-  --dataset evaluations\datasets\v2\voucher-development.jsonl `
-  --documents data\prepared\search-documents-v2.jsonl `
-  --output evaluations\results\v2\voucher-v3-step10-development-3x.jsonl `
+$env:MAI_OPENAI_BASE_URL = "https://<model-endpoint>/openai/v1"
+$env:MAI_MODEL_DEPLOYMENT_NAME = "<model-deployment>"
+$env:SHOPPINGBENCH_TOOL_URL = "https://<deployed-tool-api>"
+$env:SHOPPINGBENCH_API_TOKEN = "<tool-api-token>"
+$task = "product"
+$env:SHOPPINGBENCH_TASK = $task
+$env:OPTIMIZATION_LOCAL_DIR = "$task/baseline"
+python evals\scripts\evaluate_agent.py `
+  --runtime-module agents.shared.baseline_runtime `
+  --dataset "evals\datasets\development\$task.jsonl" `
+  --documents data\prepared\search-documents.jsonl `
+  --output ".foundry\results\$task-baseline.jsonl" `
   --rollouts 3 `
   --workers 1
 ```
 
-Then regenerate the direct promotion comparison:
+The baseline runtime intentionally leaves all tools visible, does not require
+tool use, does not force `recommend_product -> terminate`, and does not inject
+a grounded final-answer turn.
+
+## Evaluate the optimized agent
 
 ```powershell
-python evaluations\scripts\summarize_development.py `
-  --baseline evaluations\results\v2\voucher-v3-step10-development-3x.jsonl `
-  --candidate evaluations\results\v2\voucher-v3-final-development-3x.jsonl `
-  --output evaluations\results\v2\voucher-v3-final-vs-step10.json
+$env:OPTIMIZATION_LOCAL_DIR = "$task/optimized"
+python evals\scripts\evaluate_agent.py `
+  --runtime-module agents.shared.runtime `
+  --dataset "evals\datasets\development\$task.jsonl" `
+  --documents data\prepared\search-documents.jsonl `
+  --output ".foundry\results\$task-optimized.jsonl" `
+  --rollouts 3 `
+  --workers 1
 ```
 
-Step 10 is retained because the final checkpoint's one-rollout exact advantage
-was inconclusive while complete success and grounded final-answer validity each
-fell by seven rollouts. The selected hosted deployment is
-`mai-sb-vouch-v3-step10`.
-
-The hardened Web RFT4 checkpoint gate uses the same command with
-`SHOPPINGBENCH_TASK=web`, `OPTIMIZATION_LOCAL_DIR=agents/web/config`, and
-`MAI_MODEL_DEPLOYMENT_NAME` set in turn to `mai-sb-web-v3-step6`,
-`mai-sb-web-v3-step9`, and `mai-sb-web-v3-final`. Compare each receipt against
-`evaluations/results/v2/web-step10-development-3x.jsonl` with
-`summarize_development.py`. All three candidates regressed, so the frozen Web
-model remains historical RFT3 Step 10. Its current deployment alias is
-`mai-sb-web-step10-retained`.
-
-The sealed final-test receipts are generated once with `--rollouts 1` and
-`--workers 1`, using each frozen task configuration and:
-
-- Product/Shop: `mai-code-1-1-flash-base`
-- Voucher: `mai-sb-vouch-v3-step10`
-- Web: `mai-sb-web-step10-retained`
-
-Do not reroll failed cases or use these receipts to trigger another selection
-round.
-
-The commands below reproduce the historical v1 experiment. They intentionally
-use the old case-held-out development sets and are retained for evidence
-verification, not as the v2 promotion protocol.
-
-For the published Web RFT comparison, run the same command three times with
-`MAI_MODEL_DEPLOYMENT_NAME` set to `mai-sb-rft3-step10`,
-`mai-sb-rft3-step15`, and `mai-sb-rft3-final`. Then regenerate the tracked
-receipt:
+For Live Web Search, use the native-search runtime and its dedicated
+configuration:
 
 ```powershell
-python -m rft.scripts.summarize_checkpoints `
-  --baseline optimization\results\raw\web-round2-baseline-heldout.jsonl `
-  --candidate step10 .foundry\results\web-rft3-step10-holdout.jsonl `
-  --candidate step15 .foundry\results\web-rft3-step15-holdout.jsonl `
-  --candidate final .foundry\results\web-rft3-final-holdout.jsonl `
-  --output rft\results\web-rft3-holdout-comparison.json
+$env:MAI_MODEL_DEPLOYMENT_NAME = "<web-search-capable-deployment>"
+$env:OPTIMIZATION_LOCAL_DIR = "web_search/optimized"
+$env:AGENT_MODE = "optimized"
+python evals\scripts\evaluate_agent.py `
+  --runtime-module agents.shared.web_search_runtime `
+  --dataset evals\datasets\development\web.jsonl `
+  --documents data\prepared\search-documents.jsonl `
+  --output .foundry\results\web-search-optimized.jsonl `
+  --rollouts 3 `
+  --workers 1
 ```
 
-For Voucher, evaluate deployments `mai-sb-vouch-rft1-step3` and
-`mai-sb-vouch-rft1-step12` with the Voucher task/config, then regenerate:
+## Compare stages
 
 ```powershell
-python -m rft.scripts.summarize_checkpoints `
-  --task voucher `
-  --baseline optimization\results\raw\voucher-candidate-heldout.jsonl `
-  --candidate step3 .foundry\results\voucher-rft1-step3-holdout.jsonl `
-  --candidate step12 .foundry\results\voucher-rft1-step12-holdout.jsonl `
-  --output rft\results\voucher-rft1-holdout-comparison.json
+python evals\scripts\summarize_development.py `
+  --baseline ".foundry\results\$task-baseline.jsonl" `
+  --candidate ".foundry\results\$task-optimized.jsonl" `
+  --output ".foundry\results\$task-comparison.json"
 ```
 
-## Rerun Agent Optimizer
+The summary pairs rollouts by case and reports case-clustered confidence
+intervals so repeated rollouts are not treated as independent cases.
 
-Deploy the matching hosted agent first, then run the command in
-`optimization/README.md`. Use the provided round-specific dataset and seed
-configuration. Optimizer judge scores nominate candidates; always rerun the v2 development
-set before retaining one.
-
-The post-RFT Web experiment uses
-`optimization/web/post-rft-step10-start/metadata.yaml`, whose model is the
-selected `mai-sb-rft3-step10` deployment. It deliberately reuses the 40-case
-round-two optimization set and keeps the canonical holdout out of candidate
-generation.
-
-The completed operation nominated Candidate 1. To reproduce its canonical
-decision, apply it locally without deployment, set `OPTIMIZATION_LOCAL_DIR` to
-the generated candidate folder, evaluate `web-holdout.jsonl` with
-`MAI_MODEL_DEPLOYMENT_NAME=mai-sb-rft3-step10`, then compare:
+Regenerate the published aggregate table from committed receipts:
 
 ```powershell
-python -m rft.scripts.summarize_checkpoints `
-  --task web `
-  --baseline rft\results\raw\web-rft3-step10-holdout.jsonl `
-  --candidate candidate1 rft\results\raw\web-rft3-step10-post-opt-candidate1-holdout.jsonl `
-  --output optimization\results\web-post-rft-step10-comparison.json
+python evals\scripts\build_release_summary.py
+git diff --exit-code -- evals\results\summary.json
 ```
 
-The candidate is rejected because its mean is `0.871` and exact selection is
-41/50, below the Step 10 gates of `0.901` and 44/50.
+## Run Agent Optimizer
 
-## Rerun RFT
+```powershell
+python optimize\run.py product `
+  --round 1 `
+  --agent-version <version> `
+  --eval-model <judge-deployment> `
+  --optimization-model <optimizer-deployment> `
+  --dry-run
+```
 
-Follow `rft/README.md` in this order:
+Round one uses `agents/product/baseline`; round two uses
+`optimize/seeds/product/round2`. Remove `--dry-run` only after inspecting the
+materialized config under `optimize/work/`.
 
-1. regenerate group-disjoint v2 data
-2. collect base-model validation rollouts
-3. calibrate the grader
-4. verify a 25–50% base failure rate
-5. submit one task-specific job
-6. evaluate every checkpoint on the development set
-7. freeze the winner and open the sealed final test once
+## Prepare and calibrate RFT
 
-New jobs use `/grade/v3`, four authenticated live tools, clustered calibration,
-at least ten internal evaluation samples, and `max_episode_steps=12`.
+```powershell
+python rft\scripts\prepare_data.py
 
-The public submission runner exposes epochs, batch size, learning-rate
-multiplier, evaluation interval/sample count, and episode-step cap as explicit
-arguments. Submission receipts persist these values. The Voucher follow-up
-demonstrates the conservative configuration used after observing Web
-overtraining: one epoch and a `0.5` learning-rate multiplier.
+python -m rft.scripts.calibrate `
+  --results <calibration-results.jsonl> `
+  --dataset rft\data\voucher-calibration-eval.jsonl `
+  --output .foundry\voucher-calibration.json
+```
+
+Do not train unless calibration has at least 60 observations, at least 20
+cases, at least three rollouts per case, and a 25-50% failure rate at the
+selected threshold.
+
+RFT submission is billable:
+
+```powershell
+python -m rft.scripts.submit voucher `
+  --calibration .foundry\voucher-calibration.json `
+  --data-dir rft\data `
+  --grader-version v3 `
+  --confirm-submit `
+  --output .foundry\voucher-submission.json
+```
+
+For hardened Catalog Web, calibrate and submit with the v5 grader:
+
+```powershell
+python -m rft.scripts.calibrate `
+  --results rft\jobs\web-v5\base-calibration-results.jsonl `
+  --dataset rft\data\web-validation-eval.jsonl `
+  --grader-version web-v5 `
+  --output .foundry\web-v5-calibration.json
+
+python -m rft.scripts.submit web `
+  --calibration .foundry\web-v5-calibration.json `
+  --data-dir rft\data `
+  --grader-version web-v5 `
+  --eval-interval 2 `
+  --confirm-submit `
+  --output .foundry\web-v5-submission.json
+```
+
+Evaluate every deployable checkpoint on the development split before opening
+the final test. A numerically highest final checkpoint is not automatically
+selected.
+
+Live Web Search RFT is not part of the published workflow. Its current
+production result is the Agent Optimizer configuration.
+
+The receipts in `rft/jobs/` contain IDs from the published runs. Do not copy
+those IDs into a new environment; new submissions create new job and file IDs.
+
+## Validate the repository
+
+```powershell
+python -m pytest
+python -m ruff check .
+az bicep build --file azure\infra\main.bicep --stdout | Out-Null
+git diff --check
+```

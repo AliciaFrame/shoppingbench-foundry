@@ -40,7 +40,7 @@ def test_original_tool_contracts_and_grader_endpoint(monkeypatch):
     assert details.json()[0]["attributes"]["calculator_type"] == ["basic"]
 
     grade = client.post(
-        "/grade",
+        "/grade/v3",
         json={
             "sample": {
                 "output_tools": [
@@ -58,7 +58,8 @@ def test_original_tool_contracts_and_grader_endpoint(monkeypatch):
                     },
                     {"function": {"name": "recommend_product", "arguments": {"product_ids": "p1"}}},
                     {"function": {"name": "terminate", "arguments": {}}},
-                ]
+                ],
+                "assistant_text": "I recommend p1 because it matches the request.",
             },
             "item": {"task": "product", "reward": {"product_id": "p1"}},
         },
@@ -67,38 +68,57 @@ def test_original_tool_contracts_and_grader_endpoint(monkeypatch):
     assert grade.status_code == 200
     assert grade.json() == {"score": 1.0}
 
-    grade_v2 = client.post(
-        "/grade/v2",
+    web_v5_grade = client.post(
+        "/grade/web/v5",
         json={
             "sample": {
                 "output_tools": [
                     {
                         "function": {
                             "name": "find_product",
-                            "arguments": {"q": "calculator", "page": 1},
+                            "arguments": {"q": "Jason Statham mug", "page": 1},
                         }
                     },
                     {
                         "function": {
                             "name": "view_product_information",
-                            "arguments": {"product_ids": "p1"},
+                            "arguments": {"product_ids": "1234567890"},
                         }
                     },
-                    {"function": {"name": "recommend_product", "arguments": {"product_ids": "p1"}}},
-                    {"function": {"name": "terminate", "arguments": {}}},
+                    {
+                        "function": {
+                            "name": "recommend_product",
+                            "arguments": {"product_ids": "1234567890"},
+                        }
+                    },
+                    {
+                        "function": {
+                            "name": "terminate",
+                            "arguments": {
+                                "product_ids": "1234567890",
+                                "resolved_clue": "Jason Statham",
+                                "final_answer": (
+                                    "The clue resolves to Jason Statham. Product "
+                                    "1234567890 is a ceramic coffee mug matching the clue."
+                                ),
+                            },
+                        }
+                    },
                 ]
             },
             "item": {
                 "task": "web",
-                "reward": {"product_id": "p1"},
-                "knowledge_attribute": "orange",
-                "max_search_calls": 3,
+                "reward": {
+                    "product_id": "1234567890",
+                    "title": "Jason Statham Ceramic Coffee Mug",
+                },
+                "knowledge_attribute": "Jason Statham",
             },
         },
         headers=headers,
     )
-    assert grade_v2.status_code == 200
-    assert grade_v2.json() == {"score": 0.9}
+    assert web_v5_grade.status_code == 200
+    assert web_v5_grade.json() == {"score": 1.0}
 
     rft_tool = client.post(
         "/rft/tools/find_product",
@@ -117,6 +137,7 @@ def test_original_tool_contracts_and_grader_endpoint(monkeypatch):
     assert rft_tool.json()["type"] == "function_call_output"
     assert rft_tool.json()["call_id"] == "call-1"
     assert rft_tool.json()["id"] == "fc-1"
+
     app.dependency_overrides.clear()
 
 

@@ -1,10 +1,8 @@
-import json
 from pathlib import Path
 
 from shoppingbench_foundry.benchmark_subset import (
     build_benchmark_subset,
-    write_eval_datasets,
-    write_eval_datasets_v2,
+    write_lifecycle_datasets,
 )
 from shoppingbench_foundry.datasets import TASK_FILES, load_task_rows
 from shoppingbench_foundry.grading import grade_sample
@@ -80,26 +78,8 @@ def test_generated_subset_includes_one_decoy_per_gold_product():
     assert len(gold) > 1_800
 
 
-def test_round2_optimization_split_is_disjoint(tmp_path):
-    counts = write_eval_datasets(DATA_DIR, tmp_path)
-
-    for task in TASK_FILES:
-        splits = {}
-        for split in ("optimize", "holdout", "optimize-round2"):
-            path = tmp_path / f"{task}-{split}.jsonl"
-            with path.open(encoding="utf-8") as handle:
-                splits[split] = {json.loads(line)["name"] for line in handle if line.strip()}
-
-        assert counts[task]["optimize"] == 20
-        assert counts[task]["holdout"] == 50
-        assert counts[task]["optimize-round2"] == 40
-        assert splits["optimize"].isdisjoint(splits["holdout"])
-        assert splits["optimize"].isdisjoint(splits["optimize-round2"])
-        assert splits["holdout"].isdisjoint(splits["optimize-round2"])
-
-
-def test_v2_splits_are_group_disjoint(tmp_path):
-    manifest = write_eval_datasets_v2(DATA_DIR, tmp_path)
+def test_lifecycle_splits_are_group_disjoint(tmp_path):
+    manifest = write_lifecycle_datasets(DATA_DIR, tmp_path)
 
     for task in TASK_FILES:
         task_manifest = manifest["tasks"][task]

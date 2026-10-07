@@ -20,10 +20,12 @@ def test_hosted_manifest_uses_resolvable_task_config_and_bounded_steps():
     ).read_text(encoding="utf-8")
 
     assert manifest.count('MAX_TOOL_STEPS: "12"') == 4
-    assert "OPTIMIZATION_LOCAL_DIR: product/config" in manifest
-    assert "OPTIMIZATION_LOCAL_DIR: shop/config" in manifest
-    assert "OPTIMIZATION_LOCAL_DIR: voucher/config" in manifest
-    assert "OPTIMIZATION_LOCAL_DIR: web/config" in manifest
+    assert "OPTIMIZATION_LOCAL_DIR: product/optimized" in manifest
+    assert "OPTIMIZATION_LOCAL_DIR: shop/optimized" in manifest
+    assert "OPTIMIZATION_LOCAL_DIR: voucher/optimized" in manifest
+    assert "OPTIMIZATION_LOCAL_DIR: web/optimized" in manifest
+    assert "OPTIMIZATION_LOCAL_DIR: web_search/optimized" in manifest
+    assert "WEB_SEARCH_MODEL_DEPLOYMENT_NAME" in manifest
 
 
 def _response(output, output_text="", response_id="response"):
@@ -58,7 +60,7 @@ def test_termination_requests_final_user_facing_response(monkeypatch):
     runtime = importlib.import_module("agents.shared.runtime")
     assert runtime.model == "test-model-override"
     assert runtime.MAX_TOOL_STEPS == 12
-    assert runtime.CONFIG_DIR == runtime.AGENTS_ROOT / "product" / "config"
+    assert runtime.CONFIG_DIR == runtime.AGENTS_ROOT / "product" / "optimized"
     assert (
         runtime._credential_scope("https://example.openai.azure.com/openai/v1/")
         == "https://cognitiveservices.azure.com/.default"
@@ -189,3 +191,46 @@ def test_recommendation_on_final_tool_step_fails_explicitly(monkeypatch):
         assert "within 1 tool steps" in str(exc)
     else:
         raise AssertionError("Step exhaustion must fail instead of returning partial output")
+
+
+def test_web_terminal_tool_supplies_final_answer_without_extra_model_call(monkeypatch):
+    monkeypatch.setenv("SHOPPINGBENCH_TASK", "web")
+    monkeypatch.setenv("OPTIMIZATION_LOCAL_DIR", "web/optimized")
+    import sys
+
+    sys.modules.pop("agents.shared.runtime", None)
+    runtime = importlib.import_module("agents.shared.runtime")
+    responses = FakeResponses(
+        [
+            _response(
+                [_call("recommend_product", '{"product_ids":"1234567890"}', "recommend")],
+                response_id="recommend-response",
+            ),
+            _response(
+                [
+                    _call(
+                        "terminate",
+                        (
+                            '{"product_ids":"1234567890",'
+                            '"resolved_clue":"Jason Statham",'
+                            '"final_answer":"Jason Statham is the clue; '
+                            'I recommend 1234567890."}'
+                        ),
+                        "terminate",
+                    )
+                ],
+                response_id="terminal-response",
+            ),
+        ]
+    )
+    monkeypatch.setattr(runtime, "model_client", SimpleNamespace(responses=responses))
+    monkeypatch.setattr(runtime, "_execute_tool", lambda name, arguments: {"ok": True})
+
+    output, _usage = runtime._run_episode("Find the product")
+    sample = __import__("json").loads(output)
+
+    assert sample["assistant_text"] == (
+        "Jason Statham is the clue; I recommend 1234567890."
+    )
+    assert len(responses.requests) == 2
+    assert responses.requests[1]["tools"] == runtime.TERMINATE_TOOLS

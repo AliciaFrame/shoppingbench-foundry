@@ -29,7 +29,7 @@ logger = logging.getLogger("shoppingbench-agent")
 
 TASK = os.getenv("SHOPPINGBENCH_TASK", "product")
 AGENTS_ROOT = Path(__file__).resolve().parents[1]
-configured_dir = Path(os.getenv("OPTIMIZATION_LOCAL_DIR", str(Path(TASK) / "config")))
+configured_dir = Path(os.getenv("OPTIMIZATION_LOCAL_DIR", str(Path(TASK) / "optimized")))
 CONFIG_DIR = configured_dir if configured_dir.is_absolute() else AGENTS_ROOT / configured_dir
 MODEL_OVERRIDE = os.getenv("MAI_MODEL_DEPLOYMENT_NAME")
 MODEL = MODEL_OVERRIDE or "mai-code-1-1-flash-base"
@@ -46,9 +46,7 @@ FINAL_RESPONSE_INSTRUCTION = (
     "State the recommended product IDs and briefly explain why they satisfy the request. "
     "Mention every recommended product ID and do not mention or suggest any other product IDs. "
 )
-if TASK == "web":
-    FINAL_RESPONSE_INSTRUCTION += "Explicitly state the resolved knowledge clue."
-elif TASK == "voucher":
+if TASK == "voucher":
     FINAL_RESPONSE_INSTRUCTION += (
         "Show shop consistency, subtotal, voucher threshold, discount or cap, "
         "final payable, and budget fit."
@@ -234,6 +232,16 @@ def _run_episode(query: str) -> tuple[str, dict[str, int]]:
                 ]
             elif call.name == "terminate":
                 terminated = True
+                if TASK == "web":
+                    terminal_ids = [
+                        item.strip()
+                        for item in arguments.get("product_ids", "").split(",")
+                        if item.strip()
+                    ]
+                    if terminal_ids != recommended_ids:
+                        raise RuntimeError(
+                            "The Web terminate product_ids must match recommend_product"
+                        )
             outputs.append(
                 {
                     "type": "function_call_output",
@@ -247,6 +255,8 @@ def _run_episode(query: str) -> tuple[str, dict[str, int]]:
             "input": outputs,
         }
         if terminated:
+            if TASK == "web":
+                break
             request["instructions"] = FINAL_RESPONSE_INSTRUCTION
         else:
             request["tools"] = TERMINATE_TOOLS if recommended_ids else SELECTION_TOOLS
@@ -263,7 +273,11 @@ def _run_episode(query: str) -> tuple[str, dict[str, int]]:
             f"within {MAX_TOOL_STEPS} tool steps"
         )
 
-    assistant_text = response.output_text or ""
+    if TASK == "web":
+        terminal = trace[-1]["function"]["arguments"]
+        assistant_text = terminal.get("final_answer", "")
+    else:
+        assistant_text = response.output_text or ""
     if not assistant_text.strip():
         raise RuntimeError("The model terminated without a final user-facing response")
 

@@ -1,0 +1,28 @@
+{
+  "samples": 105,
+  "unique_cases": 20,
+  "rollouts_per_case": {
+    "min": 5,
+    "max": 10,
+    "mean": 5.25
+  },
+  "mean_score": 0.606762,
+  "recommended_pass_threshold": 0.9,
+  "base_failure_rate": 0.457143,
+  "base_failure_rate_bootstrap_95": [
+    0.266667,
+    0.66
+  ],
+  "score_distribution": {
+    "0.0": 22,
+    "0.1": 7,
+    "0.15": 2,
+    "0.2": 5,
+    "0.48": 12,
+    "0.9": 3,
+    "0.95": 15,
+    "1.0": 39
+  },
+  "sufficient_samples": true,
+  "sufficient_signal": true
+}

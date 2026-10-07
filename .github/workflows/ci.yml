@@ -26,7 +26,9 @@ jobs:
         run: |
           python data/scripts/prepare.py
           python rft/scripts/prepare_data.py
-          git diff --exit-code -- data/prepared evaluations/datasets rft/data
+          python evals/scripts/build_release_summary.py
+          git diff --exit-code -- data/prepared evals/datasets rft/data
+          git diff --exit-code -- evals/results/summary.json
 
       - name: Test
         run: python -m pytest
@@ -42,12 +44,16 @@ jobs:
           SHOPPINGBENCH_TOOL_URL: http://localhost:8000
         run: |
           for task in product shop voucher web; do
-            python -c "import agents.${task}.main; from agents.shared.runtime import config, TOOLS; assert config.source == 'local'; assert len(TOOLS) == 4"
+            SHOPPINGBENCH_TASK=$task OPTIMIZATION_LOCAL_DIR=$task/optimized \
+              python -c "import agents.${task}.main; from agents.shared.runtime import config, TOOLS; assert config.source == 'local'; assert len(TOOLS) == 4"
           done
+          MAI_API_KEY=test-key MAI_MODEL_DEPLOYMENT_NAME=web-search \
+            OPTIMIZATION_LOCAL_DIR=web_search/optimized \
+            python -c "import agents.web_search.main; from agents.shared.web_search_runtime import config, TOOLS; assert config.source == 'web-search-baseline'; assert len(TOOLS) == 4"
 
       - name: Materialize optimizer configuration
         run: |
-          python optimization/run.py product \
+          python optimize/run.py product \
             --round 1 \
             --agent-version 1 \
             --eval-model judge \
