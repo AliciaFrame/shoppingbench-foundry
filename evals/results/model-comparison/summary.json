@@ -1,5 +1,6 @@
 {
   "methodology": {
+    "cost": "Recorded API token usage at uncached list prices; unavailable usage excluded.",
     "hash_line_endings": "LF",
     "cases": 30,
     "rollouts_per_case": 3,

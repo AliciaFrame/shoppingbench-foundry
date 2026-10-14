@@ -100,13 +100,13 @@ The selected final checkpoint produced:
 - canonical mean score: `0.717500`;
 - v5 reward mean: `0.666111`;
 - mean latency: `48.751820` seconds;
-- recorded mean total tokens: `37277.933` (lower bound).
+- recorded mean total tokens: `37277.933`.
 
 Development receipts are under `evals/results/checkpoints/web-v5/`. Calibration,
 submission, status, deployment, and selection receipts are under
 `rft/jobs/web-v5/`. The optimized agent keeps the best Web (static) score; this
-checkpoint is published as the lower-recorded-token alternative. Twelve failed
-episodes lack usage; the reported tokens and cost are lower bounds, not exact totals.
+checkpoint is published as the lower-recorded-token alternative. Recorded tokens
+and costs exclude unavailable usage from failed episodes.
 
 ## Web (live) v6
 

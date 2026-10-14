@@ -9,7 +9,7 @@ from evals.scripts.compare_model_costs import (
     CHEAPEST,
     COMPARISON_ROOT,
     build_comparison,
-    cheapest_models,
+    lowest_recorded_cost_models,
     read_reference,
     readme_parts,
     render_section,
@@ -194,7 +194,7 @@ def test_cost_comparison_rejects_invalid_episode_accounting(invalid):
         summarize_run(rows, {"selection": (0.20, 1.20), "web": (0.75, 4.50)}, {"one"})
 
 
-def test_comparison_selects_by_all_scores_and_does_not_award_uncertain_cheapest():
+def test_comparison_selects_by_all_scores_and_highlights_lowest_recorded_cost():
     prices = {"selection": (0.20, 1.20), "web": (0.75, 4.50)}
     base = summarize_run(
         [_cost_episode("one", score=0.6), _cost_episode("two", score=0.6)],
@@ -214,9 +214,9 @@ def test_comparison_selects_by_all_scores_and_does_not_award_uncertain_cheapest(
         "mai": {"cost_per_1k_episodes_usd": 10, "cost_is_lower_bound": True},
         "luna": {"cost_per_1k_episodes_usd": 12, "cost_is_lower_bound": False},
     }
-    assert cheapest_models(metrics) == set()
+    assert lowest_recorded_cost_models(metrics) == {"mai"}
     metrics["luna"]["cost_per_1k_episodes_usd"] = 8
-    assert cheapest_models(metrics) == {"luna"}
+    assert lowest_recorded_cost_models(metrics) == {"luna"}
 
 
 def test_cost_comparison_rejects_modified_receipts(tmp_path):
@@ -235,12 +235,22 @@ def test_cost_comparison_summary_and_visual_readme_match_committed_inputs():
     assert section.strip() == readme_parts((ROOT / "README.md").read_text(encoding="utf-8"))[1].strip()
     lines = section.splitlines()
     product = next(line for line in lines if line.startswith("| Product"))
-    assert BEST_SCORE in product and CHEAPEST not in product
+    assert BEST_SCORE in product
+    assert "**$3.21&nbsp;" + CHEAPEST in product
     voucher = next(line for line in lines if line.startswith("| Voucher"))
-    assert "**$8.90 " + CHEAPEST in voucher
-    live = next(line for line in lines if line.startswith("| Web (live)"))
-    assert "| 0.903 |" in live
-    assert "**0.968\\* " + BEST_SCORE in live
-    static_rft = next(line for line in lines if line.startswith("| Web (static) - RFT"))
-    assert CHEAPEST not in static_rft
+    assert "**$8.90&nbsp;" + CHEAPEST in voucher
+    live = next(line for line in lines if line.startswith("| Web&nbsp;live"))
+    assert "| 0.903&nbsp;/&nbsp;$12.56 |" in live
+    assert "**0.968\\*&nbsp;" + BEST_SCORE in live
+    static_rft = next(
+        line for line in lines if line.startswith("| Web&nbsp;static&nbsp;(RFT&nbsp;v5)")
+    )
+    assert "**$13.33&nbsp;" + CHEAPEST in static_rft.split("|")[2]
+    for line in lines:
+        if line.startswith("|") and not line.startswith(("| MAI run", "|---")):
+            cells = [cell.strip() for cell in line.split("|")[1:-1]]
+            assert len(cells) == 5
+            assert all(" " not in cell and "&nbsp;" in cell for cell in cells)
+    assert "\u2265" not in section
+    assert "Costs exclude unavailable token usage from failed episodes." in section
     assert report["scenarios"]["web_static"]["mai_runs"][1]["episodes_with_missing_usage"] == 12

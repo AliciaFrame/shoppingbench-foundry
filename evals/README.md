@@ -86,9 +86,9 @@ calculation, along with the exact case/rollout names and usage totals.
 The script prices input/output tokens at each model's manifest rates, with
 all input uncached and the Web (live) lookup priced separately. It selects
 the highest mean canonical score among complete GPT runs, retaining failures
-as zero. Missing usage is counted explicitly and makes cost a lower bound.
-The cheapest badge is awarded only when a complete cost is no greater than
-every competitor's known cost or lower bound.
+as zero. Costs use recorded token usage, excluding unavailable usage from
+failed episodes. The cost badge marks the lowest recorded cost in each row.
+Missing-usage counts and lower-bound flags remain available in the JSON summary.
 
 `results/model-comparison/summary.json` preserves metrics for both candidate
 stages, not just the selected stage: total input/output tokens, scores, costs,

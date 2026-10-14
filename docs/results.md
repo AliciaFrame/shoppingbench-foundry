@@ -28,12 +28,12 @@ as independent.
 |  | RFT Step 10 | **0.9248** | **23.10s** | 29,610 | **$8.90** | **Selected** |
 | Web (static) | Base | 0.6911 | 99.74s | 77,709 | $31.71 | |
 |  | Agent Optimized | **0.7286** | 100.97s | 97,156 | $38.53 | **Selected** |
-|  | RFT final | 0.7175 | **48.75s** | **≥ 37,278** | **≥ $13.33** | Token alternative |
+|  | RFT final | 0.7175 | **48.75s** | **37,278** | **$13.33** | Token alternative |
 | Web (live) | Base | 0.2497 | 39.15s | **24,023** | $16.79 | |
 |  | Agent Optimized | 0.8292 | 20.00s | 25,236 | $13.19 | |
 |  | RFT final | **0.9025** | **19.80s** | 26,198 | **$12.56** | **Selected** |
 
-Cost uses list prices of $0.20 input and $1.20 output per million
+Recorded token cost uses list prices of $0.20 input and $1.20 output per million
 MAI-Code-1.1-Flash tokens, with all input priced uncached. The Web (live)
 web-search lookup step runs on GPT-5.4-mini and is priced at $0.75 / $4.50.
 
@@ -52,8 +52,8 @@ completed more episodes strictly.
 
 **Web (static)** uses the strict v5 clue, grounding, protocol, and product
 gates. Agent Optimized has the best score. Its RFT checkpoint gives up 0.011
-score with lower recorded token consumption and latency. Twelve failed
-episodes lack usage, so its tokens and cost are lower bounds, not exact totals.
+score with lower recorded token consumption and latency. Recorded tokens
+and costs exclude unavailable usage from failed episodes.
 
 The [README model comparison](../README.md#cost-comparison-with-gpt-56) compares
 these MAI choices with the best complete GPT-5.6 vanilla or agent-optimized

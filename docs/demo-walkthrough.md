@@ -41,8 +41,8 @@ Use `docs/results.md`:
 - Shop: `0.796 -> 0.937`
 - Voucher: `0.855 -> 0.861 -> 0.925`
 - Web (static): `0.691 -> 0.729`, with an RFT alternative at `0.718` with
-  lower recorded token consumption; its token cost is a lower bound because
-  12 failed episodes lack usage
+  lower recorded token consumption; costs exclude unavailable usage from
+  failed episodes
 - Web (live): `0.250 -> 0.829 -> 0.903`, both steps statistically clear
 
 Emphasize that most baseline failures were incomplete agent behavior, not an

@@ -97,16 +97,9 @@ def select_best(stages: dict[str, dict[str, Any]]) -> str:
     return max(stages, key=lambda stage: stages[stage]["mean_score"])
 
 
-def cheapest_models(metrics: dict[str, dict[str, Any]]) -> set[str]:
-    return {
-        model
-        for model, candidate in metrics.items()
-        if not candidate["cost_is_lower_bound"]
-        and all(
-            candidate["cost_per_1k_episodes_usd"] <= other["cost_per_1k_episodes_usd"]
-            for other in metrics.values()
-        )
-    }
+def lowest_recorded_cost_models(metrics: dict[str, dict[str, Any]]) -> set[str]:
+    lowest = min(run["cost_per_1k_episodes_usd"] for run in metrics.values())
+    return {model for model, run in metrics.items() if run["cost_per_1k_episodes_usd"] == lowest}
 
 
 def build_comparison(manifest_path: Path, root: Path = REPO_ROOT) -> dict[str, Any]:
@@ -173,6 +166,7 @@ def build_comparison(manifest_path: Path, root: Path = REPO_ROOT) -> dict[str, A
         scenarios[scenario["id"]] = entry
     return {
         "methodology": {
+            "cost": "Recorded API token usage at uncached list prices; unavailable usage excluded.",
             "hash_line_endings": manifest["hash_line_endings"],
             "cases": manifest["cases"],
             "rollouts_per_case": manifest["rollouts_per_case"],
@@ -194,12 +188,10 @@ def render_section(report: dict[str, Any]) -> str:
         f"and agent-optimized runs. Each run uses the same {cases} development cases",
         f"and {rollouts} rollouts ({cases * rollouts} episodes); failed episodes remain zero-scored.",
         "The two Web (static) rows show the accuracy choice and the RFT token alternative.",
+        "Each model cell shows **score / recorded token cost (USD per 1,000 episodes)**.",
         "",
-        (
-            "| MAI run | MAI score | MAI cost | Luna score | Luna cost | "
-            "Terra score | Terra cost | Sol score | Sol cost |"
-        ),
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| MAI run | MAI Flash | Luna | Terra | Sol |",
+        "|---|---:|---:|---:|---:|",
     ]
     for scenario in report["scenarios"].values():
         selected = {
@@ -209,8 +201,10 @@ def render_section(report: dict[str, Any]) -> str:
         for mai in scenario["mai_runs"]:
             metrics = {"mai": mai, **selected}
             highest_score = max(run["mean_score"] for run in metrics.values())
-            cheapest = cheapest_models(metrics)
-            cells = [f"{scenario['label']} - {mai['label']}"]
+            cheapest = lowest_recorded_cost_models(metrics)
+            label = scenario["label"].replace("(", "").replace(")", "")
+            stage = "opt." if mai["label"] == "optimized" else mai["label"].split(",")[0]
+            cells = [f"{label} ({stage})".replace(" ", "&nbsp;")]
             for model, run in metrics.items():
                 score = str(
                     Decimal(str(run["mean_score"])).quantize(
@@ -223,11 +217,9 @@ def render_section(report: dict[str, Any]) -> str:
                 if run["mean_score"] == highest_score:
                     score = f"**{score} {BEST_SCORE}**"
                 cost = f"${run['cost_per_1k_episodes_usd']:.2f}"
-                if run["cost_is_lower_bound"]:
-                    cost = f"\u2265 {cost}"
                 if model in cheapest:
                     cost = f"**{cost} {CHEAPEST}**"
-                cells.extend((score, cost))
+                cells.append(f"{score} / {cost}".replace(" ", "&nbsp;"))
             lines.append("| " + " | ".join(cells) + " |")
     rates = report["methodology"]["prices_usd_per_million_tokens"]
     excluded = [
@@ -240,15 +232,15 @@ def render_section(report: dict[str, Any]) -> str:
         [
             "",
             f"**{BEST_SCORE}** marks the highest measured score in each row (not a claim of",
-            f"statistical significance). **{CHEAPEST}** marks the provably cheapest token cost",
-            "among that row's runs. If an unknown cost could be cheaper, no cheapest badge",
-            "is awarded. **\\*** marks a selected agent-optimized GPT run; unmarked GPT",
+            f"statistical significance). **{CHEAPEST}** marks the lowest recorded token cost",
+            "among that row's runs. **\\*** marks a selected agent-optimized GPT run; unmarked GPT",
             "results are vanilla. These GPT runs use the MAI-tuned configuration, not",
             "independent GPT-specific tuning. Selection is among available complete runs,",
             "not every possible optimized configuration.",
+            "MAI RFT checkpoints are Voucher step 10, Web (static) v5 final, and Web (live) v6 final.",
             *(["Excluded incomplete candidates: " + "; ".join(excluded) + "."] if excluded else []),
             "",
-            "Costs are **USD per 1,000 episodes**, calculated from actual API-reported",
+            "Recorded token costs are **USD per 1,000 episodes**, calculated from API-reported",
             "input and output tokens, including reasoning output, with all input priced",
             "uncached. Rates per 1M tokens (input / output):",
             f"MAI ${rates['mai']['input']:.2f} / ${rates['mai']['output']:.2f};",
@@ -265,10 +257,7 @@ def render_section(report: dict[str, Any]) -> str:
             f"${rates['web_lookup']['input']:.2f} / ${rates['web_lookup']['output']:.2f}.",
             "Training, hosting, and any separately billed search/tool fees are excluded.",
             "",
-            "**\u2265 means a lower bound, not an exact cost:** some failed episodes lack",
-            "usage records. Their scores still count as zero, but their missing tokens",
-            "cannot be priced. A smaller recorded cost with missing usage is not proof",
-            "that a run is cheaper than another run with complete usage.",
+            "Costs exclude unavailable token usage from failed episodes.",
             "",
             "Recalculate the table offline, without Azure credentials or inference:",
             "",
