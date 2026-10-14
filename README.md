@@ -45,7 +45,7 @@ flowchart LR
     Agent --> Model["MAI-Code-1.1-Flash"]
     Agent --> Tools["Container Apps tool API"]
     Tools --> Search["Azure AI Search"]
-    Agent --> Lookup["Fixed GPT-5.4-mini web lookup (live only)"]
+    Agent --> Lookup["Web lookup"]
     Lookup -->|Cited evidence| Agent
     Eval["Canonical and RFT graders"] --> Tools
     Optimizer["Foundry Agent Optimizer"] -->|Agent configuration| Agent
