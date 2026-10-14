@@ -7,6 +7,7 @@ import random
 from pathlib import Path
 from typing import Any
 
+from shoppingbench_foundry.artifacts import normalized_text_bytes, text_file_sha256
 from shoppingbench_foundry.datasets import TASK_FILES, load_task_rows
 from shoppingbench_foundry.tool_definitions import chat_completions_tools
 
@@ -245,13 +246,14 @@ def main() -> None:
     ]
     generated_files = _generated_files(args.output_dir, tasks)
     manifest = {
+        "hash_line_endings": "LF",
         "split_strategy": (
             "connected-group-disjoint" if args.split_manifest.is_file() else "row-random"
         ),
         "split_manifest": (
             {
                 "path": _portable_path(args.split_manifest, repo_root),
-                "sha256": hashlib.sha256(args.split_manifest.read_bytes()).hexdigest(),
+                "sha256": text_file_sha256(args.split_manifest),
             }
             if args.split_manifest.is_file()
             else None
@@ -259,8 +261,8 @@ def main() -> None:
         "tasks": summaries,
         "files": {
             path.name: {
-                "bytes": path.stat().st_size,
-                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                "bytes": len(normalized_text_bytes(path)),
+                "sha256": text_file_sha256(path),
             }
             for path in generated_files
         },

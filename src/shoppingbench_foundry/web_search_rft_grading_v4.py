@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from .artifacts import normalized_text_bytes
 from .trajectory import (
     ids,
     meaningful_search,
@@ -116,10 +117,10 @@ def grader_sha256() -> str:
     for name in (
         "web_search_rft_grading_v4.py", "web_search_rft_grading_v3.py",
         "web_search_rft_grading_v2.py", "web_rft_grading_v5.py", "trajectory.py",
-        "web_search.py",
+        "web_search.py", "artifacts.py",
     ):
         digest.update(name.encode())
-        digest.update(Path(__file__).with_name(name).read_bytes())
+        digest.update(normalized_text_bytes(Path(__file__).with_name(name)))
     return digest.hexdigest()
 
 

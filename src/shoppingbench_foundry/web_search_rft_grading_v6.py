@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from . import web_search_rft_grading_v5 as v5
+from .artifacts import normalized_text_bytes
 from .trajectory import terminal_arguments, tool_calls
 from .web_search_rft_grading_v2 import _calls
 
@@ -35,7 +36,7 @@ MAX_COST = 0.40
 
 def grader_sha256() -> str:
     return hashlib.sha256(
-        Path(__file__).read_bytes() + v5.grader_sha256().encode("ascii"),
+        normalized_text_bytes(Path(__file__)) + v5.grader_sha256().encode("ascii"),
     ).hexdigest()
 
 

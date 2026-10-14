@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import itertools
 import json
 import math
@@ -12,6 +11,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from shoppingbench_foundry.artifacts import text_file_sha256
 from shoppingbench_foundry.rft_grading import grade
 from shoppingbench_foundry.web_rft_grading_v5 import grade as grade_web_v5
 
@@ -164,8 +164,9 @@ def calibrate(
         "complete_coverage": complete_coverage,
         "missing_results": sorted(items.keys() - seen),
         "runtime_errors": error_count,
-        "dataset_sha256": hashlib.sha256(dataset_path.read_bytes()).hexdigest(),
-        "results_sha256": hashlib.sha256(results_path.read_bytes()).hexdigest(),
+        "hash_line_endings": "LF",
+        "dataset_sha256": text_file_sha256(dataset_path),
+        "results_sha256": text_file_sha256(results_path),
         "sufficient_samples": sufficient_samples,
         "failure_rate_in_target_band": in_target_band,
         "reward_variation": {

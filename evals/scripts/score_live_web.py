@@ -11,8 +11,9 @@ zero. Optionally compares against another scored run with case-clustered
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
+import math
+import os
 import statistics
 import sys
 import time
@@ -26,6 +27,7 @@ from openai import APIConnectionError, RateLimitError
 
 from evals.scripts.summarize_development import _clustered_interval, _group
 from shoppingbench_foundry import web_search_rft_grading_v6 as grader
+from shoppingbench_foundry.artifacts import text_file_sha256
 from shoppingbench_foundry.trajectory import tool_calls
 
 
@@ -56,10 +58,68 @@ def stage_usage(result: dict[str, Any], stage: str, field: str) -> int:
     )
 
 
+def _unique_names(rows: list[dict[str, Any]], label: str) -> set[str]:
+    names = [row["name"] for row in rows]
+    if not names or len(names) != len(set(names)):
+        raise ValueError(f"{label} must contain nonempty, unique episode names")
+    return set(names)
+
+
+def _validated_results(
+    results_path: Path, dataset_path: Path,
+) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]]]:
+    dataset = read_jsonl(dataset_path)
+    _unique_names(dataset, "Dataset")
+    rows = {row["name"]: row for row in dataset}
+    results = read_jsonl(results_path)
+    _unique_names(results, "Results")
+    for result in results:
+        case = result["case_name"]
+        if case not in rows or result["query"] != rows[case]["query"]:
+            raise ValueError(f"Result does not match the dataset: {result['name']}")
+        if not result["name"].startswith(case + "-rollout-"):
+            raise ValueError(f"Invalid rollout name: {result['name']}")
+        if not isinstance(result["responses"], list) or not isinstance(result["tool_results"], list):
+            raise TypeError(f"Missing per-call receipts: {result['name']}")
+        latency = result["latency_seconds"]
+        canonical = result["grade"]["score"]
+        if (
+            isinstance(latency, bool) or not isinstance(latency, (int, float))
+            or not math.isfinite(latency) or latency < 0
+        ):
+            raise ValueError(f"Invalid latency: {result['name']}")
+        if (
+            isinstance(canonical, bool) or not isinstance(canonical, (int, float))
+            or not 0 <= canonical <= 1
+        ):
+            raise ValueError(f"Invalid canonical score: {result['name']}")
+        if result.get("error"):
+            if result["grade"]["score"] != 0:
+                raise ValueError(f"Failed result must have zero score: {result['name']}")
+        else:
+            adapt(result, rows[case])
+    return results, rows
+
+
+def _validated_baseline(
+    path: Path, results: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not path.is_file():
+        raise ValueError(f"Score the baseline first; baseline details not found: {path}")
+    baseline = read_jsonl(path)
+    if _unique_names(baseline, "Baseline") != _unique_names(results, "Results"):
+        raise ValueError("Baseline and candidate must cover the same episodes")
+    for row in baseline:
+        for value in (row["details"]["score"], row["canonical"]["score"]):
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 1:
+                raise ValueError(f"Invalid baseline score: {row['name']}")
+    return baseline
+
+
 def score(results_path: Path, dataset_path: Path) -> list[dict[str, Any]]:
-    rows = {row["name"]: row for row in read_jsonl(dataset_path)}
+    results, rows = _validated_results(results_path, dataset_path)
     scored = []
-    for result in read_jsonl(results_path):
+    for result in results:
         if result.get("error"):
             details = {"score": 0.0, "quality_pass": False, "failed_gates": ["runtime_error"]}
         else:
@@ -131,7 +191,18 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True, help="Scored details JSONL")
     parser.add_argument("--baseline-details", type=Path, help="Scored details to compare against")
     args = parser.parse_args()
-    results_sha256 = hashlib.sha256(args.results.read_bytes()).hexdigest()
+    results, _ = _validated_results(args.results, args.dataset)
+    baseline = (
+        _validated_baseline(args.baseline_details, results) if args.baseline_details else None
+    )
+    results_sha256 = text_file_sha256(args.results)
+    context = {
+        "hash_line_endings": "LF",
+        "dataset_sha256": text_file_sha256(args.dataset),
+        "judge_model_deployment": os.getenv("RFT_GRADER_MODEL_DEPLOYMENT_NAME", ""),
+        "judge_base_url": os.getenv("WEB_SEARCH_OPENAI_BASE_URL", ""),
+        "judge_reasoning_effort": grader.JUDGE_REASONING_EFFORT,
+    }
     summary_path = args.output.with_suffix(".summary.json")
     previous = (
         json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
@@ -139,17 +210,17 @@ def main() -> None:
     # Reuse scores (and their judge calls) only for the same receipts and grader.
     reusable = args.output.exists() and previous.get("results_sha256") == results_sha256 and (
         previous.get("grader_sha256") == grader.grader_sha256()
-    )
+    ) and all(previous.get(key) == value for key, value in context.items())
     scored = read_jsonl(args.output) if reusable else score(args.results, args.dataset)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in scored), encoding="utf-8",
     )
-    report = summarize(scored, results_sha256)
-    if args.baseline_details:
+    report = {**summarize(scored, results_sha256), **context}
+    if baseline is not None:
         report["paired_vs_baseline"] = {
             "baseline": args.baseline_details.stem,
-            **compare(scored, read_jsonl(args.baseline_details)),
+            **compare(scored, baseline),
         }
     summary_path.write_text(
         json.dumps(report, indent=2) + "\n", encoding="utf-8",

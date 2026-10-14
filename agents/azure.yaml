@@ -11,7 +11,11 @@ hooks:
     prepackage:
         windows:
             shell: pwsh
-            run: Copy-Item -Recurse -Force ../src/shoppingbench_foundry ./shoppingbench_foundry
+            run: |
+                if (Test-Path -LiteralPath .\shoppingbench_foundry) {
+                    Remove-Item -LiteralPath .\shoppingbench_foundry -Recurse -Force
+                }
+                Copy-Item -LiteralPath ..\src\shoppingbench_foundry -Destination .\shoppingbench_foundry -Recurse -Force
         posix:
             shell: sh
             run: rm -rf ./shoppingbench_foundry && cp -R ../src/shoppingbench_foundry ./shoppingbench_foundry

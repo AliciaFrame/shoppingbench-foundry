@@ -1,4 +1,10 @@
+import os
+import shutil
+import subprocess
+import textwrap
 from pathlib import Path
+
+import pytest
 
 from optimize.run import build_config
 
@@ -59,3 +65,30 @@ def test_build_config_maps_web_search_to_web_dataset(tmp_path: Path):
     assert config["agent"]["name"] == "shoppingbench-web-search-agent"
     assert config["agent"]["config"] == str(seed / "metadata.yaml")
     assert config["dataset"]["local_uri"] == str(dataset)
+
+
+def test_prepackage_refreshes_changed_and_removed_files_without_nesting(tmp_path):
+    manifest = (Path(__file__).parents[1] / "agents" / "azure.yaml").read_text(encoding="utf-8")
+    if os.name == "nt":
+        executable = shutil.which("pwsh")
+        if executable is None:
+            pytest.skip("PowerShell 7 is required for the Windows azd packaging hook")
+        hook = manifest.split("run: |", 1)[1].split("        posix:", 1)[0]
+        command = [executable, "-NoProfile", "-NonInteractive", "-Command", textwrap.dedent(hook)]
+    else:
+        hook = manifest.split("posix:", 1)[1].split("run:", 1)[1].split("services:", 1)[0].strip()
+        command = ["sh", "-ec", hook]
+    agents = tmp_path / "agents"
+    source = tmp_path / "src" / "shoppingbench_foundry"
+    source.mkdir(parents=True)
+    agents.mkdir()
+    (source / "version.py").write_text("old", encoding="utf-8")
+    (source / "removed.py").write_text("obsolete", encoding="utf-8")
+    subprocess.run(command, cwd=agents, check=True, capture_output=True)
+    (source / "version.py").write_text("new", encoding="utf-8")
+    (source / "removed.py").unlink()
+    subprocess.run(command, cwd=agents, check=True, capture_output=True)
+    vendored = agents / "shoppingbench_foundry"
+    assert (vendored / "version.py").read_text() == "new"
+    assert not (vendored / "removed.py").exists()
+    assert not (vendored / "shoppingbench_foundry").exists()

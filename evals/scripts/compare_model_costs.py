@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import statistics
@@ -11,9 +10,10 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT))
+sys.path[:0] = [str(REPO_ROOT), str(REPO_ROOT / "src")]
 
 from evals.scripts.build_release_summary import _cost, _read_jsonl
+from shoppingbench_foundry.artifacts import text_file_sha256
 
 COMPARISON_ROOT = REPO_ROOT / "evals" / "results" / "model-comparison"
 MODELS = ("gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol")
@@ -25,8 +25,7 @@ CHEAPEST = "\U0001f4b0"
 
 def read_reference(reference: dict[str, str], root: Path) -> tuple[Path, list[dict[str, Any]]]:
     path = root.joinpath(*reference["path"].split("/"))
-    content = path.read_bytes().replace(b"\r\n", b"\n")
-    if hashlib.sha256(content).hexdigest() != reference["sha256"]:
+    if text_file_sha256(path) != reference["sha256"]:
         raise ValueError(f"Receipt or dataset hash mismatch: {path}")
     return path, _read_jsonl(path)
 

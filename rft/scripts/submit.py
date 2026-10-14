@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import os
@@ -13,6 +12,7 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import NotFoundError, OpenAI
 
 from shoppingbench_foundry import web_search_rft_grading_v6
+from shoppingbench_foundry.artifacts import matches_text_file_sha256
 from shoppingbench_foundry.tool_definitions import chat_completions_tools
 
 SUFFIXES = {
@@ -358,8 +358,9 @@ def main() -> None:
         ):
             raise SystemExit("Complete, error-free repeated-rollout calibration is required")
         validation_path = args.data_dir / "web-validation.jsonl"
-        validation_hash = hashlib.sha256(validation_path.read_bytes()).hexdigest()
-        if calibration.get("source_dataset_sha256") != validation_hash:
+        if not matches_text_file_sha256(
+            validation_path, calibration.get("source_dataset_sha256"),
+        ):
             raise SystemExit("Calibration does not match the current prepared validation data")
         if calibration.get("judge_model_deployment") != os.getenv(
             "RFT_GRADER_MODEL_DEPLOYMENT_NAME", "",

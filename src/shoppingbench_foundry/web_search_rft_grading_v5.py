@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from . import web_search_rft_grading_v4 as v4
+from .artifacts import normalized_text_bytes
 from .trajectory import ids, normalized, terminal_arguments, tool_calls
 from .web_search import _required_env, get_web_search_client
 from .web_search_rft_grading_v2 import _calls
@@ -74,7 +75,7 @@ not merely a missing metadata field. Full permits harmless wording as above.
 
 def grader_sha256() -> str:
     return hashlib.sha256(
-        Path(__file__).read_bytes() + v4.grader_sha256().encode("ascii"),
+        normalized_text_bytes(Path(__file__)) + v4.grader_sha256().encode("ascii"),
     ).hexdigest()
 
 

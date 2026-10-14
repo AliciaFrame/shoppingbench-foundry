@@ -7,16 +7,18 @@ from pathlib import Path
 from typing import Any
 
 from rft.scripts.submit import _validate_agentic_dataset
+from shoppingbench_foundry.artifacts import (
+    matches_text_file_sha256,
+)
+from shoppingbench_foundry.artifacts import (
+    text_file_sha256 as sha256,
+)
 from shoppingbench_foundry.web_rft_grading_v5 import _accepted_clues, _contains_accepted_clue
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     with path.open(encoding="utf-8") as handle:
         return [json.loads(line) for line in handle if line.strip()]
-
-
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def capture_sha256(capture: dict[str, Any]) -> str:
@@ -60,7 +62,9 @@ def prepare(
             raise ValueError("Review must explicitly cover every source case")
         for split in source_splits:
             filename = f"web-{split}.jsonl"
-            if review["source_sha256"].get(filename) != sha256(data_dir / filename):
+            if not matches_text_file_sha256(
+                data_dir / filename, review["source_sha256"].get(filename),
+            ):
                 raise ValueError(f"Review does not match source data: {filename}")
         excluded_groups = {
             row["case_group"] for row in source_rows
@@ -188,10 +192,12 @@ def prepare(
         path.write_text(
             "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
             encoding="utf-8",
+            newline="\n",
         )
         _validate_agentic_dataset(path, "web", expected_tools=tools)
         files[path.name] = {"sha256": sha256(path), "rows": len(rows)}
     manifest = {
+        "hash_line_endings": "LF",
         "status": "prepared-not-approved-for-submission",
         "architecture": "fixed native live-web resolver followed by optimized catalog agent",
         "training_target": "catalog continuation; live web resolver weights are unchanged",
@@ -221,6 +227,7 @@ def prepare(
         }
     (output_dir / "manifest.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8",
+        newline="\n",
     )
     return manifest
 

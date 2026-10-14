@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 import pytest
@@ -191,3 +192,24 @@ def test_review_cannot_quarantine_only_part_of_a_connected_group(inputs):
     review_path.write_text(json.dumps(review), encoding="utf-8")
     with pytest.raises(ValueError, match="entire connected case group"):
         prepare(evidence, data, config, output, review_path)
+
+
+def test_curated_regeneration_is_identical_across_lf_and_crlf_and_accepts_legacy_review(inputs):
+    review_path, review = reviewed_inputs(inputs)
+    evidence, data, config, output = inputs
+    for path in data.iterdir():
+        content = path.read_bytes().replace(b"\r\n", b"\n")
+        review["source_sha256"][path.name] = hashlib.sha256(
+            content.replace(b"\n", b"\r\n"),
+        ).hexdigest()
+        path.write_bytes(content)
+    review_path.write_text(json.dumps(review), encoding="utf-8")
+    paths = [evidence, review_path, *data.iterdir(), *config.iterdir()]
+    for path in paths:
+        path.write_bytes(path.read_bytes().replace(b"\r\n", b"\n"))
+    prepare(evidence, data, config, output, review_path)
+    expected = {path.name: path.read_bytes() for path in output.iterdir()}
+    for path in paths:
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    prepare(evidence, data, config, output, review_path)
+    assert expected == {path.name: path.read_bytes() for path in output.iterdir()}

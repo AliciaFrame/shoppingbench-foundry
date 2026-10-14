@@ -14,7 +14,6 @@ only throughput and latency contention; published runs used 2-3 workers.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import importlib
 import json
 import logging
@@ -30,6 +29,8 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
+
+from shoppingbench_foundry.artifacts import text_file_sha256 as sha256
 
 PUBLISHED_SETTINGS = {
     "MAX_TOOL_STEPS": "8",
@@ -50,10 +51,6 @@ logger = logging.getLogger(__name__)
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     with path.open(encoding="utf-8") as handle:
         return [json.loads(line) for line in handle if line.strip()]
-
-
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def main() -> None:
@@ -92,6 +89,7 @@ def main() -> None:
     documents = REPO_ROOT / "data" / "prepared" / "search-documents.jsonl"
     store = InMemoryProductStore(row["product"] for row in read_jsonl(documents))
     contract = {
+        "hash_line_endings": "LF",
         "dataset_sha256": sha256(args.dataset),
         "documents_sha256": sha256(documents),
         "agent_mode": runtime.MODE,

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, remediation/v2-rft-hardening]
   pull_request:
 
 permissions:
@@ -26,6 +26,10 @@ jobs:
         run: |
           python data/scripts/prepare.py
           python rft/scripts/prepare_data.py
+          python -m rft.scripts.prepare_live_web_data \
+            --evidence rft/data/web-search/captures.jsonl \
+            --review rft/data/web-search/review.json \
+            --output-dir rft/data/web-search
           python evals/scripts/build_release_summary.py
           python evals/scripts/compare_model_costs.py --check
           git diff --exit-code -- data/prepared evals/datasets rft/data

@@ -58,6 +58,19 @@ The baseline runtime intentionally leaves all tools visible, does not require
 tool use, does not force `recommend_product -> terminate`, and does not inject
 a grounded final-answer turn.
 
+Both catalog runtimes retain failed episodes as zero-score receipts, including
+observed per-call usage and elapsed episode time. Failures produce a nonzero
+exit status by default; `--record-errors-as-zero` explicitly permits a zero
+exit status for calibration runs. Missing provider usage remains marked as
+incomplete, not invented as an exact zero-token cost.
+
+Each new output has a `.manifest.json` binding it to the dataset, catalog,
+runtime, instructions, tools, model endpoint/deployment, and SDK versions.
+Changing that contract requires a new output path. Legacy receipts without a
+manifest remain readable evidence but cannot be safely resumed. Use a new
+output when retargeting a deployment alias to different weights or changing
+the hosted catalog.
+
 ## Evaluate the optimized agent
 
 ```powershell
@@ -103,6 +116,11 @@ Score receipts with the published Web (live) RFT grader and compare stages:
 ```powershell
 $env:RFT_GRADER_MODEL_DEPLOYMENT_NAME = "<gpt-5.4-judge-deployment>"
 python evals\scripts\score_live_web.py `
+  --results .foundry\results\web-search-baseline.jsonl `
+  --dataset evals\datasets\development\web.jsonl `
+  --output .foundry\results\web-search-baseline.scored.jsonl
+
+python evals\scripts\score_live_web.py `
   --results .foundry\results\web-search-optimized.jsonl `
   --dataset evals\datasets\development\web.jsonl `
   --output .foundry\results\web-search-optimized.scored.jsonl `
@@ -111,6 +129,9 @@ python evals\scripts\score_live_web.py `
 
 The judge uses `WEB_SEARCH_OPENAI_BASE_URL`. Canonical-score comparisons use
 `summarize_development.py` exactly as for the other agents.
+The scoring CLI validates all trajectories and paired baseline inputs before
+making judge calls. Cached scores are bound to the receipts, dataset, grader,
+and configured judge.
 
 ## Compare stages
 
@@ -209,6 +230,11 @@ git diff --exit-code -- rft\data\web-search
 
 The review excludes 11 cases with ambiguous premises, insufficient evidence,
 or connected-group leakage; see `rft/data/web-search/manifest.json`.
+Derived text fingerprints normalize CRLF to LF. Preparation also recognizes
+the historical LF/CRLF source hashes in the frozen semantic review; changing
+source content still invalidates that review. Original job and calibration
+receipts are not rewritten: recalibrate with the current grader before a
+new submission.
 
 Calibrate the grader on frozen base-model rollouts (three per case). The
 published rollouts are in `rft/jobs/web-search-v6/`:

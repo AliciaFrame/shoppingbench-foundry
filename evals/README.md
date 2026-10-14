@@ -52,7 +52,13 @@ python evals\scripts\evaluate_agent.py `
 ```
 
 For the optimized condition, use `product/optimized` and
-`agents.shared.runtime`. Summarize a paired comparison with:
+`agents.shared.runtime`. Both conditions persist failed episodes with zero
+score and keep observed tokens and latency. Failure exit status is nonzero
+unless `--record-errors-as-zero` is supplied. A manifest prevents resuming
+under a different model, configuration, dataset, or catalog; legacy outputs
+without manifests require a new output path.
+
+Summarize a paired comparison with:
 
 ```powershell
 python evals\scripts\summarize_development.py `

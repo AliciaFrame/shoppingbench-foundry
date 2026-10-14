@@ -1,8 +1,9 @@
 {
+  "hash_line_endings": "LF",
   "split_strategy": "connected-group-disjoint",
   "split_manifest": {
     "path": "evals/datasets/manifest.json",
-    "sha256": "3d6b678f0e4fc642fea846d025a87567b2eb8eeb561ee1240ea95b27a4afb58a"
+    "sha256": "1065919fef4ea04ae773d04f2526f9aca1ebcceb74b1fca3b4064ce9f0e452e3"
   },
   "tasks": [
     {
@@ -52,68 +53,68 @@
   ],
   "files": {
     "product-calibration-eval.jsonl": {
-      "bytes": 537175,
-      "sha256": "4488b1c87ff0521815d2be08876f6b1830e2475673bccc959c55fe306ba512b0"
+      "bytes": 537075,
+      "sha256": "4a5ea0dc522f781c14fcfc62d3fc06dcac755ff0b2edc8898d413bd6f974aa3a"
     },
     "product-train.jsonl": {
-      "bytes": 777509,
-      "sha256": "deea01c35abe4c73263d128eba3b88d859b978aebedff2eb086f6036f1f9a5b3"
+      "bytes": 777359,
+      "sha256": "e63dbc9af936faad1889a3089e0785f766fae3fe6fc6dd0905250e56017e5e81"
     },
     "product-validation-eval.jsonl": {
-      "bytes": 107235,
-      "sha256": "79c798406ee47e9524b2be93125408f50b945fac0d2c75d1183dd8d488cb85fa"
+      "bytes": 107215,
+      "sha256": "bce758fc9832ffeaef431aab8a6d533d6c648f7ebe927952922a516181e9abec"
     },
     "product-validation.jsonl": {
-      "bytes": 104301,
-      "sha256": "1415f649582e66a6d377f3a0f813e79232937e9b322a718878e433d168cc88dd"
+      "bytes": 104281,
+      "sha256": "5f6b030f5a1be85172f89e1faf97d0db79fe1acbde124478bb0f27d77400e964"
     },
     "shop-calibration-eval.jsonl": {
-      "bytes": 863600,
-      "sha256": "c48843e920f9e76073321acf70d4d6e63747882433580f2cc647d748f389f900"
+      "bytes": 863500,
+      "sha256": "17478e5161151ae635c313e838413031b51af6827167ec19ee8670ee13f63d3d"
     },
     "shop-train.jsonl": {
-      "bytes": 1245189,
-      "sha256": "2821a78583bd0d6846601143b4e607e628d2115923c6c557b9415ffa0d51a52b"
+      "bytes": 1245039,
+      "sha256": "9322bf51bf40025eaed0c14a7a576b708b8e928726b6b7439068f63bf78a9e5f"
     },
     "shop-validation-eval.jsonl": {
-      "bytes": 172520,
-      "sha256": "c4682c31b0b934641b36ae550a6526011a1e5fc6f8e39da7a956cb52e95dc009"
+      "bytes": 172500,
+      "sha256": "a3b174df66c1ffe5028aece183cff222919ef4bf040d071092b6d16cf50b0811"
     },
     "shop-validation.jsonl": {
-      "bytes": 164735,
-      "sha256": "40c703ca0f142bc47a9719a3388197dd6c0c8ca7b224e5a75c48986f69e0bc4e"
+      "bytes": 164715,
+      "sha256": "ad76ce33e6e63743e35e1d5192ee1b985a87e208fb5721a9fa94988c0717c716"
     },
     "voucher-calibration-eval.jsonl": {
-      "bytes": 840000,
-      "sha256": "639dfe1ef116a30d8fadbd7e36144d8b9efbaa492170438d2d2703f7b2eb4bd7"
+      "bytes": 839900,
+      "sha256": "69ee7379a7816370b752d9ea5ac19c6f8436651af929f0e3465e333f2e21df8e"
     },
     "voucher-train.jsonl": {
-      "bytes": 1156273,
-      "sha256": "34528722d49fe3610627d19000800c24990cfad5cec0288ae00d8dc013773019"
+      "bytes": 1156123,
+      "sha256": "4bbe918a52197778dcd40b59264ef2c0703a6740c8f000706c988886030da532"
     },
     "voucher-validation-eval.jsonl": {
-      "bytes": 167800,
-      "sha256": "d7a32be42635d3d0cdb1c7ace15e4d81752f7f7a2b4c212192bfe192d55ccf50"
+      "bytes": 167780,
+      "sha256": "2e78e3dec741d348377df90bd27c04edad39697051d99414a7257071298309a1"
     },
     "voucher-validation.jsonl": {
-      "bytes": 156375,
-      "sha256": "500c32240bb732af689440561cb039c77a377848256b93252c49709f4eff2a19"
+      "bytes": 156355,
+      "sha256": "5661a99c29857b4079262eef30a4459519fa5738cbf13ed2a307e549fa3ee36e"
     },
     "web-calibration-eval.jsonl": {
-      "bytes": 566015,
-      "sha256": "ba91c2b1507af82d6b77b993fea920b135aea395683c971dda106599b007adb2"
+      "bytes": 565910,
+      "sha256": "b30521e1f6bbb026076538b9f90bb37c670bd74bc8ed76b4bf8649d6e3675bec"
     },
     "web-train.jsonl": {
-      "bytes": 254717,
-      "sha256": "88914d95cf4075c62b97367c66e475d4e1cac1c0d4b286defa029ce44a0205a9"
+      "bytes": 254668,
+      "sha256": "c2fc3543fa4c982615a2fde4e9c1457abcc431d3a50a398fd59099649c65a71b"
     },
     "web-validation-eval.jsonl": {
-      "bytes": 112993,
-      "sha256": "605bef9c836aa591f7f9aa0582a21db2a25738a3e2e32e0e1c98acc793e270e8"
+      "bytes": 112972,
+      "sha256": "aa533123f3dfa0f4d8bc91f9a16e69769d4f7c6e0bfe54a68dc498a3c27cfde6"
     },
     "web-validation.jsonl": {
-      "bytes": 108320,
-      "sha256": "cbf8fa17bac119aab989d66f020fc546e170603e6be3156ee1c76bdd585dcf25"
+      "bytes": 108299,
+      "sha256": "c852f31594ba314a52c15c8dfac3c389834212a8db7e33166b927c10c07c91d1"
     }
   }
 }

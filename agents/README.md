@@ -46,6 +46,10 @@ use different endpoints and authentication scopes. The runtime automatically
 uses the Cognitive Services scope for classic Azure OpenAI endpoints and the
 Foundry scope for project endpoints.
 
+The prepackage hook refreshes the vendored repository package before each
+build on both Windows and POSIX. Repeated packaging replaces the package
+rather than nesting copies or retaining removed source files.
+
 `OPTIMIZATION_LOCAL_DIR` is task-qualified in `azure.yaml` (for example,
 `voucher/optimized`). The shared runtime resolves relative configuration paths
 from the packaged agents root, so the same path works from a repository clone
