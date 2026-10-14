@@ -1,0 +1,72 @@
+[
+  {
+    "step": 0,
+    "train_mean_reward": null,
+    "valid_mean_reward": 0.8448812665148063
+  },
+  {
+    "step": 1,
+    "train_mean_reward": 0.85443598046875,
+    "valid_mean_reward": null
+  },
+  {
+    "step": 2,
+    "train_mean_reward": 0.8010551994554925,
+    "valid_mean_reward": null
+  },
+  {
+    "step": 3,
+    "train_mean_reward": 0.7765924227941178,
+    "valid_mean_reward": 0.8178142811791382
+  },
+  {
+    "step": 4,
+    "train_mean_reward": 0.7835166685855262,
+    "valid_mean_reward": null
+  },
+  {
+    "step": 5,
+    "train_mean_reward": 0.7569873476562501,
+    "valid_mean_reward": null
+  },
+  {
+    "step": 6,
+    "train_mean_reward": 0.864589607007576,
+    "valid_mean_reward": 0.829691358276644
+  },
+  {
+    "step": 7,
+    "train_mean_reward": 0.882397359375,
+    "valid_mean_reward": null
+  },
+  {
+    "step": 8,
+    "train_mean_reward": 0.7305164448975503,
+    "valid_mean_reward": null
+  },
+  {
+    "step": 9,
+    "train_mean_reward": 0.9107148784598215,
+    "valid_mean_reward": 0.8907095555555554
+  },
+  {
+    "step": 10,
+    "train_mean_reward": 0.8042414508539243,
+    "valid_mean_reward": null
+  },
+  {
+    "step": 11,
+    "train_mean_reward": 0.9102364732142858,
+    "valid_mean_reward": null
+  },
+  {
+    "step": 12,
+    "train_mean_reward": 0.8575547662417765,
+    "valid_mean_reward": 0.9114317505668933
+  },
+  {
+    "step": 13,
+    "train_mean_reward": 0.8127920863970588,
+    "valid_mean_reward": 0.9074983287981859
+  }
+]

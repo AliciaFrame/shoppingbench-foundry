@@ -52,8 +52,42 @@ RESPONSES_TOOLS: list[dict[str, Any]] = [
     },
 ]
 
+WEB_TERMINATE_PARAMETERS: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "product_ids": {
+            "type": "string",
+            "description": "The same ordered product IDs submitted to recommend_product.",
+        },
+        "resolved_clue": {
+            "type": "string",
+            "description": "The factual answer to the user's knowledge clue.",
+        },
+        "final_answer": {
+            "type": "string",
+            "description": (
+                "The complete user-facing answer naming the resolved clue and recommended "
+                "product ID."
+            ),
+        },
+    },
+    "required": ["product_ids", "resolved_clue", "final_answer"],
+    "additionalProperties": False,
+}
 
-def chat_completions_tools() -> list[dict[str, Any]]:
+
+def responses_tools(task: str | None = None) -> list[dict[str, Any]]:
+    tools = deepcopy(RESPONSES_TOOLS)
+    if task == "web":
+        terminate = next(tool for tool in tools if tool["name"] == "terminate")
+        terminate["description"] = (
+            "End the Web shopping episode with the resolved clue and complete final answer."
+        )
+        terminate["parameters"] = deepcopy(WEB_TERMINATE_PARAMETERS)
+    return tools
+
+
+def chat_completions_tools(task: str | None = None) -> list[dict[str, Any]]:
     return [
         {
             "type": "function",
@@ -62,5 +96,5 @@ def chat_completions_tools() -> list[dict[str, Any]]:
                 for key in ("name", "description", "parameters")
             },
         }
-        for tool in RESPONSES_TOOLS
+        for tool in responses_tools(task)
     ]

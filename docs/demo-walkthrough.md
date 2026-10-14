@@ -1,72 +1,65 @@
 # Demo walkthrough
 
-## 1. Frame the problem
+## 1. Establish the task
 
-Open the root README and introduce the four task families. Emphasize that this
-is a behavior benchmark: the model must use tools correctly, not merely produce
-a plausible answer.
+Open the root README and explain that ShoppingBench measures behavior, not
+plausible prose. The agent must search, inspect evidence, recommend exact
+ordered IDs, terminate, and provide a grounded answer.
 
-## 2. Show the data and tools
+## 2. Show the clean lifecycle
 
-Open `data/README.md`, then show one row from each source file. Explain the
-controlled 3,636-document index and why deterministic distractors make
-regressions visible.
+Walk through:
 
-Start the tool runtime locally or use the deployed endpoint:
+- `agents/<task>/baseline` - minimal off-the-shelf configuration
+- `agents/<task>/optimized` - retained optimized configuration
+- `evals/datasets` - optimization, training, development, and final roles
+- `evals/results` - evidence organized by lifecycle stage
+- `optimize` - Agent Optimizer runner and seeds
+- `rft` - training data, submission code, and job receipts
 
-```powershell
-uvicorn shoppingbench_foundry.app:app --host 0.0.0.0 --port 8000
-```
+## 3. Explain the baseline
 
-Demonstrate `find_product`, `view_product_information`, and the explicit
-`recommend_product` → `terminate` protocol.
+Open `agents/shared/baseline_runtime.py`. Point out that it does not force tool
+choice, hide tools, enforce termination, or request a separate final answer.
+This is what makes the first column a real off-the-shelf baseline.
 
-## 3. Show the four agents
+Then open `agents/shared/runtime.py` to show the optimized orchestration:
+sequential tools, a 12-step bound, recommendation followed by termination, and
+a grounded final-answer turn.
 
-Open `agents/product/main.py`, `agents/shop/main.py`,
-`agents/voucher/main.py`, and `agents/web/main.py`. Then open the matching
-`config/` directories to show how the task behavior is separated while the
-runtime remains shared.
+## 4. Explain the grader
 
-## 4. Explain evaluation
+Open `src/shoppingbench_foundry/grading.py`. The canonical grader scores exact
+selection, task constraints, process, and final answer. Agent Optimizer's LLM
+judge proposes candidates; this deterministic grader decides promotion.
 
-Open `src/shoppingbench_foundry/grading.py` and
-`evaluations/README.md`. Explain exact IDs, constraints, task invariants, and
-why the canonical holdout—not the optimizer judge—controls deployment.
+## 5. Present the hill climb
 
-## 5. Show Agent Optimizer
+Use `docs/results.md`:
 
-Open `optimization/results/summary.json` and a pair of raw holdout receipts.
-Walk through Product and Shop improvements, then use Voucher as the example of
-why an optimizer-score improvement is not automatically deployed.
+- Product: `0.753 -> 0.941`
+- Shop: `0.796 -> 0.937`
+- Voucher: `0.855 -> 0.861 -> 0.925`
+- Web (static): `0.691 -> 0.729`, with an RFT alternative at `0.718` with
+  lower recorded token consumption; costs exclude unavailable usage from
+  failed episodes
+- Web (live): `0.250 -> 0.829 -> 0.903`, both steps statistically clear
 
-## 6. Show RFT
+Emphasize that most baseline failures were incomplete agent behavior, not an
+inability to identify products.
 
-Open `rft/README.md`, `rft/scripts/prepare_data.py`, and
-`rft/scripts/submit.py`. Explain:
+## 6. Show checkpoint discipline
 
-- retained optimized instructions become the developer message
-- rollouts execute live tools
-- the reward is calibrated before spending a job
-- canonical holdouts remain untouched
-- each task has a distinct suffix
+For Voucher, show why Step 10 is the selected operating point. For Web
+(static), show the v5 hard gates and the score/cost trade-off. For Web (live),
+show the training curve in `rft/jobs/web-search-v6/` and the paired comparison
+in `evals/results/comparisons/web-search-optimized-to-rft.json`.
 
-Close with `rft/results/web-rft3-holdout-comparison.json`. Emphasize that Step
-10 reached `0.901`, while Step 15 fell to `0.836` and the final artifact to
-`0.795`; checkpoint selection preserved the gain that final-only deployment
-would have lost.
+## 7. Close with the sealed test
 
-## 7. Tell the hill-climb story
+Show the final-test table in `docs/results.md`. Web (live) RFT scores `0.906`
+on the sealed set, matching development. No tuning decision was made from the
+sealed test.
 
-Open `docs/shoppingbench-hill-climb-deck.html` in a browser. The final
-cross-task narrative is:
-
-- Product: `0.753 -> 0.961` with Agent Optimizer
-- Shop: `0.860 -> 0.998` with Agent Optimizer
-- Voucher: `0.898 -> 0.955` with Agent Optimizer, then `0.995` with RFT
-- Web: `0.790 -> 0.901` with agentic RFT
-- cross-task mean: `0.825 -> 0.964`
-
-End on the operating principle: use the cheapest effective improvement lever,
-but keep one deterministic evaluation spine across prompt optimization,
-training, checkpoint selection, and deployment.
+Finish with: **use the cheapest effective improvement lever, but measure
+quality, latency, and tokens on one deterministic evaluation spine.**

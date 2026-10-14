@@ -1,4 +1,0 @@
-name: shoppingbench-voucher-agent
-instruction_file: instructions.md
-skill_dir: skills
-tools_file: tools.json

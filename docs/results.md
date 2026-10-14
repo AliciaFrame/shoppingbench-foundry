@@ -1,119 +1,109 @@
 # Results
 
-## Canonical Agent Optimizer results
+## Methodology
 
-| Task | Baseline | Retained | Delta |
-|---|---:|---:|---:|
-| Product | 0.753 | 0.961 | +0.208 |
-| Shop | 0.860 | 0.998 | +0.138 |
-| Voucher | 0.898 | 0.995 | +0.097 |
-| Web | 0.790 | 0.901 | +0.111 |
+Every published MAI hill-climb development comparison uses:
 
-The final selected cross-task mean is 0.964.
+- MAI-Code-1.1-Flash for every agent and stage;
+- 30 leakage-safe development cases per task, three rollouts each
+  (90 episodes per stage);
+- one deterministic canonical grader for base, optimized, and RFT agents;
+- explicit zeroes for runtime errors and nontermination;
+- mean score, latency, total tokens, and list-price cost reported together.
 
-## Important interpretation
+Repeated rollouts are paired by case. Comparison receipts report
+case-clustered 95% confidence intervals rather than treating all 90 episodes
+as independent.
 
-Optimizer scores and canonical scores answer different questions:
+## Base → Agent Optimized → RFT
 
-- The optimizer's `task_adherence` score guides search on optimization cases.
-- The canonical score deterministically measures task correctness on untouched
-  holdouts.
+| Agent | Stage | Score | Latency | Tokens | Cost / 1k episodes | Decision |
+|---|---|---:|---:|---:|---:|---|
+| Product | Base | 0.7529 | 31.80s | 16,227 | $5.37 | |
+|  | Agent Optimized | **0.9408** | **16.22s** | **13,948** | $5.64 | **Selected** |
+| Shop | Base | 0.7957 | 51.31s | **14,821** | **$6.49** | |
+|  | Agent Optimized | **0.9371** | **25.56s** | 33,799 | $11.98 | **Selected** |
+| Voucher | Base | 0.8547 | 61.75s | **20,892** | $9.44 | |
+|  | Agent Optimized | 0.8606 | 35.17s | 30,897 | $12.08 | |
+|  | RFT Step 10 | **0.9248** | **23.10s** | 29,610 | **$8.90** | **Selected** |
+| Web (static) | Base | 0.6911 | 99.74s | 77,709 | $31.71 | |
+|  | Agent Optimized | **0.7286** | 100.97s | 97,156 | $38.53 | **Selected** |
+|  | RFT final | 0.7175 | **48.75s** | **37,278** | **$13.33** | Token alternative |
+| Web (live) | Base | 0.2497 | 39.15s | **24,023** | $16.79 | |
+|  | Agent Optimized | 0.8292 | 20.00s | 25,236 | $13.19 | |
+|  | RFT final | **0.9025** | **19.80s** | 26,198 | **$12.56** | **Selected** |
 
-A candidate can improve the optimizer score and still be rejected. Voucher
-round two improved termination but reduced recommendation correctness; Web
-round two tied the mean while reducing perfect and terminated cases.
+Recorded token cost uses list prices of $0.20 input and $1.20 output per million
+MAI-Code-1.1-Flash tokens, with all input priced uncached. The Web (live)
+web-search lookup step runs on GPT-5.4-mini and is priced at $0.75 / $4.50.
 
-## RFT
+## Interpretation
 
-Web is the first RFT task because its calibrated 40% base failure rate offers
-enough room to learn. Product remains a curriculum-design task: its 15%
-repeated-rollout failure rate is too close to ceiling for a strong first RFT
-experiment.
+**Product** improved on every operating metric. Agent Optimizer raised the
+score by 0.188 while halving latency and reducing tokens.
 
-The first Web submission reached the endpoint grader but made zero tool calls
-because the uploaded rows omitted the per-example function schemas required by
-agentic RFT. The platform rejected all 160 validation attempts before step 1
-and billed 0.000 training hours. The generator and submit-time validation now
-enforce the four schemas, and the deployed endpoint uses the same reward
-function used during calibration.
+**Shop** gained 0.141 and halved latency. The optimized instructions use more
+context, so tokens and cost rose despite faster execution.
 
-Corrected job `ftjob-e7e676861873489195e796bf622ee265` was accepted on the
-August 27 MAI-Code-1.1-Flash checkpoint with suffix `mai-sb-web-rft2`. Its
-committed job JSON preserves the submission receipt. It was canceled after its
-validation score stayed flat and training behavior showed reward-hacking
-signals; no checkpoint was retained.
+**Voucher** needed both levers. Agent Optimizer mainly hardened protocol
+completion; RFT Step 10 then lifted the score to 0.925 and was the cheapest and
+fastest stage. Step 10 was preferred over the final checkpoint because it
+completed more episodes strictly.
 
-A second `developerTier` job, `ftjob-8978aa9f7a7d40eea2fa3854babb72da`,
-completed with suffix `mai-sb-web-rft3` against the isolated v2 grader.
-The revised reward makes exact product selection dominant, limits the
-knowledge-query bonus to the first two searches, and penalizes excess and
-duplicate searches. Recalibration on the authoritative 20-case Step 0 run
-produced a 50% base failure rate at threshold `0.9`.
+**Web (static)** uses the strict v5 clue, grounding, protocol, and product
+gates. Agent Optimized has the best score. Its RFT checkpoint gives up 0.011
+score with lower recorded token consumption and latency. Recorded tokens
+and costs exclude unavailable usage from failed episodes.
 
-## Web checkpoint selection
+The [README model comparison](../README.md#cost-comparison-with-gpt-56) compares
+these MAI choices with the best complete GPT-5.6 vanilla or agent-optimized
+runs, using per-model prices and explicit missing-usage caveats.
 
-All three published artifacts were deployed and evaluated on the same
-50-case canonical Web holdout with the retained agent instructions, skill, and
-live shopping tools.
+**Web (live)** climbs at both steps:
 
-| Artifact | Mean | Perfect | Exact | Terminated | Mean searches | Mean tokens |
-|---|---:|---:|---:|---:|---:|---:|
-| Base model | 0.790 | 32 | 38 | 40 | 16.82 | 142,051 |
-| Step 10 | **0.901** | **43** | **44** | **47** | 6.24 | 49,321 |
-| Step 15 | 0.836 | 40 | 40 | 46 | **4.84** | **45,896** |
-| Final | 0.795 | 36 | 39 | 40 | 5.70 | 68,899 |
+| Step | Score Δ | 95% CI | RFT reward Δ | 95% CI |
+|---|---:|---|---:|---|
+| Base → Agent Optimized | +0.579 | [+0.437, +0.711] | +0.559 | [+0.415, +0.692] |
+| Agent Optimized → RFT | +0.073 | [+0.001, +0.165] | +0.081 | [+0.010, +0.160] |
 
-Step 10 improved 13 cases, tied 34, and regressed three relative to the base
-model. Step 15 and the final checkpoint lost exact-product accuracy, showing
-that the second epoch overfit the training reward. Step 10 is therefore the
-selected artifact.
+The base agent rarely finished: 66 of 90 episodes exhausted their tool steps
+without recommending a product. Agent Optimizer fixed most of the protocol;
+RFT then halved the remaining unfinished episodes (15 → 7), raised exact
+products from 74 to 81 of 90, and solved a case (`web-113`) that no earlier
+stage solved.
+Tokens rose 4% and latency was unchanged.
 
-The result is not evidence that Web is globally saturated. It is evidence that
-the current 80/20 curriculum is saturated: another run should wait for new,
-disjoint hard cases and better grounding labels rather than recycling the same
-examples.
+The RFT reward (`web_search_rft_grading_v6`) combines an LLM judge, which
+checks the resolved clue against the reference answer and the evidence, and
+checks product claims and answer completeness, with deterministic gates for
+the exact product, recommendation, and termination, and a succinctness cost
+for extra tool calls and long answers. Its mean rises 0.180 → 0.739 → 0.820.
 
-## Post-RFT Web optimizer
+## Sealed final test
 
-The optimizer generated four candidates around the selected Step 10 policy.
-Candidate 1 won its LLM-judge evaluation, but the canonical holdout rejected
-it.
+All selection decisions were frozen before the disjoint 50-case final sets
+were opened. Each case received one attempt.
 
-| Artifact | Optimizer score | Canonical mean | Perfect | Exact | Terminated | Mean tokens |
-|---|---:|---:|---:|---:|---:|---:|
-| Step 10 retained config | 0.584625 | **0.901** | **43** | **44** | 47 | 49,321 |
-| Candidate 1 | **0.5885** | 0.871 | 40 | 41 | **49** | **44,904** |
+| Agent | Configuration | Score | Exact | Latency | Tokens |
+|---|---|---:|---:|---:|---:|
+| Product | Agent Optimized | **0.9385** | 46/50 | 16.79s | 11,975 |
+| Shop | Agent Optimized | **0.9047** | 45/50 | 30.37s | 34,917 |
+| Voucher | RFT Step 10 | **0.8625** | 43/50 | 28.88s | 31,349 |
+| Web (live) | RFT final | **0.9055** | 45/50 | 20.11s | 26,725 |
 
-Candidate 1 improved three cases, tied 43, and regressed four. The result
-confirms a plateau: the current curriculum can trade exact accuracy for
-efficiency, but does not provide a higher-quality operating point.
+Web (live) generalized: its final-test score matches development (0.903) and
+its RFT reward is 0.782. The committed Web (static) final-test receipt
+(`evals/results/final/web.jsonl`, 0.6305) predates the hardened v5 selection
+and is retained as historical evidence, not as an estimate for the current
+Web (static) configuration.
 
-## Additional RFT gates
+## Evidence
 
-| Task | Calibrated failure | Decision |
-|---|---:|---|
-| Product | 15% across repeated rollouts | Do not train; insufficient signal |
-| Shop | 20% | Do not train; canonical score already 0.998 |
-| Voucher | 35% | Run one conservative experiment |
-| Web | 50% under grader v2 | Completed; Step 10 retained |
-
-Voucher job `ftjob-3f87f6185a6a436b9255901810c63fee` uses one epoch,
-learning-rate multiplier `0.5`, evaluation every three steps, and three
-validation samples. These settings intentionally reduce the overtraining risk
-observed in Web.
-
-## Voucher checkpoint selection
-
-The Voucher job completed with checkpoints at Steps 3, 12, and 15/final.
-Step 3 and Step 12 were deployed to the approved ShoppingBench resource and
-evaluated on the unchanged 50-case holdout.
-
-| Artifact | Mean | Perfect | Exact | Terminated | Mean searches | Mean tokens |
-|---|---:|---:|---:|---:|---:|---:|
-| Retained optimized agent | 0.9545 | 26 | 46 | 29 | 6.30 | 26,311 |
-| Step 3 | 0.96375 | 46 | 47 | 49 | 7.64 | 45,922 |
-| Step 12 | **0.994667** | **48** | **49** | **49** | **5.78** | **34,788** |
-
-Step 12 improved 24 cases, tied 26, and regressed none. Step 3 improved the
-mean but regressed three cases and used substantially more tokens. Step 12 is
-therefore retained; the lower-reward final artifact was not deployed.
+- Base receipts: `evals/results/baseline/`
+- Agent Optimized receipts: `evals/results/optimized/`
+- RFT receipts: `evals/results/checkpoints/`
+- Web (live) RFT-reward scores and paired comparisons: `evals/results/scored/`
+- Paired canonical comparisons: `evals/results/comparisons/`
+- Sealed final-test receipts: `evals/results/final/`
+- Machine-readable release summary: `evals/results/summary.json`
+- RFT calibration, submission, status, and training curves: `rft/jobs/`

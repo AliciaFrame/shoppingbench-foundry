@@ -51,7 +51,16 @@ The Container App identity receives only `Search Index Data Reader`.
 | `GET /find_product` | Search |
 | `GET /view_product_information` | Detail inspection |
 | `POST /rft/tools/{tool_name}` | Foundry RFT function-call adapter |
-| `POST /grade` | Deterministic endpoint grader |
+| `POST /grade/v3` | Canonical RFT endpoint grader |
+| `POST /grade/web/v5` | Web (static) RFT endpoint grader |
+| `POST /grade/web-search/v6` | Web (live) RFT endpoint grader |
 
 Set `SHOPPINGBENCH_API_TOKEN` to require bearer authentication on all tool and
 grader calls.
+
+The Web (live) grader calls a GPT-5.4 judge. Before provisioning, set
+`WEB_SEARCH_OPENAI_BASE_URL`, `WEB_SEARCH_MODEL_DEPLOYMENT_NAME`, and
+`RFT_GRADER_MODEL_DEPLOYMENT_NAME` with `azd env set`, and grant the Container
+App identity `Cognitive Services OpenAI User` on that model resource. Give the
+judge enough capacity for concurrent training rollouts; the published run used
+545k tokens per minute.

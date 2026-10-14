@@ -1,0 +1,164 @@
+{
+  "methodology": {
+    "dataset": "evals/datasets/development/web.jsonl",
+    "cases": 30,
+    "independent_connected_groups": 28,
+    "grouping": "expected product ID + normalized accepted clue",
+    "rollouts_per_case": 3,
+    "episodes_per_candidate": 90,
+    "grader": "web-rft-v5",
+    "failure_policy": "Nonterminating/error episodes recorded as explicit zeroes."
+  },
+  "platform_validation": {
+    "step6": 0.7557619047619049,
+    "step8": 0.7256666666666668,
+    "final_step11": 0.7718095238095238
+  },
+  "development_results": {
+    "step6": {
+      "episodes": 90,
+      "mean_score": 0.607778,
+      "passed": 46,
+      "pass_rate": 0.511111,
+      "score_distribution": {
+        "0.0": 14,
+        "0.1": 10,
+        "0.15": 4,
+        "0.2": 1,
+        "0.48": 15,
+        "0.9": 1,
+        "0.95": 4,
+        "1.0": 41
+      },
+      "components": {
+        "exact_product": 0.677778,
+        "correct_clue": 0.622222,
+        "viewed_selected": 0.833333,
+        "grounded_final_answer": 0.566667,
+        "completed_protocol": 0.844444,
+        "efficient": 0.6
+      },
+      "nonterminating": 14,
+      "mean_tokens": 34937.8,
+      "mean_latency_seconds": 43.1
+    },
+    "step8": {
+      "episodes": 90,
+      "mean_score": 0.591778,
+      "passed": 44,
+      "pass_rate": 0.488889,
+      "score_distribution": {
+        "0.0": 17,
+        "0.1": 7,
+        "0.15": 5,
+        "0.48": 17,
+        "0.95": 7,
+        "1.0": 37
+      },
+      "components": {
+        "exact_product": 0.677778,
+        "correct_clue": 0.6,
+        "viewed_selected": 0.811111,
+        "grounded_final_answer": 0.533333,
+        "completed_protocol": 0.811111,
+        "efficient": 0.611111
+      },
+      "nonterminating": 17,
+      "mean_tokens": 28699.0,
+      "mean_latency_seconds": 40.7
+    },
+    "final_step11": {
+      "episodes": 90,
+      "mean_score": 0.666111,
+      "passed": 54,
+      "pass_rate": 0.6,
+      "score_distribution": {
+        "0.0": 12,
+        "0.1": 9,
+        "0.15": 4,
+        "0.2": 1,
+        "0.48": 10,
+        "0.9": 1,
+        "0.95": 9,
+        "1.0": 44
+      },
+      "components": {
+        "exact_product": 0.711111,
+        "correct_clue": 0.666667,
+        "viewed_selected": 0.833333,
+        "grounded_final_answer": 0.655556,
+        "completed_protocol": 0.866667,
+        "efficient": 0.588889
+      },
+      "nonterminating": 12,
+      "mean_tokens": 37277.9,
+      "mean_latency_seconds": 48.8
+    }
+  },
+  "paired_comparisons": {
+    "step6_to_step8": {
+      "mean_score_delta": -0.016,
+      "score_delta_clustered_95_ci": [
+        -0.067619,
+        0.051905
+      ],
+      "pass_rate_delta": -0.022222,
+      "pass_delta_clustered_95_ci": [
+        -0.107143,
+        0.083333
+      ],
+      "exact_product_delta": 0.0,
+      "exact_delta_clustered_95_ci": [
+        -0.059524,
+        0.071429
+      ],
+      "improved": 17,
+      "regressed": 21,
+      "unchanged": 52
+    },
+    "step6_to_final_step11": {
+      "mean_score_delta": 0.058333,
+      "score_delta_clustered_95_ci": [
+        -0.016746,
+        0.12369
+      ],
+      "pass_rate_delta": 0.088889,
+      "pass_delta_clustered_95_ci": [
+        -0.02381,
+        0.186508
+      ],
+      "exact_product_delta": 0.033333,
+      "exact_delta_clustered_95_ci": [
+        -0.043651,
+        0.119048
+      ],
+      "improved": 22,
+      "regressed": 13,
+      "unchanged": 55
+    },
+    "step8_to_final_step11": {
+      "mean_score_delta": 0.074333,
+      "score_delta_clustered_95_ci": [
+        0.008492,
+        0.118294
+      ],
+      "pass_rate_delta": 0.111111,
+      "pass_delta_clustered_95_ci": [
+        0.02381,
+        0.166667
+      ],
+      "exact_product_delta": 0.033333,
+      "exact_delta_clustered_95_ci": [
+        -0.035714,
+        0.099206
+      ],
+      "improved": 25,
+      "regressed": 17,
+      "unchanged": 48
+    }
+  },
+  "selection": {
+    "checkpoint": "final_step11",
+    "reason": "Highest platform validation reward and development mean/pass rate. Statistically better than Step 8 on clustered score and pass-rate intervals; positive but not conclusive versus Step 6."
+  }
+}

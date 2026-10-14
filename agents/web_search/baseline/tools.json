@@ -1,0 +1,65 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "find_product",
+      "description": "Search the product catalog.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "q": {"type": "string"},
+          "page": {"type": "integer", "minimum": 1, "maximum": 5},
+          "shop_id": {"type": "string"},
+          "price": {"type": "string"},
+          "sort": {"type": "string", "enum": ["default", "order", "priceasc", "pricedesc"]},
+          "service": {"type": "string"}
+        },
+        "required": ["q", "page"],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "view_product_information",
+      "description": "Inspect detailed product information.",
+      "parameters": {
+        "type": "object",
+        "properties": {"product_ids": {"type": "string"}},
+        "required": ["product_ids"],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recommend_product",
+      "description": "Submit one final matching product ID.",
+      "parameters": {
+        "type": "object",
+        "properties": {"product_ids": {"type": "string"}},
+        "required": ["product_ids"],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "terminate",
+      "description": "End with the grounded clue and complete answer.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "product_ids": {"type": "string"},
+          "resolved_clue": {"type": "string"},
+          "final_answer": {"type": "string"}
+        },
+        "required": ["product_ids", "resolved_clue", "final_answer"],
+        "additionalProperties": false
+      }
+    }
+  }
+]

@@ -1,0 +1,121 @@
+[
+  {
+    "function": {
+      "description": "Search the shopping catalog for candidate items after you have already resolved the user’s factual clue from grounded evidence outside the catalog. This tool is the catalog-lookup step that converts the resolved clue into marketplace search terms and should usually be the first shopping tool called. In this task family, the workflow is typically: resolve an external fact such as a character/class name, athlete name, city, country, or year; formulate a clue-aligned product query; inspect promising matches with view_product_information; then recommend exactly one final product. Use clue-derived terms directly in the query and include the requested product type plus any user constraints such as brand/name match, “kids” sizing, “metal,” “magnetic,” “compatible with Xiaomi Band 7 series,” compactness, edition/publication year, souvenir type, flavor/style inspiration, or other item attributes. Reformulate and retry queries if the first search is too broad, too narrow, or semantically off-target. The catalog itself does not verify the factual clue, so do not use this tool to infer external facts; instead, keep the search terms consistent with the already-grounded answer. Search quality is judged partly by whether the query tightly reflects the resolved clue and the requested product category, e.g. “magnetic Rubik's Cube Warrior brand,” “kids t-shirt Kylian Mbappé,” or “Milan metal magnetic strap Xiaomi Band 7.”",
+      "name": "find_product",
+      "parameters": {
+        "additionalProperties": false,
+        "properties": {
+          "page": {
+            "description": "Result page number to retrieve. Start with 1 for the initial search and only increase to later pages if page 1 does not surface a suitable clue-matching product.",
+            "maximum": 5,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "price": {
+            "description": "Optional price filter string to narrow the catalog when the user gives a budget, asks for cheap/premium options, or when broad searches return too many candidates.",
+            "type": "string"
+          },
+          "q": {
+            "description": "Focused catalog search text built from the resolved clue and the requested item type. Include the factual answer and the concrete product attributes the user asked for, such as a person/class/city/country/year plus terms like “kids t-shirt,” “magnetic cube,” “metal magnetic strap,” “Xiaomi Band 7,” “Bible edition 1982,” or similar. Prefer concise, clue-faithful keywords over speculative marketing phrases, and avoid unsupported factual claims not already grounded outside the catalog.",
+            "type": "string"
+          },
+          "service": {
+            "description": "Optional marketplace service, fulfillment, or logistics filter to apply when a specific service scope is required by the task or helps narrow noisy results.",
+            "type": "string"
+          },
+          "shop_id": {
+            "description": "Optional seller or storefront identifier to constrain the search to one shop when continuity within a single seller matters or when revisiting a known source of relevant items.",
+            "type": "string"
+          },
+          "sort": {
+            "description": "Optional search ordering. Use a relevance-oriented sort such as the default when trying to find the best semantic match to the resolved clue and user-requested product attributes.",
+            "enum": [
+              "default",
+              "order",
+              "priceasc",
+              "pricedesc"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "q",
+          "page"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "Inspect detailed catalog information for one or more products returned by find_product before making the final recommendation. This tool is strongly preferred and often necessary for good performance because evaluation favors a workflow that verifies the candidate item actually matches the clue-derived answer and the user’s requested product characteristics before recommend_product is called. Use it to confirm details such as: the product title or metadata includes the resolved person/class/city/country/year; the item category is correct; the item is actually for kids if the user asked for a kids’ shirt; the strap is metal and magnetic and states compatibility with Xiaomi Band 7 series; the product is truly the requested cube, magnet, shirt, edition, or other format; and the candidate is not merely a loosely related search hit. When multiple plausible results exist, inspect several IDs and compare them, then choose the single strongest match.",
+      "name": "view_product_information",
+      "parameters": {
+        "additionalProperties": false,
+        "properties": {
+          "product_ids": {
+            "description": "Exact catalog product ID string to inspect in detail. If supported by the tool, multiple candidate IDs may be provided in the expected string format so you can compare them before selecting the best final product.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "Submit the single best final catalog item after the factual clue has been resolved and the product has ideally been checked with view_product_information. This tool is the commitment step: use it only when you have identified the product that most closely matches both the grounded clue and the user’s requested item type and constraints. In this task setting, recommendation quality depends on preserving the clue-to-product mapping, e.g. a Dark Souls class name mapped to a product branded with that class name, a football player mapped to a kids’ T-shirt featuring that player, or a performance city mapped to a city-themed metal magnetic strap compatible with the specified wearable series. Do not use this tool for multiple finalists; pass only the one product ID you intend to be the final answer.",
+      "name": "recommend_product",
+      "parameters": {
+        "additionalProperties": false,
+        "properties": {
+          "product_ids": {
+            "description": "The exact single product ID of the final chosen item to recommend. This should be the best verified match from the catalog and should normally have been inspected with view_product_information first.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_ids"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  },
+  {
+    "function": {
+      "description": "End the episode after the final product has been selected and recommended. This tool should summarize the completed grounded result by tying together three things: the factual answer to the clue, the final recommended product ID, and a concise explanation of how the clue maps to that product. Evaluation in these tasks expects the episode to terminate cleanly once the clue has been resolved, the product has been selected, and the mapping is explicit. Keep the termination content plain and consistent with the prior steps: do not invent unsupported citations in the termination payload, do not substitute the product ID for the factual answer, and make sure the product ID here matches the one previously passed to recommend_product.",
+      "name": "terminate",
+      "parameters": {
+        "additionalProperties": false,
+        "properties": {
+          "final_answer": {
+            "description": "A complete natural-language answer that states the resolved factual clue and identifies the selected matching product by name or type and exact product ID.",
+            "type": "string"
+          },
+          "product_ids": {
+            "description": "The exact final recommended product ID. This must match the item selected in recommend_product.",
+            "type": "string"
+          },
+          "resolved_clue": {
+            "description": "The direct grounded answer to the factual clue in concise plain form, such as a class name, player name, city, country, or year.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_ids",
+          "resolved_clue",
+          "final_answer"
+        ],
+        "type": "object"
+      }
+    },
+    "type": "function"
+  }
+]

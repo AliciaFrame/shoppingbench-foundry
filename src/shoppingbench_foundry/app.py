@@ -3,15 +3,20 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import time
+from collections.abc import Callable
 from functools import lru_cache
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from openai import APIConnectionError, RateLimitError
 from pydantic import BaseModel, Field
 
 from .rft_grading import endpoint_grade
-from .rft_grading_v2 import endpoint_grade as endpoint_grade_v2
 from .store import INFORMATION_FIELDS, ProductStore, create_store
+from .web_rft_grading_v5 import endpoint_grade as web_v5_endpoint_grade
+from .web_search import _retry_delay, search_web
+from .web_search_rft_grading_v6 import endpoint_grade as web_search_v6_endpoint_grade
 
 app = FastAPI(title="ShoppingBench Foundry Runtime", version="0.1.0")
 
@@ -101,7 +106,9 @@ def rft_tool(
     if request.name and request.name != tool_name:
         raise HTTPException(status_code=400, detail="Tool name does not match route")
 
-    if tool_name == "find_product":
+    if tool_name == "web_search":
+        output = search_web(str(arguments["query"]))
+    elif tool_name == "find_product":
         output: Any = store.search(
             arguments["q"],
             arguments["page"],
@@ -119,7 +126,7 @@ def rft_tool(
     elif tool_name == "recommend_product":
         output = {"recommended": arguments.get("product_ids", "")}
     elif tool_name == "terminate":
-        output = {"terminated": True}
+        output = {"terminated": True, **arguments}
     else:
         raise HTTPException(status_code=404, detail=f"Unknown tool: {tool_name}")
     return {
@@ -130,15 +137,46 @@ def rft_tool(
     }
 
 
-@app.post("/grade", dependencies=[Depends(require_token)])
-def grade(
+@app.post("/grade/v3", dependencies=[Depends(require_token)])
+def grade_v3(
     request: GradeRequest,
 ) -> dict[str, float]:
     return endpoint_grade(request.model_dump())
 
 
-@app.post("/grade/v2", dependencies=[Depends(require_token)])
-def grade_v2(
+@app.post("/grade/web/v5", dependencies=[Depends(require_token)])
+def grade_web_v5(
     request: GradeRequest,
 ) -> dict[str, float]:
-    return endpoint_grade_v2(request.model_dump())
+    return web_v5_endpoint_grade(request.model_dump())
+
+
+def _grade_with_judge_retries(
+    grade: Callable[[dict[str, Any]], dict[str, float]], payload: dict[str, Any],
+) -> dict[str, float]:
+    # Retries live here, outside the fingerprinted grader modules, so transport
+    # handling cannot change calibrated scoring. Only unreachable or throttled
+    # judge requests are retried; a judge answer is never resampled.
+    attempts = max(1, int(os.getenv("RFT_GRADER_TRANSPORT_ATTEMPTS", "4")))
+    backoff = float(os.getenv("RFT_GRADER_TRANSPORT_BACKOFF_SECONDS", "2"))
+    for attempt in range(attempts):
+        try:
+            return grade(payload)
+        except APIConnectionError as exc:
+            if attempt == attempts - 1:
+                raise HTTPException(
+                    status_code=503, detail="Grading judge endpoint is unreachable",
+                ) from exc
+            time.sleep(backoff * 2**attempt)
+        except RateLimitError as exc:
+            if attempt == attempts - 1:
+                raise HTTPException(
+                    status_code=503, detail="Grading judge is rate limited",
+                ) from exc
+            time.sleep(min(20.0, max(backoff, _retry_delay(exc, attempt))))
+    raise AssertionError("unreachable")
+
+
+@app.post("/grade/web-search/v6", dependencies=[Depends(require_token)])
+def grade_web_search_v6(request: GradeRequest) -> dict[str, float]:
+    return _grade_with_judge_retries(web_search_v6_endpoint_grade, request.model_dump())

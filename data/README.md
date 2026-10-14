@@ -1,27 +1,22 @@
 # Data
 
-`source/` contains the 900 frozen public ShoppingBench cases used by this demo:
+`source/` contains 900 frozen public ShoppingBench cases: 250 Product, 250
+Shop, 250 Voucher, and 150 Web.
 
-- Product: 250
-- Shop: 250
-- Voucher: 250
-- Web: 150
+`prepared/search-documents.jsonl` contains 1,818 benchmark products plus one
+deterministic distractor per product, for 3,636 searchable documents.
 
-`prepared/search-documents.jsonl` is a deterministic 3,636-document catalog:
-1,818 gold products and one controlled distractor for each gold product.
-`prepared/evaluation-dataset.jsonl` is the combined grader-ready export.
-
-Regenerate prepared data and evaluation splits:
+Regenerate the catalog and lifecycle datasets:
 
 ```powershell
 python data\scripts\prepare.py
 ```
 
-The split generator is seeded per task. It creates:
+Target product IDs and normalized Web knowledge answers form connected groups.
+Each group belongs wholly to training, development, or final test. The
+training pool supplies disjoint Agent Optimizer rounds and RFT train/validation
+data. Assignment and overlap checks are recorded in
+`evals/datasets/manifest.json`.
 
-- 20 round-one optimization cases
-- 40 disjoint round-two optimization cases
-- 50 untouched canonical holdout cases
-
-The controlled catalog is designed for reproducible optimization experiments,
-not as a claim of equivalence to the original multi-million-product environment.
+The controlled catalog is designed for reproducible behavior comparisons; it
+is not a claim of equivalence to the original production-scale catalog.

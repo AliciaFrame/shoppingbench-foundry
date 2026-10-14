@@ -1,0 +1,90 @@
+{"name": "product-002-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 10048, "output_tokens": 262, "total_tokens": 10310}, "error": false}
+{"name": "product-002-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 8009, "output_tokens": 288, "total_tokens": 8297}, "error": false}
+{"name": "product-002-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 5699, "output_tokens": 188, "total_tokens": 5887}, "error": false}
+{"name": "product-005-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 5866, "output_tokens": 246, "total_tokens": 6112}, "error": false}
+{"name": "product-005-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 14271, "output_tokens": 392, "total_tokens": 14663}, "error": false}
+{"name": "product-005-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 10672, "output_tokens": 321, "total_tokens": 10993}, "error": false}
+{"name": "product-047-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "product-047-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 46020, "output_tokens": 747, "total_tokens": 46767}, "error": false}
+{"name": "product-047-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "product-051-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 28967, "output_tokens": 471, "total_tokens": 29438}, "error": false}
+{"name": "product-051-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 17474, "output_tokens": 363, "total_tokens": 17837}, "error": false}
+{"name": "product-051-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 12063, "output_tokens": 310, "total_tokens": 12373}, "error": false}
+{"name": "product-054-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 5533, "output_tokens": 177, "total_tokens": 5710}, "error": false}
+{"name": "product-054-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 5509, "output_tokens": 153, "total_tokens": 5662}, "error": false}
+{"name": "product-054-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 5509, "output_tokens": 159, "total_tokens": 5668}, "error": false}
+{"name": "product-056-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 3402, "output_tokens": 182, "total_tokens": 3584}, "error": false}
+{"name": "product-056-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 3391, "output_tokens": 176, "total_tokens": 3567}, "error": false}
+{"name": "product-056-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 3394, "output_tokens": 180, "total_tokens": 3574}, "error": false}
+{"name": "product-059-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 5650, "output_tokens": 203, "total_tokens": 5853}, "error": false}
+{"name": "product-059-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 5584, "output_tokens": 159, "total_tokens": 5743}, "error": false}
+{"name": "product-059-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 5592, "output_tokens": 162, "total_tokens": 5754}, "error": false}
+{"name": "product-063-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 16233, "output_tokens": 394, "total_tokens": 16627}, "error": false}
+{"name": "product-063-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 15479, "output_tokens": 459, "total_tokens": 15938}, "error": false}
+{"name": "product-063-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 10306, "output_tokens": 358, "total_tokens": 10664}, "error": false}
+{"name": "product-070-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 6275, "output_tokens": 292, "total_tokens": 6567}, "error": false}
+{"name": "product-070-rollout-2", "grade": {"score": 0.9}, "usage": {"input_tokens": 7449, "output_tokens": 390, "total_tokens": 7839}, "error": false}
+{"name": "product-070-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 6085, "output_tokens": 257, "total_tokens": 6342}, "error": false}
+{"name": "product-072-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 7496, "output_tokens": 421, "total_tokens": 7917}, "error": false}
+{"name": "product-072-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "product-072-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 12557, "output_tokens": 477, "total_tokens": 13034}, "error": false}
+{"name": "product-075-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 8194, "output_tokens": 538, "total_tokens": 8732}, "error": false}
+{"name": "product-075-rollout-2", "grade": {"score": 0.975}, "usage": {"input_tokens": 6393, "output_tokens": 604, "total_tokens": 6997}, "error": false}
+{"name": "product-075-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 8046, "output_tokens": 510, "total_tokens": 8556}, "error": false}
+{"name": "product-079-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 16169, "output_tokens": 304, "total_tokens": 16473}, "error": false}
+{"name": "product-079-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 15925, "output_tokens": 341, "total_tokens": 16266}, "error": false}
+{"name": "product-079-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 15912, "output_tokens": 350, "total_tokens": 16262}, "error": false}
+{"name": "product-087-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 15489, "output_tokens": 407, "total_tokens": 15896}, "error": false}
+{"name": "product-087-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 9688, "output_tokens": 299, "total_tokens": 9987}, "error": false}
+{"name": "product-087-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 9757, "output_tokens": 261, "total_tokens": 10018}, "error": false}
+{"name": "product-088-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 3226, "output_tokens": 171, "total_tokens": 3397}, "error": false}
+{"name": "product-088-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 3214, "output_tokens": 160, "total_tokens": 3374}, "error": false}
+{"name": "product-088-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 3223, "output_tokens": 164, "total_tokens": 3387}, "error": false}
+{"name": "product-129-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 10112, "output_tokens": 266, "total_tokens": 10378}, "error": false}
+{"name": "product-129-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 10538, "output_tokens": 297, "total_tokens": 10835}, "error": false}
+{"name": "product-129-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 5975, "output_tokens": 201, "total_tokens": 6176}, "error": false}
+{"name": "product-139-rollout-1", "grade": {"score": 0.22}, "usage": {"input_tokens": 61053, "output_tokens": 1108, "total_tokens": 62161}, "error": false}
+{"name": "product-139-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "product-139-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "product-144-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 10051, "output_tokens": 247, "total_tokens": 10298}, "error": false}
+{"name": "product-144-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 10249, "output_tokens": 356, "total_tokens": 10605}, "error": false}
+{"name": "product-144-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 10094, "output_tokens": 268, "total_tokens": 10362}, "error": false}
+{"name": "product-160-rollout-1", "grade": {"score": 0.975}, "usage": {"input_tokens": 3844, "output_tokens": 137, "total_tokens": 3981}, "error": false}
+{"name": "product-160-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 5181, "output_tokens": 170, "total_tokens": 5351}, "error": false}
+{"name": "product-160-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 5411, "output_tokens": 253, "total_tokens": 5664}, "error": false}
+{"name": "product-164-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "product-164-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "product-164-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 11312, "output_tokens": 350, "total_tokens": 11662}, "error": false}
+{"name": "product-167-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 14895, "output_tokens": 327, "total_tokens": 15222}, "error": false}
+{"name": "product-167-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 10089, "output_tokens": 255, "total_tokens": 10344}, "error": false}
+{"name": "product-167-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 9595, "output_tokens": 269, "total_tokens": 9864}, "error": false}
+{"name": "product-169-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 5580, "output_tokens": 205, "total_tokens": 5785}, "error": false}
+{"name": "product-169-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 5603, "output_tokens": 222, "total_tokens": 5825}, "error": false}
+{"name": "product-169-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 5531, "output_tokens": 188, "total_tokens": 5719}, "error": false}
+{"name": "product-171-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 27517, "output_tokens": 618, "total_tokens": 28135}, "error": false}
+{"name": "product-171-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 20518, "output_tokens": 410, "total_tokens": 20928}, "error": false}
+{"name": "product-171-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 14305, "output_tokens": 316, "total_tokens": 14621}, "error": false}
+{"name": "product-177-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 3792, "output_tokens": 181, "total_tokens": 3973}, "error": false}
+{"name": "product-177-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 5983, "output_tokens": 269, "total_tokens": 6252}, "error": false}
+{"name": "product-177-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 3768, "output_tokens": 164, "total_tokens": 3932}, "error": false}
+{"name": "product-180-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 14970, "output_tokens": 320, "total_tokens": 15290}, "error": false}
+{"name": "product-180-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 27055, "output_tokens": 436, "total_tokens": 27491}, "error": false}
+{"name": "product-180-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "product-182-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 6154, "output_tokens": 229, "total_tokens": 6383}, "error": false}
+{"name": "product-182-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 6160, "output_tokens": 236, "total_tokens": 6396}, "error": false}
+{"name": "product-182-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 6161, "output_tokens": 228, "total_tokens": 6389}, "error": false}
+{"name": "product-198-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 21360, "output_tokens": 416, "total_tokens": 21776}, "error": false}
+{"name": "product-198-rollout-2", "grade": {"score": 0.975}, "usage": {"input_tokens": 12053, "output_tokens": 379, "total_tokens": 12432}, "error": false}
+{"name": "product-198-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 5393, "output_tokens": 186, "total_tokens": 5579}, "error": false}
+{"name": "product-220-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 10485, "output_tokens": 286, "total_tokens": 10771}, "error": false}
+{"name": "product-220-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 15246, "output_tokens": 388, "total_tokens": 15634}, "error": false}
+{"name": "product-220-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 16386, "output_tokens": 458, "total_tokens": 16844}, "error": false}
+{"name": "product-221-rollout-1", "grade": {"score": 0.266667}, "usage": {"input_tokens": 3051, "output_tokens": 227, "total_tokens": 3278}, "error": false}
+{"name": "product-221-rollout-2", "grade": {"score": 0.266667}, "usage": {"input_tokens": 2931, "output_tokens": 179, "total_tokens": 3110}, "error": false}
+{"name": "product-221-rollout-3", "grade": {"score": 0.3}, "usage": {"input_tokens": 4847, "output_tokens": 359, "total_tokens": 5206}, "error": false}
+{"name": "product-232-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 30278, "output_tokens": 544, "total_tokens": 30822}, "error": false}
+{"name": "product-232-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 16663, "output_tokens": 385, "total_tokens": 17048}, "error": false}
+{"name": "product-232-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 16659, "output_tokens": 373, "total_tokens": 17032}, "error": false}
+{"name": "product-236-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 14988, "output_tokens": 422, "total_tokens": 15410}, "error": false}
+{"name": "product-236-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "product-236-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 29669, "output_tokens": 553, "total_tokens": 30222}, "error": false}

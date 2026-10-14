@@ -1,0 +1,171 @@
+{
+  "methodology": {
+    "cases": 30,
+    "rollouts_per_case": 3,
+    "episodes_per_stage": 90,
+    "score": "canonical deterministic development score",
+    "cost": "MAI-Code-1.1-Flash $0.20 input / $1.20 output per 1M tokens; the Web (live) web-search lookup step uses GPT-5.4-mini at $0.75 / $4.50. All input is priced uncached."
+  },
+  "tasks": {
+    "product": {
+      "label": "Product",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.75287,
+          "mean_latency_seconds": 31.800434,
+          "mean_total_tokens": 16227.2,
+          "cost_per_1k_episodes_usd": 5.3687
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.940833,
+          "mean_latency_seconds": 16.215882,
+          "mean_total_tokens": 13947.533,
+          "cost_per_1k_episodes_usd": 5.6406
+        }
+      },
+      "selected_stage": "optimized",
+      "rft_status": "not_run",
+      "selected_gain_vs_base": {
+        "mean_score": 0.187963,
+        "latency_fraction": -0.490074,
+        "tokens_fraction": -0.140484
+      }
+    },
+    "shop": {
+      "label": "Shop",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.795694,
+          "mean_latency_seconds": 51.312819,
+          "mean_total_tokens": 14821.333,
+          "cost_per_1k_episodes_usd": 6.4925
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.937083,
+          "mean_latency_seconds": 25.559206,
+          "mean_total_tokens": 33798.733,
+          "cost_per_1k_episodes_usd": 11.9841
+        }
+      },
+      "selected_stage": "optimized",
+      "rft_status": "not_run",
+      "selected_gain_vs_base": {
+        "mean_score": 0.141389,
+        "latency_fraction": -0.501894,
+        "tokens_fraction": 1.280411
+      }
+    },
+    "voucher": {
+      "label": "Voucher",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.854722,
+          "mean_latency_seconds": 61.74678,
+          "mean_total_tokens": 20891.756,
+          "cost_per_1k_episodes_usd": 9.4429
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.860625,
+          "mean_latency_seconds": 35.173728,
+          "mean_total_tokens": 30896.778,
+          "cost_per_1k_episodes_usd": 12.0824
+        },
+        "rft": {
+          "episodes": 90,
+          "mean_score": 0.924757,
+          "mean_latency_seconds": 23.098198,
+          "mean_total_tokens": 29609.611,
+          "cost_per_1k_episodes_usd": 8.8992
+        }
+      },
+      "selected_stage": "rft",
+      "rft_status": "complete",
+      "selected_gain_vs_base": {
+        "mean_score": 0.070035,
+        "latency_fraction": -0.625921,
+        "tokens_fraction": 0.417287
+      }
+    },
+    "catalog_web": {
+      "label": "Web (static)",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.691111,
+          "mean_latency_seconds": 99.736409,
+          "mean_total_tokens": 77708.767,
+          "cost_per_1k_episodes_usd": 31.7125
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.728611,
+          "mean_latency_seconds": 100.970086,
+          "mean_total_tokens": 97156.222,
+          "cost_per_1k_episodes_usd": 38.5284
+        },
+        "rft": {
+          "episodes": 90,
+          "mean_score": 0.7175,
+          "mean_latency_seconds": 48.75182,
+          "mean_total_tokens": 37277.933,
+          "cost_per_1k_episodes_usd": 13.332
+        }
+      },
+      "selected_stage": "optimized",
+      "rft_status": "complete",
+      "selected_gain_vs_base": {
+        "mean_score": 0.0375,
+        "latency_fraction": 0.012369,
+        "tokens_fraction": 0.250261
+      },
+      "alternative_stage": "rft",
+      "alternative_reason": "Lower cost and latency for a small score trade-off"
+    },
+    "live_web_search": {
+      "label": "Web (live)",
+      "stages": {
+        "base": {
+          "episodes": 90,
+          "mean_score": 0.249722,
+          "mean_latency_seconds": 39.154834,
+          "mean_total_tokens": 24022.533,
+          "cost_per_1k_episodes_usd": 16.7916
+        },
+        "optimized": {
+          "episodes": 90,
+          "mean_score": 0.829167,
+          "mean_latency_seconds": 19.997112,
+          "mean_total_tokens": 25236.478,
+          "cost_per_1k_episodes_usd": 13.188
+        },
+        "rft": {
+          "episodes": 90,
+          "mean_score": 0.9025,
+          "mean_latency_seconds": 19.803304,
+          "mean_total_tokens": 26197.633,
+          "cost_per_1k_episodes_usd": 12.5586
+        }
+      },
+      "selected_stage": "rft",
+      "rft_status": "complete",
+      "selected_gain_vs_base": {
+        "mean_score": 0.652778,
+        "latency_fraction": -0.494231,
+        "tokens_fraction": 0.090544
+      },
+      "final_test": {
+        "episodes": 50,
+        "mean_score": 0.9055,
+        "mean_latency_seconds": 20.105129,
+        "mean_total_tokens": 26724.64,
+        "cost_per_1k_episodes_usd": 12.6235
+      }
+    }
+  }
+}

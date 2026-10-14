@@ -1,0 +1,10 @@
+version: 1
+defaultEnvironment: dev
+environments:
+  dev:
+    projectEndpoint: ${FOUNDRY_PROJECT_ENDPOINT}
+    agentName: shoppingbench-web-search-agent
+    evaluationSuites:
+      - name: web-search-development
+        datasetFile: ../../../evals/datasets/development/web.jsonl
+        tags: {tier: regression}

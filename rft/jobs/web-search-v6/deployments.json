@@ -1,0 +1,9 @@
+{
+  "selected": {
+    "deployment": "mai-sb-web-search-v6-final",
+    "model": "MAI-Code-1.1-Flash-2026-09-15.ft-3784fe1951d5407883b0c517d00ec505-mai-sb-web-search-rft-v6",
+    "sku": "DeveloperTier",
+    "capacity": 50,
+    "selection": "Final checkpoint (step 13); evaluated on the development split before the one-time sealed final test."
+  }
+}

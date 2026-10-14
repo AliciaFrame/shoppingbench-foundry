@@ -1,0 +1,10 @@
+{
+  "id": "ftjob-b057fdb754bd4034817b79ef32fc8680",
+  "status": "succeeded",
+  "model": "MAI-Code-1.1-Flash-2026-09-15",
+  "training_type": "developerTier",
+  "fine_tuned_model": "MAI-Code-1.1-Flash-2026-09-15.ft-b057fdb754bd4034817b79ef32fc8680-mai-sb-web-rft-v5",
+  "trained_tokens": 127308,
+  "finished_at": 1791337359,
+  "error": null
+}

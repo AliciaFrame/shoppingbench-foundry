@@ -1,0 +1,71 @@
+{
+  "experiment": "web-rft-v5",
+  "task": "web",
+  "lineage": "catalog-only",
+  "resource_scope": {
+    "subscription_id": "507baf40-e783-4961-baf7-d7bc3109baab",
+    "resource_group": "alicia-rl-demo",
+    "foundry_resource": "amf-mai-shoppingbench-resource",
+    "project": "amf-mai-shoppingbench",
+    "region": "swedencentral"
+  },
+  "base_calibration": {
+    "model": "MAI-Code-1.1-Flash",
+    "version": "2026-09-15",
+    "deployment": "mai-code-1-1-flash-base",
+    "deployment_resource": "amf-mai-eu-resource",
+    "reason": "The subscription's 100K GlobalStandard MAI-Code inference quota is already fully allocated to this established benchmark base deployment. DeveloperTier is unsupported for the unmodified base model.",
+    "runtime": "agents.shared.runtime",
+    "contract": "Web terminal tool carries product_ids, resolved_clue, and final_answer.",
+    "target_failure_rate": [
+      0.25,
+      0.5
+    ]
+  },
+  "grader": {
+    "version": "web-rft-v5",
+    "route": "/grade/web/v5",
+    "weights": {
+      "exact_product": 0.6,
+      "correct_resolved_clue": 0.1,
+      "viewed_selected_product": 0.05,
+      "grounded_complete_terminal_answer": 0.15,
+      "recommend_then_terminate": 0.05,
+      "efficiency": 0.05
+    },
+    "hard_gates": {
+      "wrong_product_cap": 0.2,
+      "other_failed_gate_cap": 0.48,
+      "gated_components": [
+        "correct_resolved_clue",
+        "grounded_complete_terminal_answer",
+        "recommend_then_terminate"
+      ],
+      "calibration_adjustment": "Selected-product inspection and efficiency remain weighted signals rather than hard gates. Gating both produced a 62.9% base failure rate; the quality-critical gates produce a 45.7% base failure rate."
+    },
+    "normalization": [
+      "Number words, digits, and ordinal forms normalize to a common numeric representation.",
+      "Configured knowledge aliases are accepted.",
+      "The terminal answer must include selected IDs, an accepted clue, and expected product metadata language."
+    ]
+  },
+  "data": {
+    "training_rows": 49,
+    "training_connected_groups": 48,
+    "validation_rows": 21,
+    "validation_connected_groups": 20,
+    "calibration_episodes": 105,
+    "rollouts_per_validation_row": 5,
+    "split_strategy": "connected-group-disjoint"
+  },
+  "training": {
+    "training_type": "developerTier",
+    "n_epochs": 2,
+    "batch_size": 8,
+    "learning_rate_multiplier": 1.0,
+    "eval_interval": 2,
+    "eval_samples": 10,
+    "max_episode_steps": 12,
+    "minimal_payload": false
+  }
+}

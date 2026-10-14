@@ -12,22 +12,30 @@ that deliberately violates a relevant constraint.
 
 ## Agent plane
 
-Four Microsoft Foundry hosted agents share one implementation but load separate
-instructions, skills, and tool definitions. They use the Responses protocol so
-multi-step function calls can be continued with `previous_response_id`.
+Five Microsoft Foundry hosted agents load separate instructions, skills, and
+tool definitions. Every agent runs on MAI-Code-1.1-Flash. Product, Shop,
+Voucher, and Web (static) share the bounded catalog runtime. Web (live) first
+runs a fixed web-search lookup (the Responses API `web_search` tool on
+GPT-5.4-mini), then passes the cited evidence to the MAI-Code-1.1-Flash
+catalog agent. The lookup step is identical across stages; only the catalog
+agent is optimized and fine-tuned. Both paths continue multi-step function
+calls with `previous_response_id`.
 
 ## Evaluation plane
 
-The canonical grader retrieves recommended products and scores exact IDs,
-constraint satisfaction, task invariants, and process completion. Fixed
-holdouts remain outside optimizer and RFT training data.
+The deterministic grader retrieves recommended products and scores exact IDs,
+constraint satisfaction, task invariants, process completion, and grounded
+final answers. Development sets control optimization and checkpoint decisions;
+the sealed final sets remain outside optimizer and RFT training data.
 
 ## Improvement plane
 
 Agent Optimizer searches configuration changes around a fixed model. Agentic
-RFT trains the model policy against live tool episodes. Keeping the mechanisms
-separate makes their contribution measurable and allows the final system to
-combine the best model checkpoint with the best agent configuration.
+RFT trains Voucher, Web (static), and Web (live) policies against live
+catalog-tool episodes, scored by graders hosted on the same API. Web (live)
+uses a semantic grader: an LLM judge checks clue correctness and grounding
+against captured evidence, deterministic gates check the exact product and
+protocol, and a cost term rewards succinct trajectories.
 
 ## Security
 
@@ -35,4 +43,4 @@ combine the best model checkpoint with the best agent configuration.
 - Azure resources use managed identity where supported.
 - Search local authentication and Storage shared-key access are disabled.
 - Tool and grader endpoints support bearer authentication.
-- RFT API keys are read only from process environment.
+- Model and RFT credentials are read only from process environment.

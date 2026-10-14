@@ -1,0 +1,120 @@
+{
+  "hash_line_endings": "LF",
+  "split_strategy": "connected-group-disjoint",
+  "split_manifest": {
+    "path": "evals/datasets/manifest.json",
+    "sha256": "1065919fef4ea04ae773d04f2526f9aca1ebcceb74b1fca3b4064ce9f0e452e3"
+  },
+  "tasks": [
+    {
+      "task": "product",
+      "train": 150,
+      "validation": 20,
+      "calibration_rollouts": 100,
+      "holdout_excluded": 50,
+      "split_manifest": "manifest.json",
+      "validation_groups": 20,
+      "training_groups": 150,
+      "developer_message_sha256": "e893935fbb14c55cb451a44500c8a03f99acaad1c95137fab792b6406d65c5d3"
+    },
+    {
+      "task": "shop",
+      "train": 150,
+      "validation": 20,
+      "calibration_rollouts": 100,
+      "holdout_excluded": 50,
+      "split_manifest": "manifest.json",
+      "validation_groups": 20,
+      "training_groups": 150,
+      "developer_message_sha256": "b9626b417ee56b562fa9b64ec69ba2812df8e240f0577d207d4f12a67dcabc2c"
+    },
+    {
+      "task": "voucher",
+      "train": 150,
+      "validation": 20,
+      "calibration_rollouts": 100,
+      "holdout_excluded": 50,
+      "split_manifest": "manifest.json",
+      "validation_groups": 20,
+      "training_groups": 150,
+      "developer_message_sha256": "db72d9bff91061a28b2598090e9c74fa06080d7b3ccc59e56aee19525fe1cd4f"
+    },
+    {
+      "task": "web",
+      "train": 49,
+      "validation": 21,
+      "calibration_rollouts": 105,
+      "holdout_excluded": 50,
+      "split_manifest": "manifest.json",
+      "validation_groups": 20,
+      "training_groups": 48,
+      "developer_message_sha256": "10e3f8722b9f1237a5991e79196a5cca9927da91ab5bdce57d6c421002e669a5"
+    }
+  ],
+  "files": {
+    "product-calibration-eval.jsonl": {
+      "bytes": 537075,
+      "sha256": "4a5ea0dc522f781c14fcfc62d3fc06dcac755ff0b2edc8898d413bd6f974aa3a"
+    },
+    "product-train.jsonl": {
+      "bytes": 777359,
+      "sha256": "e63dbc9af936faad1889a3089e0785f766fae3fe6fc6dd0905250e56017e5e81"
+    },
+    "product-validation-eval.jsonl": {
+      "bytes": 107215,
+      "sha256": "bce758fc9832ffeaef431aab8a6d533d6c648f7ebe927952922a516181e9abec"
+    },
+    "product-validation.jsonl": {
+      "bytes": 104281,
+      "sha256": "5f6b030f5a1be85172f89e1faf97d0db79fe1acbde124478bb0f27d77400e964"
+    },
+    "shop-calibration-eval.jsonl": {
+      "bytes": 863500,
+      "sha256": "17478e5161151ae635c313e838413031b51af6827167ec19ee8670ee13f63d3d"
+    },
+    "shop-train.jsonl": {
+      "bytes": 1245039,
+      "sha256": "9322bf51bf40025eaed0c14a7a576b708b8e928726b6b7439068f63bf78a9e5f"
+    },
+    "shop-validation-eval.jsonl": {
+      "bytes": 172500,
+      "sha256": "a3b174df66c1ffe5028aece183cff222919ef4bf040d071092b6d16cf50b0811"
+    },
+    "shop-validation.jsonl": {
+      "bytes": 164715,
+      "sha256": "ad76ce33e6e63743e35e1d5192ee1b985a87e208fb5721a9fa94988c0717c716"
+    },
+    "voucher-calibration-eval.jsonl": {
+      "bytes": 839900,
+      "sha256": "69ee7379a7816370b752d9ea5ac19c6f8436651af929f0e3465e333f2e21df8e"
+    },
+    "voucher-train.jsonl": {
+      "bytes": 1156123,
+      "sha256": "4bbe918a52197778dcd40b59264ef2c0703a6740c8f000706c988886030da532"
+    },
+    "voucher-validation-eval.jsonl": {
+      "bytes": 167780,
+      "sha256": "2e78e3dec741d348377df90bd27c04edad39697051d99414a7257071298309a1"
+    },
+    "voucher-validation.jsonl": {
+      "bytes": 156355,
+      "sha256": "5661a99c29857b4079262eef30a4459519fa5738cbf13ed2a307e549fa3ee36e"
+    },
+    "web-calibration-eval.jsonl": {
+      "bytes": 565910,
+      "sha256": "b30521e1f6bbb026076538b9f90bb37c670bd74bc8ed76b4bf8649d6e3675bec"
+    },
+    "web-train.jsonl": {
+      "bytes": 254668,
+      "sha256": "c2fc3543fa4c982615a2fde4e9c1457abcc431d3a50a398fd59099649c65a71b"
+    },
+    "web-validation-eval.jsonl": {
+      "bytes": 112972,
+      "sha256": "aa533123f3dfa0f4d8bc91f9a16e69769d4f7c6e0bfe54a68dc498a3c27cfde6"
+    },
+    "web-validation.jsonl": {
+      "bytes": 108299,
+      "sha256": "c852f31594ba314a52c15c8dfac3c389834212a8db7e33166b927c10c07c91d1"
+    }
+  }
+}

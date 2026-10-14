@@ -1,0 +1,29 @@
+{
+  "task": "web",
+  "model": "mai-code-1.1-flash",
+  "suffix": "mai-sb-web-rft-v5",
+  "grader_version": "web-v5",
+  "training_type": "developerTier",
+  "job_id": "ftjob-b057fdb754bd4034817b79ef32fc8680",
+  "status": "pending",
+  "training_file": "file-0113e614c1124439bc140105361c2516",
+  "validation_file": "file-a2f61dae9002408abfd38aed9489db87",
+  "pass_threshold": 0.9,
+  "submission_mode": "public-v1",
+  "max_episode_steps": 12,
+  "hyperparameters": {
+    "n_epochs": 2,
+    "batch_size": 8,
+    "learning_rate_multiplier": 1.0,
+    "eval_interval": 2,
+    "eval_samples": 10,
+    "compute_multiplier": 1.0,
+    "reasoning_effort": "medium"
+  },
+  "tools": [
+    "find_product",
+    "view_product_information",
+    "recommend_product",
+    "terminate"
+  ]
+}
