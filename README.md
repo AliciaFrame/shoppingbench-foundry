@@ -196,6 +196,8 @@ This reproduces the arithmetic and stage selection, not a new inference run.
 
 ## Repository map
 
+See [CHANGELOG.md](CHANGELOG.md) for v1/v2 workflow differences and release notes.
+
 | Directory | Purpose |
 |---|---|
 | [`agents`](agents) | Runnable baseline and optimized agents for all five tasks |
