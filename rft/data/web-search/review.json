@@ -1,0 +1,587 @@
+{
+  "status": "approved-for-data-preparation",
+  "source_sha256": {
+    "web-train.jsonl": "88914d95cf4075c62b97367c66e475d4e1cac1c0d4b286defa029ce44a0205a9",
+    "web-validation.jsonl": "cbf8fa17bac119aab989d66f020fc546e170603e6be3156ee1c76bdd585dcf25"
+  },
+  "benchmark_manifest_sha256": "3d6b678f0e4fc642fea846d025a87567b2eb8eeb561ee1240ea95b27a4afb58a",
+  "heldout_group_overlap": [],
+  "alias_connected_groups": [
+    [
+      "web-777f043a65b8ab9b",
+      "web-d674d6d12da66c22"
+    ]
+  ],
+  "source_adjudications": {
+    "web-004": "Fetched https://hypebeast.com/2016/1/undercover-2016-fall-winter-collection confirms Instant Calm.",
+    "web-012": "World Bank API ER.H2O.INTR.PC, 2021: Iceland 456351.336840975, Guyana 295530.741328441. Visual Capitalist extraction was unreliable; not claimed independently verified.",
+    "web-041": "Rejected retry 1 (wrong 2018 paper); fetched ORBi 2268/291967 confirms requested 2022 title/authors; selected retry 2.",
+    "web-048": "Fetched https://www.prairiestyles.com/wright.htm explicitly says Baptist minister.",
+    "web-105": "Contemporary Ultiworld 2014 Johnny Bravo roster/preview confirms Brodie Smith."
+  },
+  "selection_policy": "Original capture first, then the first qualifying retry in rollout order, maximum three retries; this curates training data, not evaluation results.",
+  "split_policy": "Retain original valid validation groups; replace excluded groups with SHA256(live-web-repair-v1:group) ordered training groups, independent of model scores.",
+  "validation_groups": [
+    "web-011217520232ce7d",
+    "web-07ccc1f8a81b87da",
+    "web-1a2f5f4d23a62c48",
+    "web-24e46accf569105a",
+    "web-2ceaa91e1f01d863",
+    "web-3444b4348446518e",
+    "web-4e9c5d754c945732",
+    "web-62dfde35c1555b6c",
+    "web-7776d93d76ffcdcf",
+    "web-78e6c3d15259ad1d",
+    "web-90ade251cda3ca3b",
+    "web-94d28241bc35c57d",
+    "web-963154e3422d4e57",
+    "web-a57148a648407563",
+    "web-afedbdd9335d2e12",
+    "web-b3a7c502d28a093d",
+    "web-e4bd0f95922aa765",
+    "web-eb2cbfcf1480b5a9",
+    "web-fe22e102e998ff77",
+    "web-merged-f3b31e173b605fc6"
+  ],
+  "replacement_validation_groups": [
+    "web-78e6c3d15259ad1d",
+    "web-963154e3422d4e57",
+    "web-a57148a648407563"
+  ],
+  "cases": {
+    "web-105": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "cfe2500bf9beb03d878717843054009ef7b8a1f51418978ef24bdef6b6097671",
+      "knowledge_aliases": [],
+      "captures_recorded": 4,
+      "case_group": "web-3da5aa1c124fe538"
+    },
+    "web-009": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "b800a79d24d1d6417f72f084a8d62dd514293fa2adde8df48579811ba60aacb8",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-d2c4c355404aac35"
+    },
+    "web-089": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "ddad16acb3cf8c7236b0f1f1046d01d7fa9a2871068919f0dc6773c4f8ed60ea",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-94416fd67f9a1e17"
+    },
+    "web-056": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "a83db7b3191bb763222bc7ac69aede32ba414535b36b2968b53720e1f84e7377",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-a57148a648407563"
+    },
+    "web-078": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "edf1ed398adc413e65f704b93d5af605d4f829740013fe075784cae409d9d49b",
+      "knowledge_aliases": [
+        "Mallorca"
+      ],
+      "captures_recorded": 1,
+      "case_group": "web-05d473ea0227e585"
+    },
+    "web-085": {
+      "decision": "exclude",
+      "reason": "No complete, cited, label-consistent capture after the bounded retrieval attempts.",
+      "captures_recorded": 4
+    },
+    "web-052": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "fc03b127c48519ad22cb4737c8f0de82449699199598c7ecc7460d833bee9437",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-11b5dd77f6befe80"
+    },
+    "web-096": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "f3a04f59271f85ce90a2b0e6ac74cd66681e2f3edb784ec1b0fdd07ffa70d14f",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-6d34be0087d37c88"
+    },
+    "web-065": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "835a0e2c14fba74d8b276de0ada2f56d04195390faac4ac2894d44bed2c079f8",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-01be353104aa2d7c"
+    },
+    "web-121": {
+      "decision": "exclude",
+      "reason": "Only paid-Juneteenth state in 2020 is date-dependent; query lacks a defensible as-of date.",
+      "captures_recorded": 1
+    },
+    "web-016": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "3270e631723d8e45b6eb778a29ee675f0343146726096b3dc3bcc4317319aee5",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-78e6c3d15259ad1d"
+    },
+    "web-062": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "559f854a627d5e957c81967d41f691234852f6f8d260c8cf028978cc29858ca0",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-a081ed9280961135"
+    },
+    "web-007": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "9a7170c9a3ab5479ceea43d89e3b9b5c6a100c25aa3136558f052fd372410cdd",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-4e85ed7243739242"
+    },
+    "web-109": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "bbd83ee2fc0116c5d064c446bd25e73abf06ec7b5c83a7eb43e2730d036ff584",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-52cd2ea31193ab15"
+    },
+    "web-116": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "665efb41e191295c0ab2b4c89efab50b7914b5edc3fb43595f3a9bddaa0677de",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-62321fc21ae63fba"
+    },
+    "web-134": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "123d183b766d45f07f82652a35030e3eef8f5d6289e1cfadbcca0b5f12a80ef5",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-6661cd85b80d49a8"
+    },
+    "web-115": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "e824f988633d45464c97ad5e0ab1a11764d00acdf6a6f50b412972d9c898eab7",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-c56ee7f542ebae85"
+    },
+    "web-066": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "733b538c036df096f2fc3cfbb1ff23e6988f917e7306a96788d25d3915339d06",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-ea0da714be24545d"
+    },
+    "web-131": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "ff8d6a632c6879ae1862c73925eab05618b5b865ac684cae2cb7d499c4d2cea0",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-merged-f3b31e173b605fc6"
+    },
+    "web-087": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "7bc03e17303351f8a0b0fe8cf189737a2a47d3d5f4361889078c7019b06ac878",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-eafc37a0c47f3d33"
+    },
+    "web-130": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "3ffb4dfd71416f8f30485902fbf793527a727f30a396d230d8489fa25850162f",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-eafc37a0c47f3d33"
+    },
+    "web-124": {
+      "decision": "exclude",
+      "reason": "EU authorisation, EMA recommendation and public announcement dates are conflated.",
+      "captures_recorded": 1
+    },
+    "web-058": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "1dc88415e77f98842f2a5c1d3f6106bbee85e60135cfc73b3cf90b18e8193d0a",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-17dcd2f4fa6f8be8"
+    },
+    "web-100": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "e825914328e9ece9e9313fe369daf0b4ad3c909086032e8179aa501c499f2dd4",
+      "knowledge_aliases": [],
+      "captures_recorded": 4,
+      "case_group": "web-3e133d813f1f29e6"
+    },
+    "web-035": {
+      "decision": "exclude",
+      "reason": "Web response adds an unrequested MoMA teether recommendation rather than only resolving the factual clue.",
+      "captures_recorded": 1
+    },
+    "web-033": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "5d4abc7742f178afeb35a1dec378ac559fe31450c0e51dc8b56377a31f72de05",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-0a0cdfee69d7793d"
+    },
+    "web-057": {
+      "decision": "exclude",
+      "reason": "Ambiguous last-born versus last-serving president; preserve original benchmark, quarantine this training query.",
+      "captures_recorded": 1
+    },
+    "web-110": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "527359b08be4f36512f379243b7b118977f32144eddc00ae2fd76c2904ace407",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-5057dbf8b1a27e79"
+    },
+    "web-017": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "4d62a753f0fb5a0f7755d3f44cb1209bd95cf1b26f7eead7407e7cf1940107e9",
+      "knowledge_aliases": [],
+      "captures_recorded": 4,
+      "case_group": "web-963154e3422d4e57"
+    },
+    "web-038": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "b1fe5daa828b8c795de2bc62faa87ea4a852e44f403a0a320462ca48c791b1b5",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-f87a08a611b35ffe"
+    },
+    "web-070": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "d21307e7e6e7647805ca6b0bd4cca240ed271ae7614d3b4d75c112b47529f8c3",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-a70e5b7dc86d75dd"
+    },
+    "web-023": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "518d7dcddf03c5cbb346be0b451adb32b46016bf01ba8bc6823f68324e82ae1b",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-07bafaebf6ee8245"
+    },
+    "web-029": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "8d5169aa78aaae96121f37b9f66e4a82f33700f47579c8188d5a91a05387f805",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-a827b637418345a9"
+    },
+    "web-119": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "1c339a64c9490921adc68bd382bd414108ac19fc130f42e8321b6e7178dca167",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-7407b11436d26fe2"
+    },
+    "web-133": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "a19b6e8581fbba49d8f03dd25c4c4634785309cd27f0a3b21b2585538cebd799",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-8e43064c57e2a4d4"
+    },
+    "web-034": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "905dc3815b27bfe9b734a8760e6eb515bee29bc746ec8f29bd2943e7e16a3663",
+      "knowledge_aliases": [
+        "Mané",
+        "Sadio Mané"
+      ],
+      "captures_recorded": 1,
+      "case_group": "web-8b9a90f31e65e342"
+    },
+    "web-020": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "492fdc2ff995d4ffe906adbfc5679e8d2624729fe233eaef6f4404639b7bb213",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-9060202e3ddf1812"
+    },
+    "web-041": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "f3ac19c2e03c6f934e725112d77a02f01d76c8dec388ed76b1ecd0ce48431ac5",
+      "knowledge_aliases": [],
+      "captures_recorded": 4,
+      "case_group": "web-100d174fc151746b"
+    },
+    "web-147": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "8a93f63cebb45e6b5dae1167a7db0ef4664a1d0943d2da4c70831c3fde19d46d",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-23058b7fd2ab7f2e"
+    },
+    "web-054": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "d7f1b932fa8c3dd6eddf2220779fe933b802175abbcfa414b8dc29110aff569b",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-96d0ba5aa278aab6"
+    },
+    "web-005": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "2000f96f896f49f5ef797dc5efcf6de6d174e8a66ee3f04a2baced4523fcd2f2",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-3bfcb37eee1a9241"
+    },
+    "web-042": {
+      "decision": "exclude",
+      "reason": "No complete, cited, label-consistent capture after the bounded retrieval attempts.",
+      "captures_recorded": 4
+    },
+    "web-021": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "fd1f657c21f4a4e319b9c24104edde6e968385f3b07dbaba764686204d852250",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-eea5cb111b3df37e"
+    },
+    "web-002": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "4315c27ae5a7d171bc14074aeac321055974f4878bf02f73cf19c5cdba9ca966",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-272eb97a19401d57"
+    },
+    "web-048": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "2a0ba9c2da497b87c3cd7140bb881b4bf8999278c03606ff56f5ada3e99a5980",
+      "knowledge_aliases": [],
+      "captures_recorded": 4,
+      "case_group": "web-e110f816712f1c23"
+    },
+    "web-012": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "2f72aeed8410154532161e30573ce765b5bda099833a972ce84c960eb0d77a92",
+      "knowledge_aliases": [],
+      "captures_recorded": 4,
+      "case_group": "web-a21d3a03af8293c7"
+    },
+    "web-027": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "ec90ca0a7a908bfbeec8e39983b465360056ed509f033ef7dc5a73afa1a15315",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-7816728f77fdef15"
+    },
+    "web-026": {
+      "decision": "exclude",
+      "reason": "Performance/filming city differs from exhibition city; Dublin label requires a revised question.",
+      "captures_recorded": 1
+    },
+    "web-036": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "bb8093fec0bd46f4d1ff71472596e8740f22d1dd67c82d1b4e1e30f80ec88110",
+      "knowledge_aliases": [],
+      "captures_recorded": 4,
+      "case_group": "web-6d4dbac6449d4a4b"
+    },
+    "web-090": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "10923e1549e26045577779314456b72fdb8e7ede74c4a0f2dd8964f4e59ccfa1",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-4e9c5d754c945732"
+    },
+    "web-013": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "910bde6f650e31f99b280741399f90ff0fcee86f4a90861dff147a3d35cb339a",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-011217520232ce7d"
+    },
+    "web-037": {
+      "decision": "exclude",
+      "reason": "Question specifies 2022 rather than the reported 2002 stroke; contemporary source not independently verified.",
+      "captures_recorded": 1
+    },
+    "web-064": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "1cb5a7415ac591389c389bc6289d73c378d9bd27bb730b04575a3b1413b66eea",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-b3a7c502d28a093d"
+    },
+    "web-146": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "99eaa39c4e5a98339cf98353e5086e3cd3b39009a59ea97366509435831beebd",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-7776d93d76ffcdcf"
+    },
+    "web-039": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "712e65a0a22d9b74796a385d6785d7784def9701f29b386f882c70641037bd7d",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-1a2f5f4d23a62c48"
+    },
+    "web-095": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "2544e528512130fabaf8bbf332b10bf0142d0cdf1d49589e0789a3aa6cc7be9b",
+      "knowledge_aliases": [],
+      "captures_recorded": 4,
+      "case_group": "web-3444b4348446518e"
+    },
+    "web-040": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "ea43380b269ac15c4ff392053868488962306ec472e5acbac68cd92305955322",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-24e46accf569105a"
+    },
+    "web-067": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "30d0d43e28bdd7e0a95af72c720753138eec594addfdc474c61f456bd0b7a950",
+      "knowledge_aliases": [
+        "65 W",
+        "65 watts"
+      ],
+      "captures_recorded": 1,
+      "case_group": "web-e4bd0f95922aa765"
+    },
+    "web-010": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "d9c9cae1851c98328e5a37f6ec447840e895f6a144719a3ca71e277687270bc2",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-eb2cbfcf1480b5a9"
+    },
+    "web-055": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "550092e4d1f56e07885a15dfbfe2146cf7a0351b535e44d96bfa3fbd0d0d9416",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-62dfde35c1555b6c"
+    },
+    "web-143": {
+      "decision": "exclude",
+      "reason": "Quarantine the entire connected group to prevent a partial-group split."
+    },
+    "web-149": {
+      "decision": "exclude",
+      "reason": "Web response invents a particular Bible edition/publisher beyond the factual year; quarantine its connected group.",
+      "captures_recorded": 1
+    },
+    "web-102": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "c4ab2e74eda6c06544cf90a897bb73c1a7fec12f0c83024a0fa553daa9b66904",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-afedbdd9335d2e12"
+    },
+    "web-139": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "8625261d9cf22ce59bd1021e0ed222739c431c34f2d48612cd31ce9d53e65e71",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-2ceaa91e1f01d863"
+    },
+    "web-123": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "86182a7a4a7d39d438ec2e28a9f040c06a4b53b33d9afb5c6cf7c9d94ae87a2e",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-fe22e102e998ff77"
+    },
+    "web-004": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "c77acabd519a8a0ac12cfc3b785632ffc839fe2faf6530d911d5b7b2324db4f4",
+      "knowledge_aliases": [],
+      "captures_recorded": 4,
+      "case_group": "web-07ccc1f8a81b87da"
+    },
+    "web-137": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "c88ba39bf64d7b263fb85453872736e21594db8740d3f2366939cccac8ea0235",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-merged-f3b31e173b605fc6"
+    },
+    "web-126": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "ec6eebf1ad7dd6c0b63d966312f164af7c6d9b20f3d801c7f380409d520da11b",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-90ade251cda3ca3b"
+    },
+    "web-084": {
+      "decision": "include",
+      "reason": "Complete cited native-web evidence reviewed against the original factual clue; no gold text substituted.",
+      "capture_sha256": "8f59c8050d6c6becfd0e0a5c0f7d2a44c0e9faf81930d241ef54c705016a6e95",
+      "knowledge_aliases": [],
+      "captures_recorded": 1,
+      "case_group": "web-94d28241bc35c57d"
+    },
+    "web-050": {
+      "decision": "exclude",
+      "reason": "Historical browser-share snapshot is underspecified and not independently reproducible.",
+      "captures_recorded": 1
+    }
+  }
+}

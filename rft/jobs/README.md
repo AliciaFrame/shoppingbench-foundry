@@ -1,7 +1,9 @@
 # Published RFT job receipts
 
-`voucher/` and `web-v5/` contain the calibration, submission, terminal status,
-deployment, and selection evidence captured for the published experiments.
+`voucher/`, `web-v5/`, and `web-search-v6/` contain the calibration,
+submission, terminal status, deployment, and selection evidence captured for
+the published experiments. `web-search-v6/` also contains the frozen
+base-model rollouts its calibration scored and the training curve.
 
 These files are evidence, not reusable configuration:
 

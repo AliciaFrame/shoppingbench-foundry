@@ -2,75 +2,104 @@
 
 ## Methodology
 
-The published development comparison uses:
+Every published development comparison uses:
 
-- 30 leakage-safe cases per task;
-- three rollouts per case;
-- 90 episodes per stage;
-- one deterministic canonical grader for base, optimized, and RFT models;
+- MAI-Code-1.1-Flash for every agent and stage;
+- 30 leakage-safe development cases per task, three rollouts each
+  (90 episodes per stage);
+- one deterministic canonical grader for base, optimized, and RFT agents;
 - explicit zeroes for runtime errors and nontermination;
-- mean score, latency, and total tokens reported together.
+- mean score, latency, total tokens, and list-price cost reported together.
 
-Repeated rollouts are paired by case. Comparison receipts include
-case-clustered confidence intervals rather than treating all 90 episodes as
-independent observations.
+Repeated rollouts are paired by case. Comparison receipts report
+case-clustered 95% confidence intervals rather than treating all 90 episodes
+as independent.
 
-## Base, Agent Optimized, and RFT
+## Base → Agent Optimized → RFT
 
-| Task | Stage | Mean score | Latency | Tokens | Published decision |
-|---|---|---:|---:|---:|---|
-| Product | Base | 0.7529 | 31.80s | 16,227 | |
-|  | Agent Optimized | **0.9408** | **16.22s** | **13,948** | **Selected** |
-| Shop | Base | 0.7957 | 51.31s | **14,821** | |
-|  | Agent Optimized | **0.9371** | **25.56s** | 33,799 | **Selected** |
-| Voucher | Base | 0.8547 | 61.75s | **20,892** | |
-|  | Agent Optimized | 0.8606 | 35.17s | 30,897 | |
-|  | RFT Step 10 | **0.9248** | **23.10s** | 29,610 | **Selected** |
-| Catalog Web | Base | 0.6911 | 99.74s | 77,709 | |
-|  | Agent Optimized | **0.7286** | 100.97s | 97,156 | |
-|  | Hardened v5 RFT final | 0.7175 | **48.75s** | **37,278** | **Selected hardened RFT** |
-| Live Web Search | Base | 0.7636 | **13.77s** | **13,586** | |
-|  | Agent Optimized | **0.9047** | 15.23s | 17,779 | **Selected** |
-|  | RFT | WIP | WIP | WIP | Not published |
+| Agent | Stage | Score | Latency | Tokens | Cost / 1k episodes | Decision |
+|---|---|---:|---:|---:|---:|---|
+| Product | Base | 0.7529 | 31.80s | 16,227 | $5.37 | |
+|  | Agent Optimized | **0.9408** | **16.22s** | **13,948** | $5.64 | **Selected** |
+| Shop | Base | 0.7957 | 51.31s | **14,821** | **$6.49** | |
+|  | Agent Optimized | **0.9371** | **25.56s** | 33,799 | $11.98 | **Selected** |
+| Voucher | Base | 0.8547 | 61.75s | **20,892** | $9.44 | |
+|  | Agent Optimized | 0.8606 | 35.17s | 30,897 | $12.08 | |
+|  | RFT Step 10 | **0.9248** | **23.10s** | 29,610 | **$8.90** | **Selected** |
+| Web (static) | Base | 0.6911 | 99.74s | 77,709 | $31.71 | |
+|  | Agent Optimized | **0.7286** | 100.97s | 97,156 | $38.53 | **Selected** |
+|  | RFT final | 0.7175 | **48.75s** | **37,278** | **$13.33** | Cost alternative |
+| Web (live) | Base | 0.2497 | 39.15s | **24,023** | $16.79 | |
+|  | Agent Optimized | 0.8292 | 20.00s | 25,236 | $13.19 | |
+|  | RFT final | **0.9025** | **19.80s** | 26,198 | **$12.56** | **Selected** |
 
-## Final gains
-
-| Task | Score gain vs base | Latency change | Token change |
-|---|---:|---:|---:|
-| Product | **+0.1880** | **-49.0%** | **-14.0%** |
-| Shop | **+0.1414** | **-50.2%** | +128.0% |
-| Voucher | **+0.0700** | **-62.6%** | +41.7% |
-| Catalog Web | **+0.0264** | **-51.1%** | **-52.0%** |
-| Live Web Search | **+0.1411** | +10.6% | +30.9% |
+Cost uses list prices of $0.20 input and $1.20 output per million
+MAI-Code-1.1-Flash tokens, with all input priced uncached. The Web (live)
+web-search lookup step runs on GPT-5.4-mini and is priced at $0.75 / $4.50.
 
 ## Interpretation
 
-**Product** improved across all three operating metrics. Agent Optimizer raised
-mean score by 0.1880 while nearly halving latency and reducing token use.
+**Product** improved on every operating metric. Agent Optimizer raised the
+score by 0.188 while halving latency and reducing tokens.
 
-**Shop** gained 0.1414 score and halved latency. Its optimized instructions and
-tool policy use more context, so token use increased despite faster execution.
+**Shop** gained 0.141 and halved latency. The optimized instructions use more
+context, so tokens and cost rose despite faster execution.
 
-**Voucher** required both stages. Agent Optimizer primarily hardened protocol
-completion; RFT Step 10 then produced the retained quality and latency result.
+**Voucher** needed both levers. Agent Optimizer mainly hardened protocol
+completion; RFT Step 10 then lifted the score to 0.925 and was the cheapest and
+fastest stage. Step 10 was preferred over the final checkpoint because it
+completed more episodes strictly.
 
-**Catalog Web** uses the strict v5 clue, grounding, protocol, and product gates.
-The selected RFT checkpoint trades 0.0111 canonical score versus the optimized
-agent for substantially stronger protocol completion and roughly half the
-latency and token cost. Its dedicated v5 reward mean is 0.6661 with 54/90
-episodes passing the 0.90 threshold.
+**Web (static)** uses the strict v5 clue, grounding, protocol, and product
+gates. Agent Optimized has the best score. Its RFT checkpoint is a cost
+alternative: 0.011 lower score for half the latency and about a third of the
+tokens and cost.
 
-**Live Web Search** is a separate internet-enabled lineage. The retained Agent
-Optimizer configuration raised mean score by 0.1411 and strict success from
-13/90 to 78/90. Live Web Search RFT remains work in progress and is not part of
-the published RFT workflow.
+**Web (live)** climbs at both steps:
+
+| Step | Score Δ | 95% CI | RFT reward Δ | 95% CI |
+|---|---:|---|---:|---|
+| Base → Agent Optimized | +0.579 | [+0.437, +0.711] | +0.559 | [+0.415, +0.692] |
+| Agent Optimized → RFT | +0.073 | [+0.001, +0.165] | +0.081 | [+0.010, +0.160] |
+
+The base agent rarely finished: 66 of 90 episodes exhausted their tool steps
+without recommending a product. Agent Optimizer fixed most of the protocol;
+RFT then halved the remaining unfinished episodes (15 → 7), raised exact
+products from 74 to 81 of 90, and solved a case (`web-113`) that no earlier
+stage solved.
+Tokens rose 4% and latency was unchanged.
+
+The RFT reward (`web_search_rft_grading_v6`) combines an LLM judge, which
+checks the resolved clue against the reference answer and the evidence, and
+checks product claims and answer completeness, with deterministic gates for
+the exact product, recommendation, and termination, and a succinctness cost
+for extra tool calls and long answers. Its mean rises 0.180 → 0.739 → 0.820.
+
+## Sealed final test
+
+All selection decisions were frozen before the disjoint 50-case final sets
+were opened. Each case received one attempt.
+
+| Agent | Configuration | Score | Exact | Latency | Tokens |
+|---|---|---:|---:|---:|---:|
+| Product | Agent Optimized | **0.9385** | 46/50 | 16.79s | 11,975 |
+| Shop | Agent Optimized | **0.9047** | 45/50 | 30.37s | 34,917 |
+| Voucher | RFT Step 10 | **0.8625** | 43/50 | 28.88s | 31,349 |
+| Web (live) | RFT final | **0.9055** | 45/50 | 20.11s | 26,725 |
+
+Web (live) generalized: its final-test score matches development (0.903) and
+its RFT reward is 0.782. The committed Web (static) final-test receipt
+(`evals/results/final/web.jsonl`, 0.6305) predates the hardened v5 selection
+and is retained as historical evidence, not as an estimate for the current
+Web (static) configuration.
 
 ## Evidence
 
 - Base receipts: `evals/results/baseline/`
-- Optimized receipts: `evals/results/optimized/`
-- Voucher RFT receipts: `evals/results/checkpoints/voucher/`
-- Catalog Web v5 RFT receipts: `evals/results/checkpoints/web-v5/`
-- Paired comparisons: `evals/results/comparisons/`
+- Agent Optimized receipts: `evals/results/optimized/`
+- RFT receipts: `evals/results/checkpoints/`
+- Web (live) RFT-reward scores and paired comparisons: `evals/results/scored/`
+- Paired canonical comparisons: `evals/results/comparisons/`
+- Sealed final-test receipts: `evals/results/final/`
 - Machine-readable release summary: `evals/results/summary.json`
-- Voucher and Catalog Web job receipts: `rft/jobs/`
+- RFT calibration, submission, status, and training curves: `rft/jobs/`

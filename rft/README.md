@@ -7,12 +7,12 @@ endpoint graders hosted by the ShoppingBench API.
 The published RFT workflow covers:
 
 - **Voucher**, using the canonical v3 reward;
-- **Catalog Web**, using the hardened v5 clue and grounding reward.
+- **Web (static)**, using the hardened v5 clue and grounding reward;
+- **Web (live)**, using the semantic web-search reward
+  (`web_search_rft_grading_v6`).
 
-Product and Shop were not trained because calibration did not show enough
-useful base-model failures. Live Web Search RFT remains work in progress and
-is intentionally excluded from the published data, configuration, and job
-receipts.
+Product and Shop were not trained: Agent Optimizer already reached 0.94, and
+calibration did not show enough useful base-model failures.
 
 ## Workflow
 
@@ -59,7 +59,7 @@ The selected Voucher checkpoint is Step 10:
 - mean latency: `23.098198` seconds;
 - mean total tokens: `29609.611`.
 
-## Hardened Catalog Web v5
+## Hardened Web (static) v5
 
 The v5 reward requires:
 
@@ -104,14 +104,46 @@ The selected final checkpoint produced:
 
 Development receipts are under `evals/results/checkpoints/web-v5/`. Calibration,
 submission, status, deployment, and selection receipts are under
-`rft/jobs/web-v5/`.
+`rft/jobs/web-v5/`. The optimized agent keeps the best Web (static) score; this
+checkpoint is published as the lower-cost alternative.
+
+## Web (live) v6
+
+Web (live) trains only the catalog agent. Each training row contains the
+optimized instructions, the user query, and web evidence captured once by the
+fixed lookup step, so the trainer sees exactly what the deployed agent sees.
+Data, captures, and the curation review are in `rft/data/web-search/`.
+
+The reward combines:
+
+- deterministic gates for the exact recommended and terminal product, product
+  inspection before recommendation, and completed protocol;
+- an LLM judge (GPT-5.4) that rates clue correctness against the reference
+  answer, faithfulness to the captured evidence, product-claim support, and
+  answer completeness; all four must be full to pass quality;
+- a succinctness cost of 0.08 per tool call beyond
+  search → inspect → recommend → terminate, 0.16 per repeated search or
+  inspection, and 0.005 per final-answer word beyond 30, capped at 0.40 so a
+  correct answer always outscores any quality failure.
+
+The pass threshold is 0.85. On frozen base-model rollouts the reward failed
+28.9% of training samples, inside the 25-50% calibration target, and 19.0% of
+validation samples.
+
+The job (`rft/jobs/web-search-v6/`) trained for 3 epochs with batch size 8,
+learning-rate multiplier 0.5, compute multiplier 1.5, medium reasoning, and at
+most 8 episode steps. Validation reward rose from 0.845 to 0.907. The final
+checkpoint scored 0.9025 on development (versus 0.8292 for the optimized agent)
+and 0.9055 on the sealed final test. See `docs/reproducibility.md` for the
+exact commands.
 
 ## Published reward endpoints
 
 | Endpoint | Purpose |
 |---|---|
 | `POST /grade/v3` | Voucher and general catalog RFT reward |
-| `POST /grade/web/v5` | Hardened Catalog Web reward |
+| `POST /grade/web/v5` | Hardened Web (static) reward |
+| `POST /grade/web-search/v6` | Web (live) semantic reward |
 | `POST /rft/tools/{tool_name}` | Catalog tool adapter for RFT episodes |
 
 RFT is billable and availability depends on model, region, and subscription.

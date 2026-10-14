@@ -32,11 +32,12 @@
 <section>
   <div class="eyebrow">Clean comparison</div><h2>Same split. Same grader. Three rollouts.</h2>
   <table>
-    <tr><th>Task</th><th>Off-the-shelf</th><th>Optimized</th><th>RFT</th></tr>
-    <tr><td>Product</td><td>0.7529</td><td class="good">0.9408</td><td>Not trained</td></tr>
-    <tr><td>Shop</td><td>0.7957</td><td class="good">0.9371</td><td>Not trained</td></tr>
-    <tr><td>Voucher</td><td>0.8547</td><td>0.8606</td><td class="good">Step 10: 0.9248</td></tr>
-    <tr><td>Web</td><td>0.6911</td><td class="good">0.7286</td><td class="warn">Rejected</td></tr>
+    <tr><th>Agent</th><th>Base</th><th>Agent Optimized</th><th>RFT</th></tr>
+    <tr><td>Product</td><td>0.753</td><td class="good">0.941</td><td>Not needed</td></tr>
+    <tr><td>Shop</td><td>0.796</td><td class="good">0.937</td><td>Not needed</td></tr>
+    <tr><td>Voucher</td><td>0.855</td><td>0.861</td><td class="good">0.925</td></tr>
+    <tr><td>Web (static)</td><td>0.691</td><td class="good">0.729</td><td class="warn">0.718, &#8531; the cost</td></tr>
+    <tr><td>Web (live)</td><td>0.250</td><td>0.829</td><td class="good">0.903</td></tr>
   </table>
 </section>
 <section>
@@ -59,15 +60,15 @@
   <p class="sub">A nearly identical mean did not outweigh seven fewer complete successes and seven fewer valid final answers.</p>
 </section>
 <section>
-  <div class="eyebrow">Negative result</div><h2>Web RFT was attempted and rejected</h2>
+  <div class="eyebrow">Web (live)</div><h2>Both levers climb, and the gain holds on the sealed test</h2>
   <table>
-    <tr><th>Artifact</th><th>Mean</th></tr>
-    <tr><td>Optimized base</td><td class="good">0.7286</td></tr>
-    <tr><td>Step 6</td><td>0.6500</td></tr>
-    <tr><td>Step 9</td><td>0.6717</td></tr>
-    <tr><td>Final</td><td>0.6669</td></tr>
+    <tr><th>Stage</th><th>Score</th><th>Exact</th><th>Latency</th><th>Cost / 1k episodes</th></tr>
+    <tr><td>Base</td><td>0.250</td><td>21/90</td><td>39.2s</td><td>$16.79</td></tr>
+    <tr><td>Agent Optimized</td><td>0.829</td><td>74/90</td><td>20.0s</td><td>$13.19</td></tr>
+    <tr><td>RFT</td><td class="good">0.903</td><td class="good">81/90</td><td class="good">19.8s</td><td class="good">$12.56</td></tr>
+    <tr><td>RFT, sealed final test</td><td class="good">0.906</td><td class="good">45/50</td><td>20.1s</td><td>$12.62</td></tr>
   </table>
-  <p class="sub">The correct hill-climb narrative includes rejected training runs. RFT is retained only when it clears the deterministic gate.</p>
+  <p class="sub">The RFT reward pairs an LLM judge for clue correctness and grounding with deterministic product and protocol gates and a succinctness cost.</p>
 </section>
 <section>
   <div class="eyebrow">Operating principle</div><h1>The LLM judge proposes.<br>The deterministic grader disposes.</h1>

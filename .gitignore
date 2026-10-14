@@ -15,3 +15,5 @@ optimize/work/
 rft/jobs/**/*-events.jsonl
 agents/.agent_configs/
 agents/azd-ai-*.log
+# Vendored by the agents prepackage hook
+agents/shoppingbench_foundry/

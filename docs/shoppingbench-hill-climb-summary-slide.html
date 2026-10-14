@@ -15,17 +15,18 @@
   </style>
 </head>
 <body><main>
-  <h1>ShoppingBench: a clean frontier-tuning hill climb</h1>
+  <h1>ShoppingBench: five MAI-Code-1.1-Flash agents</h1>
   <p>Same development cases, same deterministic grader, three rollouts per case.</p>
   <table>
-    <thead><tr><th>Task</th><th>Off-the-shelf</th><th>Optimized agent</th><th>Agent gain</th><th>RFT decision</th></tr></thead>
+    <thead><tr><th>Agent</th><th>Base</th><th>Agent Optimized</th><th>RFT</th><th>Selected</th></tr></thead>
     <tbody>
-      <tr><td>Product</td><td>0.7529</td><td>0.9408</td><td class="gain">+0.1880</td><td>Not trained</td></tr>
-      <tr><td>Shop</td><td>0.7957</td><td>0.9371</td><td class="gain">+0.1414</td><td>Not trained</td></tr>
-      <tr><td>Voucher</td><td>0.8547</td><td>0.8606</td><td>+0.0059</td><td class="gain">Step 10: 0.9248 (+0.0641)</td></tr>
-      <tr><td>Web</td><td>0.6911</td><td>0.7286</td><td>+0.0375</td><td class="reject">Rejected: every checkpoint regressed</td></tr>
+      <tr><td>Product</td><td>0.753</td><td class="gain">0.941</td><td>Not needed</td><td>Optimized</td></tr>
+      <tr><td>Shop</td><td>0.796</td><td class="gain">0.937</td><td>Not needed</td><td>Optimized</td></tr>
+      <tr><td>Voucher</td><td>0.855</td><td>0.861</td><td class="gain">0.925</td><td>RFT</td></tr>
+      <tr><td>Web (static)</td><td>0.691</td><td class="gain">0.729</td><td class="reject">0.718 at &#8531; the cost</td><td>Optimized</td></tr>
+      <tr><td>Web (live)</td><td>0.250</td><td>0.829</td><td class="gain">0.903</td><td>RFT</td></tr>
     </tbody>
   </table>
-  <div class="footer">The LLM judge proposes. The deterministic grader disposes. RFT is a gated lever, not a mandatory final stage.</div>
+  <div class="footer">Use the cheapest effective lever: Agent Optimizer first, RFT only where calibration shows a learnable signal.</div>
 </main></body>
 </html>

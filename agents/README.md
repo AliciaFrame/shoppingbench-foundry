@@ -64,8 +64,9 @@ python -c "from agents.shared.runtime import TASK; print(TASK)"
 Live startup additionally requires model and tool endpoint configuration.
 
 `web_search/` uses `shared/web_search_runtime.py` rather than the catalog-only
-shared runtime. It first calls the Responses API native web-search tool,
-captures cited evidence, and then performs the bounded catalog-selection
+shared runtime. A fixed lookup step first calls the Responses API native
+web-search tool (on GPT-5.4-mini) and captures cited evidence; the
+MAI-Code-1.1-Flash agent then performs the bounded catalog-selection
 trajectory. Its retained optimized configuration preserves a structured
 terminal answer containing the product ID, resolved clue, and complete
 grounded recommendation.

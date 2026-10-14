@@ -13,6 +13,15 @@
     },
     "shoppingbenchApiToken": {
       "value": "${SHOPPINGBENCH_API_TOKEN}"
+    },
+    "webSearchOpenAiBaseUrl": {
+      "value": "${WEB_SEARCH_OPENAI_BASE_URL=}"
+    },
+    "webSearchModelDeploymentName": {
+      "value": "${WEB_SEARCH_MODEL_DEPLOYMENT_NAME=}"
+    },
+    "rftGraderModelDeploymentName": {
+      "value": "${RFT_GRADER_MODEL_DEPLOYMENT_NAME=}"
     }
   }
 }

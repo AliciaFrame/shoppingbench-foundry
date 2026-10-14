@@ -37,26 +37,27 @@ judge proposes candidates; this deterministic grader decides promotion.
 
 Use `docs/results.md`:
 
-- Product: `0.7529 -> 0.9408`
-- Shop: `0.7957 -> 0.9371`
-- Voucher: `0.8547 -> 0.8606 -> 0.9248`
-- Catalog Web: `0.6911 -> 0.7286 -> 0.7175`, with RFT cutting latency
-  and tokens by roughly half versus base
-- Live Web Search: `0.7636 -> 0.9047`, with RFT still WIP
+- Product: `0.753 -> 0.941`
+- Shop: `0.796 -> 0.937`
+- Voucher: `0.855 -> 0.861 -> 0.925`
+- Web (static): `0.691 -> 0.729`, with an RFT alternative at `0.718` for
+  half the latency and about a third of the cost
+- Web (live): `0.250 -> 0.829 -> 0.903`, both steps statistically clear
 
 Emphasize that most baseline failures were incomplete agent behavior, not an
 inability to identify products.
 
 ## 6. Show checkpoint discipline
 
-For Voucher, show why Step 10 is the selected operating point. For Catalog
-Web, show the v5 hard gates and the score/cost tradeoff. For Live Web Search,
-show that the Agent Optimizer result remains published while RFT is marked WIP.
+For Voucher, show why Step 10 is the selected operating point. For Web
+(static), show the v5 hard gates and the score/cost trade-off. For Web (live),
+show the training curve in `rft/jobs/web-search-v6/` and the paired comparison
+in `evals/results/comparisons/web-search-optimized-to-rft.json`.
 
 ## 7. Close with the sealed test
 
-Show the final-test table in `docs/results.md`. Web's drop to `0.6305` is the
-remaining generalization problem. No new tuning decision was made from the
+Show the final-test table in `docs/results.md`. Web (live) RFT scores `0.906`
+on the sealed set, matching development. No tuning decision was made from the
 sealed test.
 
 Finish with: **use the cheapest effective improvement lever, but measure

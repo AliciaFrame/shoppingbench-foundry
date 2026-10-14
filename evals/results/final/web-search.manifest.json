@@ -1,0 +1,27 @@
+{
+  "started_at": "2026-10-14T01:01:33.138002+00:00",
+  "contract": {
+    "dataset_sha256": "52cad7de727dc872b3410ee905649db3482c16c9b875d097233aed68f05e17cc",
+    "documents_sha256": "65145eb8da6b83e6329e624e5d1288997b92d91856d9ffd81d1117c682276c21",
+    "instructions_sha256": "2d0f0043df2d375e0f01722fff912245a1f4be9097f8296c4ba2e7cc8ff063ff",
+    "tools_sha256": "a44e1b6353a76cf674958efea9d4eb6919be7563228564ac093b5dfe6b9818c0",
+    "runtime_sha256": "79d0017258723cf1794264f6ab1e9cf6466ad0f63b51f1f0dd7d7b5231bae4b3",
+    "selection_deployment": "mai-code-1.1-flash RFT (web-search v6 grader)",
+    "web_deployment": "shoppingbench-eval-gpt-5-4-mini",
+    "selection_reasoning_effort": "medium",
+    "selection_max_output_tokens": 4096,
+    "web_max_output_tokens": 256,
+    "web_source_limit": 2,
+    "web_max_attempts": 3,
+    "max_tool_steps": 8,
+    "enforce_selection_tool_limits": false,
+    "catalog_search_result_limit": 10,
+    "agent_mode": "optimized",
+    "catalog_backend": "hosted-production-azure-search",
+    "cases": 50,
+    "rollouts": 1,
+    "workers": 3,
+    "limit": null,
+    "web_only": false
+  }
+}

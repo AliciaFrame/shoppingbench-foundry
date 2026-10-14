@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from rft.scripts.calibrate import calibrate
 from rft.scripts.monitor import (
     COGNITIVE_SERVICES_TOKEN_SCOPE,
@@ -417,8 +419,200 @@ def test_calibration_can_require_threshold_above_gate_caps(tmp_path: Path):
         minimum_pass_threshold=0.49,
     )
 
-    assert summary["recommended_pass_threshold"] == 1.0
+    assert summary["recommended_pass_threshold"] == 0.99
+    assert summary["observations_equal_to_threshold"] == 0
     assert summary["base_failure_rate"] == 0.45
+
+
+def test_calibration_does_not_approve_incomplete_coverage_or_runtime_errors(tmp_path: Path):
+    dataset = tmp_path / "dataset.jsonl"
+    results = tmp_path / "results.jsonl"
+    rows = [
+        {"name": f"{case}-{rollout}", "item": {"case_name": str(case)}}
+        for case in range(21) for rollout in range(3)
+    ]
+    observations = [
+        {"name": row["name"], "sample": {"score": 0.8 if int(row["item"]["case_name"]) < 7 else 1}}
+        for row in rows
+    ]
+    dataset.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    results.write_text(
+        "".join(json.dumps(row) + "\n" for row in observations[:-3]), encoding="utf-8",
+    )
+    summary = calibrate(results, dataset, grader=lambda sample, item: sample["score"])
+    assert summary["sufficient_samples"]
+    assert not summary["complete_coverage"]
+    assert not summary["sufficient_signal"]
+    observations[0]["error"] = "Upstream timeout"
+    results.write_text(
+        "".join(json.dumps(row) + "\n" for row in observations), encoding="utf-8",
+    )
+    summary = calibrate(results, dataset, grader=lambda sample, item: sample["score"])
+    assert summary["complete_coverage"]
+    assert summary["runtime_errors"] == 1
+    assert not summary["sufficient_signal"]
+
+
+def test_calibration_rejects_duplicate_observations(tmp_path: Path):
+    dataset = tmp_path / "dataset.jsonl"
+    results = tmp_path / "results.jsonl"
+    dataset.write_text('{"name":"one","item":{}}\n', encoding="utf-8")
+    results.write_text('{"name":"one","sample":{}}\n' * 60, encoding="utf-8")
+    with pytest.raises(ValueError, match="Duplicate calibration result"):
+        calibrate(results, dataset, grader=lambda sample, item: 1.0)
+
+
+@pytest.mark.parametrize("threshold", [0, 1, float("inf"), float("nan")])
+def test_calibration_and_submission_reject_unusable_threshold_boundaries(tmp_path, threshold):
+    with pytest.raises(ValueError, match="strictly between"):
+        calibrate(tmp_path / "results", tmp_path / "dataset", pass_threshold=threshold)
+    with pytest.raises(ValueError, match="strictly between"):
+        _endpoint_grader("web", threshold)
+
+
+def test_calibration_keeps_quality_cutoff_and_reports_continuous_signal(tmp_path):
+    dataset = tmp_path / "dataset.jsonl"
+    results = tmp_path / "results.jsonl"
+    rows = [
+        {"name": f"{case}-{rollout}", "item": {"case_name": str(case)}}
+        for case in range(20) for rollout in range(3)
+    ]
+    values = [
+        {"name": row["name"], "sample": {"score": (1.0, 0.98, 0.96)[index % 3]}}
+        for index, row in enumerate(rows)
+    ]
+    dataset.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    results.write_text("".join(json.dumps(row) + "\n" for row in values), encoding="utf-8")
+    summary = calibrate(
+        results, dataset, grader=lambda sample, item: sample["score"], pass_threshold=0.82,
+    )
+    assert summary["recommended_pass_threshold"] == 0.82
+    assert summary["sufficient_signal"]
+    assert not summary["failure_rate_in_target_band"]
+    assert summary["reward_variation"]["varying_examples"] == 20
+    with pytest.raises(ValueError, match="between observed scores"):
+        calibrate(
+            results, dataset, grader=lambda sample, item: sample["score"], pass_threshold=0.98,
+        )
+
+
+def test_calibration_does_not_claim_signal_for_a_saturated_grader(tmp_path):
+    dataset = tmp_path / "dataset.jsonl"
+    results = tmp_path / "results.jsonl"
+    rows = [
+        {"name": f"{case}-{rollout}", "item": {"case_name": str(case)}}
+        for case in range(20) for rollout in range(3)
+    ]
+    dataset.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    results.write_text(
+        "".join(json.dumps({"name": row["name"], "sample": {}}) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+    summary = calibrate(results, dataset, grader=lambda sample, item: 1)
+    assert not summary["sufficient_signal"]
+    assert summary["recommended_pass_threshold"] < 1
+    assert summary["base_failure_rate"] == 0
+
+
+def test_live_web_cli_rejects_stale_calibration_even_with_low_signal_override(
+    tmp_path, monkeypatch,
+):
+    from rft.scripts.submit import main
+
+    calibration = tmp_path / "calibration.json"
+    calibration.write_text(
+        json.dumps({"grader_version": "web-search-v6", "grader_sha256": "stale"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("sys.argv", [
+        "submit", "web", "--grader-version", "web-search-v6",
+        "--calibration", str(calibration), "--allow-low-signal", "--confirm-submit",
+    ])
+    with pytest.raises(SystemExit, match="does not match"):
+        main()
+
+
+def test_live_web_submission_route_threshold_and_judge_binding(tmp_path, monkeypatch):
+    import hashlib
+
+    from rft.scripts.submit import _suffix, main
+    from shoppingbench_foundry import web_search_rft_grading_v6 as grader
+
+    monkeypatch.setenv("SHOPPINGBENCH_TOOL_BASE_URL", "https://tools.example")
+    monkeypatch.setenv("SHOPPINGBENCH_API_TOKEN", "test-token")
+    monkeypatch.setenv("RFT_GRADER_MODEL_DEPLOYMENT_NAME", "judge")
+    monkeypatch.setenv("WEB_SEARCH_OPENAI_BASE_URL", "https://different-endpoint")
+    assert _endpoint_grader("web", grader.PASS_THRESHOLD, "web-search-v6")["url"].endswith(
+        "/grade/web-search/v6",
+    )
+    assert _suffix("web", "web-search-v6") == "mai-sb-web-search-rft-v6"
+    with pytest.raises(ValueError, match="calibrated"):
+        _endpoint_grader("web", 0.82, "web-search-v6")
+    with pytest.raises(ValueError, match="Web-specific"):
+        _endpoint_grader("shop", grader.PASS_THRESHOLD, "web-search-v6")
+    data = tmp_path / "web-validation.jsonl"
+    data.write_text("{}\n", encoding="utf-8")
+    calibration = tmp_path / "calibration.json"
+    calibration.write_text(json.dumps({
+        "grader_version": "web-search-v6", "grader_sha256": grader.grader_sha256(),
+        "complete_coverage": True, "runtime_errors": 0, "sufficient_samples": True,
+        "source_dataset_sha256": hashlib.sha256(data.read_bytes()).hexdigest(),
+        "judge_model_deployment": "judge", "judge_base_url": "https://calibrated-endpoint",
+        "judge_reasoning_effort": "medium",
+    }), encoding="utf-8")
+    monkeypatch.setattr("sys.argv", [
+        "submit", "web", "--grader-version", "web-search-v6", "--data-dir", str(tmp_path),
+        "--calibration", str(calibration), "--confirm-submit",
+    ])
+    with pytest.raises(SystemExit, match="endpoint or reasoning"):
+        main()
+
+
+@pytest.mark.parametrize("mismatch", ["data", "judge"])
+def test_live_web_cli_binds_calibration_to_data_and_judge(tmp_path, monkeypatch, mismatch):
+    import hashlib
+
+    from rft.scripts.submit import main
+    from shoppingbench_foundry.web_search_rft_grading_v6 import grader_sha256
+
+    data = tmp_path / "web-validation.jsonl"
+    data.write_text("{}\n", encoding="utf-8")
+    calibration = tmp_path / "calibration.json"
+    calibration.write_text(json.dumps({
+        "grader_version": "web-search-v6",
+        "grader_sha256": grader_sha256(),
+        "complete_coverage": True,
+        "runtime_errors": 0,
+        "sufficient_samples": True,
+        "source_dataset_sha256": (
+            "stale" if mismatch == "data" else hashlib.sha256(data.read_bytes()).hexdigest()
+        ),
+        "judge_model_deployment": "calibrated-judge",
+    }), encoding="utf-8")
+    monkeypatch.setenv("RFT_GRADER_MODEL_DEPLOYMENT_NAME", "different-judge")
+    monkeypatch.setattr("sys.argv", [
+        "submit", "web", "--grader-version", "web-search-v6",
+        "--data-dir", str(tmp_path), "--calibration", str(calibration), "--confirm-submit",
+    ])
+    with pytest.raises(SystemExit, match="validation data" if mismatch == "data" else "judge"):
+        main()
+
+
+def test_dataset_validator_preserves_explicit_optimized_tool_definitions(tmp_path: Path):
+    from shoppingbench_foundry.tool_definitions import chat_completions_tools
+
+    tools = chat_completions_tools("web")
+    tools[0]["function"]["description"] = "Optimized search policy; preserve verbatim."
+    path = tmp_path / "dataset.jsonl"
+    row = {"messages": [{"role": "user", "content": "Find a product"}], "tools": tools}
+    path.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    assert _validate_agentic_dataset(path, expected_tools=tools)[0] == "find_product"
+    with pytest.raises(ValueError, match="expected web contract"):
+        _validate_agentic_dataset(path)
+    changed_tools = json.loads(json.dumps(tools))
+    changed_tools[0]["function"]["description"] = "A different policy"
+    with pytest.raises(ValueError, match="expected web contract"):
+        _validate_agentic_dataset(path, expected_tools=changed_tools)
 
 
 def test_preparation_manifest_uses_only_selected_task_outputs(tmp_path: Path):
@@ -461,7 +655,7 @@ def test_public_rft_payload_matches_agentic_contract(monkeypatch):
     monkeypatch.setenv("SHOPPINGBENCH_API_TOKEN", "test-token")
     reinforcement = _reinforcement_config(
         task="web",
-        threshold=1.0,
+        threshold=0.99,
         grader_version="v3",
         n_epochs=3,
         batch_size=4,
@@ -472,14 +666,14 @@ def test_public_rft_payload_matches_agentic_contract(monkeypatch):
     )
 
     assert reinforcement["grader"]["type"] == "endpoint"
-    assert reinforcement["grader"]["pass_threshold"] == 1.0
+    assert reinforcement["grader"]["pass_threshold"] == 0.99
     assert [tool["name"] for tool in reinforcement["tools"]] == [
         "find_product",
         "view_product_information",
         "recommend_product",
         "terminate",
     ]
-    assert reinforcement["pass_threshold"] == 1.0
+    assert reinforcement["pass_threshold"] == 0.99
     assert reinforcement["max_episode_steps"] == 9
     assert reinforcement["hyperparameters"] == {
         "eval_interval": 7,

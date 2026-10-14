@@ -1,0 +1,26 @@
+{
+  "job_id": "ftjob-3784fe1951d5407883b0c517d00ec505",
+  "status": "succeeded",
+  "model": "MAI-Code-1.1-Flash-2026-09-15",
+  "fine_tuned_model": "MAI-Code-1.1-Flash-2026-09-15.ft-3784fe1951d5407883b0c517d00ec505-mai-sb-web-search-rft-v6",
+  "trained_tokens": 398661,
+  "created_at": 1791917075,
+  "finished_at": 1791928944,
+  "result_files": [
+    "file-0d54fb68a35f4990b208b85e206f07dd"
+  ],
+  "checkpoints": [
+    {
+      "step": 13,
+      "model": "MAI-Code-1.1-Flash-2026-09-15.ft-3784fe1951d5407883b0c517d00ec505-mai-sb-web-search-rft-v6"
+    },
+    {
+      "step": 12,
+      "model": "MAI-Code-1.1-Flash-2026-09-15.ft-3784fe1951d5407883b0c517d00ec505-mai-sb-web-search-rft-v6:ckpt-step-12"
+    },
+    {
+      "step": 9,
+      "model": "MAI-Code-1.1-Flash-2026-09-15.ft-3784fe1951d5407883b0c517d00ec505-mai-sb-web-search-rft-v6:ckpt-step-9"
+    }
+  ]
+}

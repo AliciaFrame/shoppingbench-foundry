@@ -6,11 +6,9 @@ RESULTS = ROOT / "evals" / "results"
 
 
 def _rows(path: Path) -> list[dict]:
-    return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    # Iterate file lines: product text can contain Unicode line separators.
+    with path.open(encoding="utf-8") as handle:
+        return [json.loads(line) for line in handle if line.strip()]
 
 
 def _mean_score(path: Path) -> float:
@@ -86,14 +84,24 @@ def test_hardened_web_v5_receipts_and_selected_checkpoint_are_present():
     assert comparison["metrics"]["latency_seconds"]["delta"] < 0
 
 
-def test_live_web_search_optimized_receipt_is_published_without_rft():
+def test_live_web_climbs_from_base_to_optimized_to_rft():
     baseline = _mean_score(RESULTS / "baseline" / "web-search.jsonl")
     optimized = _mean_score(RESULTS / "optimized" / "web-search.jsonl")
-    comparison = _comparison("web-search-baseline-to-optimized.json")
-
-    assert (baseline, optimized) == (0.763611, 0.904722)
-    assert comparison["metrics"]["score"]["delta"] == 0.141111
-    assert comparison["metrics"]["success"]["delta"] == 0.722222
+    rft = _mean_score(RESULTS / "checkpoints" / "web-search-v6" / "final.jsonl")
+    assert (baseline, optimized, rft) == (0.249722, 0.829167, 0.9025)
+    for name in ("web-search-baseline-to-optimized.json", "web-search-optimized-to-rft.json"):
+        assert _comparison(name)["metrics"]["score"]["delta_clustered_95_ci"][0] > 0
+    for stage, reward in (("baseline", 0.18), ("optimized", 0.739), ("rft", 0.82)):
+        summary = json.loads(
+            (RESULTS / "scored" / f"web-search-{stage}.summary.json").read_text(encoding="utf-8"),
+        )
+        assert round(summary["rft_reward"], 3) == reward
+        if stage != "baseline":
+            assert summary["paired_vs_baseline"]["rft_reward"]["case_clustered_95_ci"][0] > 0
+    manifest = json.loads(
+        (RESULTS / "baseline" / "web-search.manifest.json").read_text(encoding="utf-8"),
+    )
+    assert manifest["contract"]["selection_deployment"].startswith("mai-code-1.1-flash")
 
 
 def test_release_summary_matches_published_receipts():
@@ -102,11 +110,13 @@ def test_release_summary_matches_published_receipts():
     assert summary["methodology"]["episodes_per_stage"] == 90
     assert summary["tasks"]["voucher"]["selected_stage"] == "rft"
     assert summary["tasks"]["catalog_web"]["stages"]["rft"]["mean_score"] == 0.7175
-    assert summary["tasks"]["live_web_search"]["rft_status"] == "wip"
-    assert "rft" not in summary["tasks"]["live_web_search"]["stages"]
+    assert summary["tasks"]["catalog_web"]["selected_stage"] == "optimized"
+    assert summary["tasks"]["catalog_web"]["alternative_stage"] == "rft"
+    assert summary["tasks"]["live_web_search"]["selected_stage"] == "rft"
+    assert summary["tasks"]["live_web_search"]["final_test"]["episodes"] == 50
 
 
 def test_final_test_receipts_are_present_for_all_tasks():
-    for task in ("product", "shop", "voucher", "web"):
+    for task in ("product", "shop", "voucher", "web", "web-search"):
         rows = _rows(RESULTS / "final" / f"{task}.jsonl")
         assert len(rows) == 50

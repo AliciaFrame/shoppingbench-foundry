@@ -1,0 +1,36 @@
+{
+  "grader_sha256": "dec4679258a6e1dd2d52788c8cebc94aac162d6ebc27a420e4ccf8fb4b3e0e2f",
+  "results_sha256": "529788836bf2393fd080a6610d1fc0334b9c59866f32acab08efbfbec8a1d232",
+  "episodes": 90,
+  "rft_reward": 0.7388712444444444,
+  "rft_passes": 65,
+  "quality_passes": 67,
+  "canonical_score": 0.8291666666666667,
+  "exact": 74.0,
+  "mean_latency_seconds": 19.99711178888889,
+  "mean_catalog_calls": 4.766666666666667,
+  "mean_tokens": {
+    "selection_input_tokens": 13317.5,
+    "selection_output_tokens": 2669.5777777777776,
+    "web_input_tokens": 9147.022222222222,
+    "web_output_tokens": 102.37777777777778
+  },
+  "runtime_errors": 0,
+  "paired_vs_baseline": {
+    "baseline": "web-search-baseline",
+    "rft_reward": {
+      "delta": 0.558585411111111,
+      "case_clustered_95_ci": [
+        0.415371,
+        0.692407
+      ]
+    },
+    "canonical_score": {
+      "delta": 0.5794444444444444,
+      "case_clustered_95_ci": [
+        0.436667,
+        0.711389
+      ]
+    }
+  }
+}

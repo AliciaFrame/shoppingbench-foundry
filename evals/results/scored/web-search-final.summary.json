@@ -1,0 +1,19 @@
+{
+  "grader_sha256": "dec4679258a6e1dd2d52788c8cebc94aac162d6ebc27a420e4ccf8fb4b3e0e2f",
+  "results_sha256": "7e359d82aef05511c11ccfabd3cc52ed99040d1d39adcbea09746dd141e4df84",
+  "episodes": 50,
+  "rft_reward": 0.78175524,
+  "rft_passes": 34,
+  "quality_passes": 40,
+  "canonical_score": 0.9055,
+  "exact": 45.0,
+  "mean_latency_seconds": 20.10512926,
+  "mean_catalog_calls": 4.9,
+  "mean_tokens": {
+    "selection_input_tokens": 15671.56,
+    "selection_output_tokens": 1858.78,
+    "web_input_tokens": 9097.52,
+    "web_output_tokens": 96.78
+  },
+  "runtime_errors": 0
+}

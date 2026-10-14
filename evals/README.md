@@ -13,7 +13,8 @@
 | `datasets/manifest.json` | Split lineage, groups, and overlap assertions |
 | `results/baseline/` | True off-the-shelf development receipts |
 | `results/optimized/` | Retained optimized-agent receipts |
-| `results/checkpoints/` | Voucher and hardened Catalog Web v5 checkpoint receipts |
+| `results/checkpoints/` | Voucher, Web (static) v5, and Web (live) v6 checkpoint receipts |
+| `results/scored/` | Web (live) RFT-reward scores, summaries, and paired comparisons |
 | `results/comparisons/` | Paired, case-clustered comparisons |
 | `results/final/` | One-time sealed final-test receipts |
 | `results/summary.json` | Generated release metrics for score, latency, and tokens |
@@ -29,11 +30,11 @@ The grader implementations live in the installable
 `shoppingbench_foundry` package because both local evaluation and the deployed
 API use the same code.
 
-Live Web Search uses the same canonical grader after its native web-search
-phase. Its baseline and retained optimized receipts are
-`results/baseline/web-search.jsonl` and
-`results/optimized/web-search.jsonl`. RFT results are intentionally not
-published while that experiment remains work in progress.
+Web (live) uses the same canonical grader after its web-search lookup.
+`scripts/evaluate_live_web.py` produces its receipts and
+`scripts/score_live_web.py` rescores them with the Web (live) RFT reward.
+Receipts are `results/{baseline,optimized,final}/web-search.jsonl` and
+`results/checkpoints/web-search-v6/final.jsonl`.
 
 ## Evaluate
 

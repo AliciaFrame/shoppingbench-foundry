@@ -4,6 +4,7 @@ import argparse
 import copy
 import importlib
 import json
+import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -11,10 +12,10 @@ from pathlib import Path
 from typing import Any
 
 from azure.ai.agentserver.responses import ResponsesAgentServerHost
-from openai import RateLimitError
+from openai import APIConnectionError, APITimeoutError, RateLimitError
 
 from shoppingbench_foundry.grading import grade_sample
-from shoppingbench_foundry.store import InMemoryProductStore
+from shoppingbench_foundry.store import INFORMATION_FIELDS, InMemoryProductStore
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
@@ -34,6 +35,36 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
 
 def _load_products(path: Path) -> list[dict[str, Any]]:
     return [row["product"] for row in _read_jsonl(path)]
+
+
+def _use_in_process_tools(store: InMemoryProductStore) -> None:
+    def execute(name: str, arguments: dict[str, Any]) -> Any:
+        if name == "find_product":
+            return store.search(
+                arguments["q"],
+                arguments["page"],
+                arguments.get("shop_id"),
+                arguments.get("price"),
+                arguments.get("sort"),
+                arguments.get("service"),
+            )
+        if name == "view_product_information":
+            product_ids = [
+                item.strip()
+                for item in arguments.get("product_ids", "").split(",")
+                if item.strip()
+            ]
+            return [
+                {field: product.get(field) for field in INFORMATION_FIELDS}
+                for product in store.get_products(product_ids)
+            ]
+        if name == "recommend_product":
+            return {"recommended": arguments.get("product_ids", "")}
+        if name == "terminate":
+            return {"terminated": True, **arguments}
+        raise ValueError(f"Unknown tool: {name}")
+
+    runtime._execute_tool = execute
 
 
 def _expand_rollouts(
@@ -61,7 +92,7 @@ def _evaluate(
         try:
             output_text, usage = runtime._run_episode(row["query"])
             break
-        except RateLimitError:
+        except (APIConnectionError, APITimeoutError, RateLimitError):
             if attempt == 5:
                 raise
             time.sleep(min(60, 10 * 2**attempt))
@@ -108,6 +139,8 @@ def main_cli() -> None:
         rows = rows[: args.limit]
     rows = _expand_rollouts(rows, args.rollouts)
     store = InMemoryProductStore(_load_products(args.documents))
+    if os.getenv("EVALUATION_IN_PROCESS_TOOLS", "").lower() in {"1", "true", "yes"}:
+        _use_in_process_tools(store)
     results: list[dict[str, Any] | None] = [None] * len(rows)
     errors: list[dict[str, str]] = []
     existing = (

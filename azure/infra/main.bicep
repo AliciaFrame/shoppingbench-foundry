@@ -9,6 +9,13 @@ param searchLocation string = location
 @minLength(32)
 param shoppingbenchApiToken string
 
+@description('Responses endpoint for the Web (live) web-search lookup and RFT judge, for example https://<resource>.openai.azure.com/openai/v1.')
+param webSearchOpenAiBaseUrl string = ''
+@description('GPT-5.4-mini deployment used by the Web (live) web-search lookup.')
+param webSearchModelDeploymentName string = ''
+@description('GPT-5.4 deployment used as the Web (live) RFT judge.')
+param rftGraderModelDeploymentName string = ''
+
 var token = uniqueString(subscription().id, resourceGroup().id, location, environmentName)
 var tags = {
   'azd-env-name': environmentName
@@ -237,6 +244,18 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'SHOPPINGBENCH_API_TOKEN'
               secretRef: 'sb-api-token'
             }
+            {
+              name: 'WEB_SEARCH_OPENAI_BASE_URL'
+              value: webSearchOpenAiBaseUrl
+            }
+            {
+              name: 'WEB_SEARCH_MODEL_DEPLOYMENT_NAME'
+              value: webSearchModelDeploymentName
+            }
+            {
+              name: 'RFT_GRADER_MODEL_DEPLOYMENT_NAME'
+              value: rftGraderModelDeploymentName
+            }
           ]
           probes: [
             {
@@ -256,8 +275,9 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         }
       ]
       scale: {
-        minReplicas: 1
-        maxReplicas: 1
+        // Concurrent RFT rollouts call the tool and grader endpoints in parallel.
+        minReplicas: 2
+        maxReplicas: 5
         rules: [
           {
             name: 'http'

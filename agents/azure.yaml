@@ -5,6 +5,16 @@ requiredVersions:
     extensions:
         azure.ai.agents: '>=1.0.0-beta.17'
 name: shoppingbench-hosted-agents
+hooks:
+    # The Web (live) runtime imports the shared catalog store from the repository
+    # package; vendor it into the agent project before packaging.
+    prepackage:
+        windows:
+            shell: pwsh
+            run: Copy-Item -Recurse -Force ../src/shoppingbench_foundry ./shoppingbench_foundry
+        posix:
+            shell: sh
+            run: rm -rf ./shoppingbench_foundry && cp -R ../src/shoppingbench_foundry ./shoppingbench_foundry
 services:
     ai-project:
         host: azure.ai.project
@@ -129,9 +139,14 @@ services:
             - ai-project
         env:
             AGENT_MODE: optimized
-            MAI_MODEL_DEPLOYMENT_NAME: ${WEB_SEARCH_MODEL_DEPLOYMENT_NAME}
-            MAI_OPENAI_BASE_URL: ${WEB_SEARCH_OPENAI_BASE_URL}
+            MAI_MODEL_DEPLOYMENT_NAME: ${WEB_LIVE_MODEL_DEPLOYMENT_NAME}
+            MAI_OPENAI_BASE_URL: ${WEB_LIVE_OPENAI_BASE_URL}
+            WEB_SEARCH_MODEL_DEPLOYMENT_NAME: ${WEB_SEARCH_MODEL_DEPLOYMENT_NAME}
+            WEB_SEARCH_OPENAI_BASE_URL: ${WEB_SEARCH_OPENAI_BASE_URL}
             MAX_TOOL_STEPS: "8"
+            SELECTION_REASONING_EFFORT: medium
+            WEB_SEARCH_MAX_OUTPUT_TOKENS: "256"
+            WEB_SEARCH_SOURCE_LIMIT: "2"
             OPTIMIZATION_LOCAL_DIR: web_search/optimized
             SHOPPINGBENCH_API_TOKEN: ${SHOPPINGBENCH_API_TOKEN}
             SHOPPINGBENCH_TOOL_URL: ${SHOPPINGBENCH_TOOL_URL}
@@ -143,7 +158,7 @@ services:
                 cpu: "1"
                 memory: 2Gi
         description: Resolves knowledge clues with live web search before catalog selection.
-        displayName: ShoppingBench Live Web Search Agent
+        displayName: ShoppingBench Web (live) Agent
         kind: hosted
         name: shoppingbench-web-search-agent
         protocols:
