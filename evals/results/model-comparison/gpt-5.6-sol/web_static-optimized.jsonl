@@ -1,0 +1,90 @@
+{"name": "web-000-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 18330, "output_tokens": 521, "total_tokens": 18851}, "error": false}
+{"name": "web-000-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 12654, "output_tokens": 452, "total_tokens": 13106}, "error": false}
+{"name": "web-000-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 13393, "output_tokens": 408, "total_tokens": 13801}, "error": false}
+{"name": "web-001-rollout-1", "grade": {"score": 0.25}, "usage": {"input_tokens": 46887, "output_tokens": 1013, "total_tokens": 47900}, "error": false}
+{"name": "web-001-rollout-2", "grade": {"score": 0.25}, "usage": {"input_tokens": 47207, "output_tokens": 871, "total_tokens": 48078}, "error": false}
+{"name": "web-001-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-008-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 4691, "output_tokens": 551, "total_tokens": 5242}, "error": false}
+{"name": "web-008-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 5012, "output_tokens": 661, "total_tokens": 5673}, "error": false}
+{"name": "web-008-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 9032, "output_tokens": 787, "total_tokens": 9819}, "error": false}
+{"name": "web-019-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 28179, "output_tokens": 832, "total_tokens": 29011}, "error": false}
+{"name": "web-019-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 46807, "output_tokens": 1014, "total_tokens": 47821}, "error": false}
+{"name": "web-019-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 58876, "output_tokens": 1116, "total_tokens": 59992}, "error": false}
+{"name": "web-022-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-022-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-022-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 13373, "output_tokens": 529, "total_tokens": 13902}, "error": false}
+{"name": "web-028-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 23795, "output_tokens": 1134, "total_tokens": 24929}, "error": false}
+{"name": "web-028-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 22849, "output_tokens": 567, "total_tokens": 23416}, "error": false}
+{"name": "web-028-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 23349, "output_tokens": 975, "total_tokens": 24324}, "error": false}
+{"name": "web-043-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-043-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 30469, "output_tokens": 999, "total_tokens": 31468}, "error": false}
+{"name": "web-043-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 25665, "output_tokens": 1479, "total_tokens": 27144}, "error": false}
+{"name": "web-044-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-044-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-044-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-059-rollout-1", "grade": {"score": 0.25}, "usage": {"input_tokens": 25579, "output_tokens": 778, "total_tokens": 26357}, "error": false}
+{"name": "web-059-rollout-2", "grade": {"score": 0.25}, "usage": {"input_tokens": 32346, "output_tokens": 1023, "total_tokens": 33369}, "error": false}
+{"name": "web-059-rollout-3", "grade": {"score": 0.25}, "usage": {"input_tokens": 23543, "output_tokens": 684, "total_tokens": 24227}, "error": false}
+{"name": "web-061-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 16680, "output_tokens": 1022, "total_tokens": 17702}, "error": false}
+{"name": "web-061-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-061-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 38707, "output_tokens": 1741, "total_tokens": 40448}, "error": false}
+{"name": "web-068-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-068-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-068-rollout-3", "grade": {"score": 0.25}, "usage": {"input_tokens": 44590, "output_tokens": 1195, "total_tokens": 45785}, "error": false}
+{"name": "web-069-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 20207, "output_tokens": 749, "total_tokens": 20956}, "error": false}
+{"name": "web-069-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-069-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-079-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-079-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 35764, "output_tokens": 896, "total_tokens": 36660}, "error": false}
+{"name": "web-079-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 43903, "output_tokens": 1026, "total_tokens": 44929}, "error": false}
+{"name": "web-080-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-080-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-080-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 41717, "output_tokens": 1145, "total_tokens": 42862}, "error": false}
+{"name": "web-082-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-082-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-082-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-086-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 44821, "output_tokens": 1051, "total_tokens": 45872}, "error": false}
+{"name": "web-086-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-086-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-093-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 6006, "output_tokens": 349, "total_tokens": 6355}, "error": false}
+{"name": "web-093-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 10060, "output_tokens": 402, "total_tokens": 10462}, "error": false}
+{"name": "web-093-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 10612, "output_tokens": 401, "total_tokens": 11013}, "error": false}
+{"name": "web-103-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 17177, "output_tokens": 750, "total_tokens": 17927}, "error": false}
+{"name": "web-103-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 32985, "output_tokens": 1545, "total_tokens": 34530}, "error": false}
+{"name": "web-103-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 51502, "output_tokens": 1657, "total_tokens": 53159}, "error": false}
+{"name": "web-106-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 18702, "output_tokens": 514, "total_tokens": 19216}, "error": false}
+{"name": "web-106-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 17840, "output_tokens": 654, "total_tokens": 18494}, "error": false}
+{"name": "web-106-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-107-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-107-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-107-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-111-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-111-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-111-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-112-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-112-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 33907, "output_tokens": 971, "total_tokens": 34878}, "error": false}
+{"name": "web-112-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 60740, "output_tokens": 1383, "total_tokens": 62123}, "error": false}
+{"name": "web-113-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 23734, "output_tokens": 611, "total_tokens": 24345}, "error": false}
+{"name": "web-113-rollout-2", "grade": {"score": 0.1}, "usage": {"input_tokens": 33946, "output_tokens": 2180, "total_tokens": 36126}, "error": false}
+{"name": "web-113-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-120-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-120-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-120-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-125-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 11969, "output_tokens": 525, "total_tokens": 12494}, "error": false}
+{"name": "web-125-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-125-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-132-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 9164, "output_tokens": 372, "total_tokens": 9536}, "error": false}
+{"name": "web-132-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 9207, "output_tokens": 412, "total_tokens": 9619}, "error": false}
+{"name": "web-132-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 8925, "output_tokens": 336, "total_tokens": 9261}, "error": false}
+{"name": "web-136-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-136-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-136-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-140-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 31905, "output_tokens": 991, "total_tokens": 32896}, "error": false}
+{"name": "web-140-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 41820, "output_tokens": 1160, "total_tokens": 42980}, "error": false}
+{"name": "web-140-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-141-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-141-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-141-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-145-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-145-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "web-145-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 38854, "output_tokens": 712, "total_tokens": 39566}, "error": false}

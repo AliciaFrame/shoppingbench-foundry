@@ -1,0 +1,90 @@
+{"name": "voucher-006-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-006-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-006-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-009-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-009-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-009-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-010-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 37733, "output_tokens": 891, "total_tokens": 38624}, "error": false}
+{"name": "voucher-010-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 52958, "output_tokens": 995, "total_tokens": 53953}, "error": false}
+{"name": "voucher-010-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-015-rollout-1", "grade": {"score": 0.183333}, "usage": {"input_tokens": 37191, "output_tokens": 816, "total_tokens": 38007}, "error": false}
+{"name": "voucher-015-rollout-2", "grade": {"score": 0.183333}, "usage": {"input_tokens": 44717, "output_tokens": 787, "total_tokens": 45504}, "error": false}
+{"name": "voucher-015-rollout-3", "grade": {"score": 0.183333}, "usage": {"input_tokens": 53367, "output_tokens": 1025, "total_tokens": 54392}, "error": false}
+{"name": "voucher-017-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-017-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-017-rollout-3", "grade": {"score": 0.9}, "usage": {"input_tokens": 30745, "output_tokens": 972, "total_tokens": 31717}, "error": false}
+{"name": "voucher-023-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 11651, "output_tokens": 459, "total_tokens": 12110}, "error": false}
+{"name": "voucher-023-rollout-2", "grade": {"score": 0.9}, "usage": {"input_tokens": 11647, "output_tokens": 465, "total_tokens": 12112}, "error": false}
+{"name": "voucher-023-rollout-3", "grade": {"score": 0.9}, "usage": {"input_tokens": 19152, "output_tokens": 907, "total_tokens": 20059}, "error": false}
+{"name": "voucher-030-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-030-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-030-rollout-3", "grade": {"score": 0.9}, "usage": {"input_tokens": 26522, "output_tokens": 709, "total_tokens": 27231}, "error": false}
+{"name": "voucher-033-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-033-rollout-2", "grade": {"score": 0.125}, "usage": {"input_tokens": 53171, "output_tokens": 927, "total_tokens": 54098}, "error": false}
+{"name": "voucher-033-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 53400, "output_tokens": 803, "total_tokens": 54203}, "error": false}
+{"name": "voucher-038-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 32121, "output_tokens": 777, "total_tokens": 32898}, "error": false}
+{"name": "voucher-038-rollout-2", "grade": {"score": 0.9}, "usage": {"input_tokens": 32183, "output_tokens": 772, "total_tokens": 32955}, "error": false}
+{"name": "voucher-038-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 33914, "output_tokens": 764, "total_tokens": 34678}, "error": false}
+{"name": "voucher-042-rollout-1", "grade": {"score": 0.1}, "usage": {"input_tokens": 20234, "output_tokens": 612, "total_tokens": 20846}, "error": false}
+{"name": "voucher-042-rollout-2", "grade": {"score": 0.1}, "usage": {"input_tokens": 35071, "output_tokens": 704, "total_tokens": 35775}, "error": false}
+{"name": "voucher-042-rollout-3", "grade": {"score": 0.1}, "usage": {"input_tokens": 33499, "output_tokens": 773, "total_tokens": 34272}, "error": false}
+{"name": "voucher-076-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 13852, "output_tokens": 562, "total_tokens": 14414}, "error": false}
+{"name": "voucher-076-rollout-2", "grade": {"score": 0.9}, "usage": {"input_tokens": 26096, "output_tokens": 673, "total_tokens": 26769}, "error": false}
+{"name": "voucher-076-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 28440, "output_tokens": 753, "total_tokens": 29193}, "error": false}
+{"name": "voucher-084-rollout-1", "grade": {"score": 1.0}, "usage": {"input_tokens": 29571, "output_tokens": 623, "total_tokens": 30194}, "error": false}
+{"name": "voucher-084-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-084-rollout-3", "grade": {"score": 0.9}, "usage": {"input_tokens": 37737, "output_tokens": 652, "total_tokens": 38389}, "error": false}
+{"name": "voucher-086-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-086-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-086-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-104-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-104-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-104-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-115-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-115-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-115-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-134-rollout-1", "grade": {"score": 0.1}, "usage": {"input_tokens": 46141, "output_tokens": 910, "total_tokens": 47051}, "error": false}
+{"name": "voucher-134-rollout-2", "grade": {"score": 0.1}, "usage": {"input_tokens": 45253, "output_tokens": 845, "total_tokens": 46098}, "error": false}
+{"name": "voucher-134-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-141-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-141-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-141-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-146-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-146-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-146-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-147-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 53332, "output_tokens": 1101, "total_tokens": 54433}, "error": false}
+{"name": "voucher-147-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 44275, "output_tokens": 982, "total_tokens": 45257}, "error": false}
+{"name": "voucher-147-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-157-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-157-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-157-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-162-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 56419, "output_tokens": 800, "total_tokens": 57219}, "error": false}
+{"name": "voucher-162-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 36150, "output_tokens": 665, "total_tokens": 36815}, "error": false}
+{"name": "voucher-162-rollout-3", "grade": {"score": 0.9}, "usage": {"input_tokens": 46845, "output_tokens": 932, "total_tokens": 47777}, "error": false}
+{"name": "voucher-173-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 28401, "output_tokens": 932, "total_tokens": 29333}, "error": false}
+{"name": "voucher-173-rollout-2", "grade": {"score": 0.9}, "usage": {"input_tokens": 28458, "output_tokens": 824, "total_tokens": 29282}, "error": false}
+{"name": "voucher-173-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 55337, "output_tokens": 1217, "total_tokens": 56554}, "error": false}
+{"name": "voucher-196-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 46264, "output_tokens": 791, "total_tokens": 47055}, "error": false}
+{"name": "voucher-196-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-196-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-199-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-199-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-199-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-200-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-200-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-200-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-202-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 27694, "output_tokens": 480, "total_tokens": 28174}, "error": false}
+{"name": "voucher-202-rollout-2", "grade": {"score": 1.0}, "usage": {"input_tokens": 22234, "output_tokens": 420, "total_tokens": 22654}, "error": false}
+{"name": "voucher-202-rollout-3", "grade": {"score": 0.9}, "usage": {"input_tokens": 10342, "output_tokens": 375, "total_tokens": 10717}, "error": false}
+{"name": "voucher-213-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 60035, "output_tokens": 710, "total_tokens": 60745}, "error": false}
+{"name": "voucher-213-rollout-2", "grade": {"score": 0.9}, "usage": {"input_tokens": 40642, "output_tokens": 609, "total_tokens": 41251}, "error": false}
+{"name": "voucher-213-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-224-rollout-1", "grade": {"score": 0.9}, "usage": {"input_tokens": 10461, "output_tokens": 372, "total_tokens": 10833}, "error": false}
+{"name": "voucher-224-rollout-2", "grade": {"score": 0.9}, "usage": {"input_tokens": 10123, "output_tokens": 379, "total_tokens": 10502}, "error": false}
+{"name": "voucher-224-rollout-3", "grade": {"score": 1.0}, "usage": {"input_tokens": 15140, "output_tokens": 556, "total_tokens": 15696}, "error": false}
+{"name": "voucher-229-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-229-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-229-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-241-rollout-1", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-241-rollout-2", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}
+{"name": "voucher-241-rollout-3", "grade": {"score": 0.0}, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}, "error": true, "error_type": "RuntimeError"}

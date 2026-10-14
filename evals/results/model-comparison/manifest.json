@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "hash_line_endings": "LF",
+  "cases": 30,
+  "rollouts_per_case": 3,
+  "prices_usd_per_million_tokens": {
+    "mai": {
+      "input": 0.2,
+      "output": 1.2
+    },
+    "gpt-5.6-luna": {
+      "input": 0.2,
+      "output": 1.2
+    },
+    "gpt-5.6-terra": {
+      "input": 2.0,
+      "output": 12.0
+    },
+    "gpt-5.6-sol": {
+      "input": 4.0,
+      "output": 20.0
+    },
+    "web_lookup": {
+      "input": 0.75,
+      "output": 4.5
+    }
+  },
+  "projection": "GPT receipts retain episode names, canonical scores, usage, and failure flags from saved evaluations. For live Web, per-call stages and usage are retained. Queries, outputs, traces, and connection details are omitted. Recalculation does not require the original sessions or Azure.",
+  "scenarios": [
+    {
+      "id": "product",
+      "label": "Product",
+      "dataset": {
+        "path": "evals/datasets/development/product.jsonl",
+        "sha256": "bc3b86c6901898f9f267fb47752955bc426e6cfbaedaebeee7fb9e6f35375496"
+      },
+      "mai_runs": [
+        {
+          "label": "optimized",
+          "receipt": {
+            "path": "evals/results/optimized/product.jsonl",
+            "sha256": "fae001719870aabbce452540af7783267154765d2aa75b019ec55ec27d2716f9"
+          }
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-luna/product-base.jsonl",
+            "sha256": "7b80551bc94e2220152271b0b8d47621f0cf8c1e9195c594719fd6646369889d",
+            "source_sha256": "b2b75f17eed9427053f86383b8e885be1ab7d3c288b3e1d3f0717c2335b794fc"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-luna/product-optimized.jsonl",
+            "sha256": "221e2a925edc9bee09ae5807d748ba099e975336e904df9b7452126daa38230d",
+            "source_sha256": "c5c7adc17c5c08d10f8806f15488c5aeadf38798461e8f26404aa2acf3d4bacb"
+          }
+        },
+        "gpt-5.6-terra": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-terra/product-base.jsonl",
+            "sha256": "ba6afaf03d23a21f92afd006325d120726696173f7a8c6ad742045e746a1983f",
+            "source_sha256": "2b4ce4e6dca4c18345bf95ed8cb93eb1b4e30bf55345129c4474b8c34b3620eb"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-terra/product-optimized.jsonl",
+            "sha256": "f5fb549d0a598a14688196fbea98b6e404a4ff26298f0a851ec890303a661076",
+            "source_sha256": "fcb347f67f44baddd57869ec70006442d740507f662528ae58f27cb0a91ac241"
+          }
+        },
+        "gpt-5.6-sol": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/product-base.jsonl",
+            "sha256": "59a6972b415c97ff1e0607d1bc4a410b7ebaad82088693ef8128f2134adb8da2",
+            "source_sha256": "1e68a7080d2899eddfdfbed8d8fde03d0bafc818688f43c0e8f2466864172cf5"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/product-optimized.jsonl",
+            "sha256": "0018ad8eba0454f481b67805f1a5e7bfbcd8b5489057aa632fb6649a729848f8",
+            "source_sha256": "838dfb5db3abc6647a7455cd2d459c517183f9b437b8d044767bd63b7b4c11ce"
+          }
+        }
+      }
+    },
+    {
+      "id": "shop",
+      "label": "Shop",
+      "dataset": {
+        "path": "evals/datasets/development/shop.jsonl",
+        "sha256": "cdd5854d924b56f341477f7b46d0724932c2c5e707e764dc3f37dd9365a66766"
+      },
+      "mai_runs": [
+        {
+          "label": "optimized",
+          "receipt": {
+            "path": "evals/results/optimized/shop.jsonl",
+            "sha256": "8eab16c6b1e85acf0769ae5e06c12963a5ed40dbad2687553458a9b26e886cfc"
+          }
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-luna/shop-base.jsonl",
+            "sha256": "6a8c520a3f1da5b322d33beb8ddd60242fc7fb2508b2b54b286bb597d3c12926",
+            "source_sha256": "2721717ae1606ad3ec5936a692adbcf4a4d08f993d21fff096d5624f05401236"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-luna/shop-optimized.jsonl",
+            "sha256": "7be073af16456bc4330692ff1dd2cf65230072ae769eeb7d1eb6dc2f5245c5dd",
+            "source_sha256": "164b1434a287bcd5a1ae865b2e64a54cdf742a43c1e7f2b926d464d940a55830"
+          }
+        },
+        "gpt-5.6-terra": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-terra/shop-base.jsonl",
+            "sha256": "a01d13c0e2375686c884bfa53cade6e1f8dc08b70f9ff80baf46b6b7012fbfb4",
+            "source_sha256": "815f3a58a366dfaa6e41b84176985f830058905f23f0ddbd339dffef128a76f5"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-terra/shop-optimized.jsonl",
+            "sha256": "ec57c8ec276dadf9de6f335ad98a587b6ea7fd6b40fb80a8ed555dfde9b4efe1",
+            "source_sha256": "debff74c2f304ee9015b9d7990783e7ae9a6df3668cb142cdc60d383a9d0103d"
+          }
+        },
+        "gpt-5.6-sol": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/shop-base.jsonl",
+            "sha256": "f6f433ffc740cd1c7b58ca2f2837e02a8130d6cc86ad63b13912c479cb0d03fa",
+            "source_sha256": "de62203260ecf9f054af599a0bbc2e50d017eb7610e421d88048c29dd7d138da"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/shop-optimized.jsonl",
+            "sha256": "273d7f94e240454d5436eb64f628a13e457845a8d601bf9faa87c8decb15efb9",
+            "source_sha256": "e03aa693a6a7c409ddf87b5e8770a4cfd6e853c46088cc32f6fb3a6c8ae0502d"
+          }
+        }
+      }
+    },
+    {
+      "id": "voucher",
+      "label": "Voucher",
+      "dataset": {
+        "path": "evals/datasets/development/voucher.jsonl",
+        "sha256": "8a6d2ec05733055141866d17f97c51c3cd278258b94279280d9bfad23200a463"
+      },
+      "mai_runs": [
+        {
+          "label": "RFT, step 10",
+          "receipt": {
+            "path": "evals/results/checkpoints/voucher/step10.jsonl",
+            "sha256": "5a3903826c796c91d1ce8a0e9e3d4a5584d1cede287bd143794ab241396f056c"
+          }
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-luna/voucher-base.jsonl",
+            "sha256": "df66e14e16fdef1df76e15298e8250b1ffdc9fe89b439fc0344a0f3ba11b984c",
+            "source_sha256": "43c8cc84c671681a72c42f0dabbcc2f0253e84b8b4183035f623a307c95e8832"
+          }
+        },
+        "gpt-5.6-terra": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-terra/voucher-base.jsonl",
+            "sha256": "1d87c9e1b1cf4fd50b86d73b95c5bda88e4ccba079cc40a5cc4e00c98bb1036f",
+            "source_sha256": "71c5857d3b5225976e24fe58ddfb24d510c4d911011d03a95895c222d6ae1be1"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-terra/voucher-optimized.jsonl",
+            "sha256": "2a7860e0ef61b5084c7c562756a90ea4e5289fd5cc3861616ca6af849b8caf68",
+            "source_sha256": "424dff6ad0edade5de72b2f2b1294266999457e205749ed41f83d3e1283dddef"
+          }
+        },
+        "gpt-5.6-sol": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/voucher-base.jsonl",
+            "sha256": "15c31f16a810b59eb14eab3446e702a3d147a5aa3254fe89d15f0b37e8e02fbe",
+            "source_sha256": "340c60e96638a65587d1e83ef00d1841b305e1682002730da915d6a1453f944d"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/voucher-optimized.jsonl",
+            "sha256": "a226dde8761368b8d8581951ac9cb80001ce2f64ed6a583d89fa4c59efd6178f",
+            "source_sha256": "50a1d532fc26dee48d46a539f0f6433d2826b2603ce4e82562ac31402db6bd6f"
+          }
+        }
+      }
+    },
+    {
+      "id": "web_static",
+      "label": "Web (static)",
+      "dataset": {
+        "path": "evals/datasets/development/web.jsonl",
+        "sha256": "52a4e3fd18279510b0dc2835bc5be9434a2ed1938a7046b96a9aea7c09c874c0"
+      },
+      "mai_runs": [
+        {
+          "label": "optimized",
+          "receipt": {
+            "path": "evals/results/optimized/web.jsonl",
+            "sha256": "17ef06e2d37a37e22c572c8b5906dbde7aece4e1aa911b0da4e14db2937673da"
+          }
+        },
+        {
+          "label": "RFT v5, token alternative",
+          "receipt": {
+            "path": "evals/results/checkpoints/web-v5/final.jsonl",
+            "sha256": "90e8ff58c67ecdd2e18c032476fa858342fea475073be2a9c91ee7b7d71c39ee"
+          }
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-luna/web_static-base.jsonl",
+            "sha256": "88f5f16f8722593807bb967fe85c4608010b30f16255b7f37d779bd2d0df3cb6",
+            "source_sha256": "195fa90b8e127c61887d6054178da4cce1c2f6e06cc214c08665da0824a32df5"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-luna/web_static-optimized.jsonl",
+            "sha256": "479517c419d2deda0e9c00b616c7fc60d1b5f5f4266dbaf6f77458249e29fad2",
+            "source_sha256": "0c177b36e52fae4b20b43642cc0d13f7e755c55a87c4ab991cdd1bc0bc749048"
+          }
+        },
+        "gpt-5.6-terra": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-terra/web_static-base.jsonl",
+            "sha256": "c3a3bbeec8fa7aad98c0c1ea4ccb55eda742d673236d07cc77af919f30010565",
+            "source_sha256": "a9e06cc466a91bdf67e708c64cd54490d289747afdaf60457136dae6f6386d44"
+          }
+        },
+        "gpt-5.6-sol": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/web_static-base.jsonl",
+            "sha256": "0c3701876babed0096eb533c8afd7d0131a58df6b76a1bd78c794ae494cf2250",
+            "source_sha256": "a8fe799c5362d506d16cf2ed26d3e4057228b76288e6a4af0ae900d3ee447a1a"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/web_static-optimized.jsonl",
+            "sha256": "6889822ed410ffe09af1c9ab4320745b9e2b24514f2963938274f0e520d5c406",
+            "source_sha256": "42446e5b884f730b37b8d5893b3e816c1007bcc7023062342588059bc81414e3"
+          }
+        }
+      }
+    },
+    {
+      "id": "web_live",
+      "label": "Web (live)",
+      "dataset": {
+        "path": "evals/datasets/development/web.jsonl",
+        "sha256": "52a4e3fd18279510b0dc2835bc5be9434a2ed1938a7046b96a9aea7c09c874c0"
+      },
+      "mai_runs": [
+        {
+          "label": "RFT v6, final",
+          "receipt": {
+            "path": "evals/results/checkpoints/web-search-v6/final.jsonl",
+            "sha256": "ce12027bbfd0f7cdbdd20d3763aa70a2e4f6a9935239de30003cd73ea6e2090b"
+          }
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-luna/web_live-base.jsonl",
+            "sha256": "3f79e7c57cbaf77bdee433eb77df10018618d957615377c161e6e4603f4d4dab",
+            "source_sha256": "f7ea2d13dd8058a239780cac6418c3d9eee3f5a1818cc8f3a4604e597d1435c0"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-luna/web_live-optimized.jsonl",
+            "sha256": "caff60e9835daed92cd35e4faaa07b6d9cc0fc5cfe90d66a5f063b58b4b019ac",
+            "source_sha256": "7da574c679d4e82d205d8008301abeef9368868488562a6c888116dcc3fa57fd"
+          }
+        },
+        "gpt-5.6-terra": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-terra/web_live-base.jsonl",
+            "sha256": "07566fbef13ca75f642a6e84f8255fda745c0f092c2a79484df2e70e604650ce",
+            "source_sha256": "3876d6af747d8f4f8b25b7b46f85f799fa23c943e59e6d30fd87a33aed85b675"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-terra/web_live-optimized.jsonl",
+            "sha256": "f213a073c1c22c170d51fbd9b0894d90ab040321adb8e47dda9c6cb3dc7504b7",
+            "source_sha256": "c1bcc2c7e71ee166d02211c93ef7ae70bb422c1aaaf7919a0d24f0fa01399ae4"
+          }
+        },
+        "gpt-5.6-sol": {
+          "base": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/web_live-base.jsonl",
+            "sha256": "450d0c65ab692fef65b76086a4ca03a0e244438b4918770d1cb68176e02b4c20",
+            "source_sha256": "5c8dbd74629f4043f67ff5183704e823526d2c18dff0936c603e3603125284cd"
+          },
+          "optimized": {
+            "path": "evals/results/model-comparison/gpt-5.6-sol/web_live-optimized.jsonl",
+            "sha256": "4fcf4d8c3fd54f7fb9434e9fe32deb8fa54e4af36c41524653b59f639abff7c3",
+            "source_sha256": "1dac5678940f549e2410f5599bbbd067b0ad6907a291e56d9f977b8a7a1266ed"
+          }
+        }
+      }
+    }
+  ],
+  "excluded_incomplete_runs": [
+    {
+      "scenario": "voucher",
+      "model": "gpt-5.6-luna",
+      "stage": "optimized",
+      "episodes": 47
+    },
+    {
+      "scenario": "web_static",
+      "model": "gpt-5.6-terra",
+      "stage": "optimized",
+      "episodes": 85
+    }
+  ]
+}

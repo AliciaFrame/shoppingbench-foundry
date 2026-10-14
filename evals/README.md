@@ -18,6 +18,7 @@
 | `results/comparisons/` | Paired, case-clustered comparisons |
 | `results/final/` | One-time sealed final-test receipts |
 | `results/summary.json` | Generated release metrics for score, latency, and tokens |
+| `results/model-comparison/` | Portable GPT score/usage receipts, prices and provenance, and generated MAI/GPT cost comparison |
 
 ## Grading
 
@@ -65,3 +66,39 @@ Regenerate the release summary with:
 ```powershell
 python evals\scripts\build_release_summary.py
 ```
+
+## Reproduce the model cost comparison
+
+```powershell
+python evals\scripts\compare_model_costs.py --write-readme
+python evals\scripts\compare_model_costs.py --check
+```
+
+This requires only Python's standard library, not Azure or inference. The
+manifest references existing MAI receipts and compact GPT-5.6 receipts for
+every complete vanilla and agent-optimized candidate. Compact receipts retain
+episode names, canonical scores, aggregate token usage, failure flags, and
+per-call usage by model stage for Web (live); they are not full trajectories
+and cannot be rescored. Source-file hashes record their provenance. Dataset
+and committed-receipt hashes are verified with CRLF normalized to LF before
+calculation, along with the exact case/rollout names and usage totals.
+
+The script prices input/output tokens at each model's manifest rates, with
+all input uncached and the Web (live) lookup priced separately. It selects
+the highest mean canonical score among complete GPT runs, retaining failures
+as zero. Missing usage is counted explicitly and makes cost a lower bound.
+The cheapest badge is awarded only when a complete cost is no greater than
+every competitor's known cost or lower bound.
+
+`results/model-comparison/summary.json` preserves metrics for both candidate
+stages, not just the selected stage: total input/output tokens, scores, costs,
+errors, and missing-usage counts. Two incomplete candidates are documented
+in the manifest and excluded, not silently treated as full runs.
+
+For new receipts, edit the manifest's relative input paths, SHA-256 hashes,
+and prices, then regenerate. This reproduces the saved-run arithmetic, not
+the original inference or training spend. Use `scripts/evaluate_agent.py`
+or `scripts/evaluate_live_web.py` for new inference; choose the deployment
+with `MAI_MODEL_DEPLOYMENT_NAME` and keep the same dataset and baseline/optimized
+configuration. For Web (live), retain the fixed lookup deployment in
+`WEB_SEARCH_MODEL_DEPLOYMENT_NAME` when changing the selection model.

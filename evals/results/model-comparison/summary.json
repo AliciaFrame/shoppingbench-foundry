@@ -1,0 +1,569 @@
+{
+  "methodology": {
+    "hash_line_endings": "LF",
+    "cases": 30,
+    "rollouts_per_case": 3,
+    "prices_usd_per_million_tokens": {
+      "mai": {
+        "input": 0.2,
+        "output": 1.2
+      },
+      "gpt-5.6-luna": {
+        "input": 0.2,
+        "output": 1.2
+      },
+      "gpt-5.6-terra": {
+        "input": 2.0,
+        "output": 12.0
+      },
+      "gpt-5.6-sol": {
+        "input": 4.0,
+        "output": 20.0
+      },
+      "web_lookup": {
+        "input": 0.75,
+        "output": 4.5
+      }
+    },
+    "excluded_incomplete_runs": [
+      {
+        "scenario": "voucher",
+        "model": "gpt-5.6-luna",
+        "stage": "optimized",
+        "episodes": 47
+      },
+      {
+        "scenario": "web_static",
+        "model": "gpt-5.6-terra",
+        "stage": "optimized",
+        "episodes": 85
+      }
+    ]
+  },
+  "scenarios": {
+    "product": {
+      "label": "Product",
+      "mai_runs": [
+        {
+          "label": "optimized",
+          "receipt": "evals/results/optimized/product.jsonl",
+          "episodes": 90,
+          "mean_score": 0.940833344,
+          "errors": 0,
+          "input_tokens": 998677,
+          "output_tokens": 256601,
+          "total_tokens": 1255278,
+          "cost_per_1k_episodes_usd": 5.640628889,
+          "episodes_with_missing_usage": 0,
+          "cost_is_lower_bound": false
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-luna/product-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.809166678,
+              "errors": 0,
+              "input_tokens": 2071989,
+              "output_tokens": 47338,
+              "total_tokens": 2119327,
+              "cost_per_1k_episodes_usd": 5.235593333,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-luna/product-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.8413889,
+              "errors": 11,
+              "input_tokens": 1144366,
+              "output_tokens": 49999,
+              "total_tokens": 1194365,
+              "cost_per_1k_episodes_usd": 3.209688889,
+              "episodes_with_missing_usage": 11,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "optimized"
+        },
+        "gpt-5.6-terra": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-terra/product-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.758518522,
+              "errors": 0,
+              "input_tokens": 1022761,
+              "output_tokens": 33289,
+              "total_tokens": 1056050,
+              "cost_per_1k_episodes_usd": 27.166555556,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-terra/product-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.765833344,
+              "errors": 17,
+              "input_tokens": 741361,
+              "output_tokens": 20074,
+              "total_tokens": 761435,
+              "cost_per_1k_episodes_usd": 19.151222222,
+              "episodes_with_missing_usage": 17,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "optimized"
+        },
+        "gpt-5.6-sol": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/product-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.851851856,
+              "errors": 0,
+              "input_tokens": 1486756,
+              "output_tokens": 38808,
+              "total_tokens": 1525564,
+              "cost_per_1k_episodes_usd": 74.702044444,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/product-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.865314822,
+              "errors": 9,
+              "input_tokens": 931274,
+              "output_tokens": 25977,
+              "total_tokens": 957251,
+              "cost_per_1k_episodes_usd": 47.162622222,
+              "episodes_with_missing_usage": 9,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "optimized"
+        }
+      }
+    },
+    "shop": {
+      "label": "Shop",
+      "mai_runs": [
+        {
+          "label": "optimized",
+          "receipt": "evals/results/optimized/shop.jsonl",
+          "episodes": 90,
+          "mean_score": 0.937083333,
+          "errors": 0,
+          "input_tokens": 2571692,
+          "output_tokens": 470194,
+          "total_tokens": 3041886,
+          "cost_per_1k_episodes_usd": 11.984124444,
+          "episodes_with_missing_usage": 0,
+          "cost_is_lower_bound": false
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-luna/shop-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.889722222,
+              "errors": 0,
+              "input_tokens": 3641968,
+              "output_tokens": 72300,
+              "total_tokens": 3714268,
+              "cost_per_1k_episodes_usd": 9.057262222,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-luna/shop-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.646840278,
+              "errors": 31,
+              "input_tokens": 2098386,
+              "output_tokens": 36909,
+              "total_tokens": 2135295,
+              "cost_per_1k_episodes_usd": 5.1552,
+              "episodes_with_missing_usage": 31,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "base"
+        },
+        "gpt-5.6-terra": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-terra/shop-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.811199078,
+              "errors": 5,
+              "input_tokens": 2696313,
+              "output_tokens": 67318,
+              "total_tokens": 2763631,
+              "cost_per_1k_episodes_usd": 68.8938,
+              "episodes_with_missing_usage": 5,
+              "cost_is_lower_bound": true
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-terra/shop-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.833333333,
+              "errors": 15,
+              "input_tokens": 2414050,
+              "output_tokens": 41351,
+              "total_tokens": 2455401,
+              "cost_per_1k_episodes_usd": 59.159022222,
+              "episodes_with_missing_usage": 15,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "optimized"
+        },
+        "gpt-5.6-sol": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/shop-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.871388889,
+              "errors": 2,
+              "input_tokens": 3303740,
+              "output_tokens": 73608,
+              "total_tokens": 3377348,
+              "cost_per_1k_episodes_usd": 163.190222222,
+              "episodes_with_missing_usage": 2,
+              "cost_is_lower_bound": true
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/shop-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.711111111,
+              "errors": 26,
+              "input_tokens": 1907672,
+              "output_tokens": 37363,
+              "total_tokens": 1945035,
+              "cost_per_1k_episodes_usd": 93.088311111,
+              "episodes_with_missing_usage": 26,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "base"
+        }
+      }
+    },
+    "voucher": {
+      "label": "Voucher",
+      "mai_runs": [
+        {
+          "label": "RFT, step 10",
+          "receipt": "evals/results/checkpoints/voucher/step10.jsonl",
+          "episodes": 90,
+          "mean_score": 0.924756933,
+          "errors": 0,
+          "input_tokens": 2396914,
+          "output_tokens": 267951,
+          "total_tokens": 2664865,
+          "cost_per_1k_episodes_usd": 8.899155556,
+          "episodes_with_missing_usage": 0,
+          "cost_is_lower_bound": false
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-luna/voucher-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.705193978,
+              "errors": 0,
+              "input_tokens": 7942326,
+              "output_tokens": 128370,
+              "total_tokens": 8070696,
+              "cost_per_1k_episodes_usd": 19.361213333,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            }
+          },
+          "selected_stage": "base"
+        },
+        "gpt-5.6-terra": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-terra/voucher-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.742083322,
+              "errors": 0,
+              "input_tokens": 7508388,
+              "output_tokens": 136166,
+              "total_tokens": 7644554,
+              "cost_per_1k_episodes_usd": 185.008533333,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-terra/voucher-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.354166656,
+              "errors": 48,
+              "input_tokens": 1438518,
+              "output_tokens": 31321,
+              "total_tokens": 1469839,
+              "cost_per_1k_episodes_usd": 36.1432,
+              "episodes_with_missing_usage": 48,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "base"
+        },
+        "gpt-5.6-sol": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/voucher-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.7811111,
+              "errors": 7,
+              "input_tokens": 7794964,
+              "output_tokens": 128277,
+              "total_tokens": 7923241,
+              "cost_per_1k_episodes_usd": 374.948844444,
+              "episodes_with_missing_usage": 7,
+              "cost_is_lower_bound": true
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/voucher-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.335555556,
+              "errors": 58,
+              "input_tokens": 1213286,
+              "output_tokens": 27125,
+              "total_tokens": 1240411,
+              "cost_per_1k_episodes_usd": 59.9516,
+              "episodes_with_missing_usage": 58,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "base"
+        }
+      }
+    },
+    "web_static": {
+      "label": "Web (static)",
+      "mai_runs": [
+        {
+          "label": "optimized",
+          "receipt": "evals/results/optimized/web.jsonl",
+          "episodes": 90,
+          "mean_score": 0.728611111,
+          "errors": 0,
+          "input_tokens": 7025318,
+          "output_tokens": 1718742,
+          "total_tokens": 8744060,
+          "cost_per_1k_episodes_usd": 38.528377778,
+          "episodes_with_missing_usage": 0,
+          "cost_is_lower_bound": false
+        },
+        {
+          "label": "RFT v5, token alternative",
+          "receipt": "evals/results/checkpoints/web-v5/final.jsonl",
+          "episodes": 90,
+          "mean_score": 0.7175,
+          "errors": 12,
+          "input_tokens": 2826140,
+          "output_tokens": 528874,
+          "total_tokens": 3355014,
+          "cost_per_1k_episodes_usd": 13.331964444,
+          "episodes_with_missing_usage": 12,
+          "cost_is_lower_bound": true
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-luna/web_static-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.7025,
+              "errors": 0,
+              "input_tokens": 5469498,
+              "output_tokens": 134775,
+              "total_tokens": 5604273,
+              "cost_per_1k_episodes_usd": 13.95144,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-luna/web_static-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.521666667,
+              "errors": 11,
+              "input_tokens": 3073259,
+              "output_tokens": 177756,
+              "total_tokens": 3251015,
+              "cost_per_1k_episodes_usd": 9.199544444,
+              "episodes_with_missing_usage": 9,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "base"
+        },
+        "gpt-5.6-terra": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-terra/web_static-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.823333333,
+              "errors": 0,
+              "input_tokens": 3469032,
+              "output_tokens": 109497,
+              "total_tokens": 3578529,
+              "cost_per_1k_episodes_usd": 91.6892,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            }
+          },
+          "selected_stage": "base"
+        },
+        "gpt-5.6-sol": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/web_static-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.867777778,
+              "errors": 5,
+              "input_tokens": 7319910,
+              "output_tokens": 140936,
+              "total_tokens": 7460846,
+              "cost_per_1k_episodes_usd": 356.648444444,
+              "episodes_with_missing_usage": 5,
+              "cost_is_lower_bound": true
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/web_static-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.462222222,
+              "errors": 43,
+              "input_tokens": 1267480,
+              "output_tokens": 41144,
+              "total_tokens": 1308624,
+              "cost_per_1k_episodes_usd": 65.475555556,
+              "episodes_with_missing_usage": 43,
+              "cost_is_lower_bound": true
+            }
+          },
+          "selected_stage": "base"
+        }
+      }
+    },
+    "web_live": {
+      "label": "Web (live)",
+      "mai_runs": [
+        {
+          "label": "RFT v6, final",
+          "receipt": "evals/results/checkpoints/web-search-v6/final.jsonl",
+          "episodes": 90,
+          "mean_score": 0.9025,
+          "errors": 0,
+          "input_tokens": 2177214,
+          "output_tokens": 180573,
+          "total_tokens": 2357787,
+          "cost_per_1k_episodes_usd": 12.558618333,
+          "episodes_with_missing_usage": 0,
+          "cost_is_lower_bound": false
+        }
+      ],
+      "gpt_runs": {
+        "gpt-5.6-luna": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-luna/web_live-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.884166667,
+              "errors": 0,
+              "input_tokens": 1736805,
+              "output_tokens": 44875,
+              "total_tokens": 1781680,
+              "cost_per_1k_episodes_usd": 9.978702222,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-luna/web_live-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.968333333,
+              "errors": 0,
+              "input_tokens": 1757956,
+              "output_tokens": 34129,
+              "total_tokens": 1792085,
+              "cost_per_1k_episodes_usd": 9.687406667,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            }
+          },
+          "selected_stage": "optimized"
+        },
+        "gpt-5.6-terra": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-terra/web_live-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.866666667,
+              "errors": 0,
+              "input_tokens": 1482548,
+              "output_tokens": 37797,
+              "total_tokens": 1520345,
+              "cost_per_1k_episodes_usd": 25.834930556,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-terra/web_live-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.946111111,
+              "errors": 0,
+              "input_tokens": 1749169,
+              "output_tokens": 30939,
+              "total_tokens": 1780108,
+              "cost_per_1k_episodes_usd": 30.963608333,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            }
+          },
+          "selected_stage": "optimized"
+        },
+        "gpt-5.6-sol": {
+          "stages": {
+            "base": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/web_live-base.jsonl",
+              "episodes": 90,
+              "mean_score": 0.836944444,
+              "errors": 0,
+              "input_tokens": 2102731,
+              "output_tokens": 64030,
+              "total_tokens": 2166761,
+              "cost_per_1k_episodes_usd": 76.539077778,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            },
+            "optimized": {
+              "receipt": "evals/results/model-comparison/gpt-5.6-sol/web_live-optimized.jsonl",
+              "episodes": 90,
+              "mean_score": 0.941388889,
+              "errors": 0,
+              "input_tokens": 1774740,
+              "output_tokens": 34250,
+              "total_tokens": 1808990,
+              "cost_per_1k_episodes_usd": 55.609752778,
+              "episodes_with_missing_usage": 0,
+              "cost_is_lower_bound": false
+            }
+          },
+          "selected_stage": "optimized"
+        }
+      }
+    }
+  }
+}

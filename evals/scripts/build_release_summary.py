@@ -60,14 +60,18 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
         return [json.loads(line) for line in handle if line.strip()]
 
 
-def _cost(row: dict[str, Any]) -> float:
+def _cost(
+    row: dict[str, Any],
+    prices: dict[str, tuple[float, float]] | None = None,
+) -> float:
+    prices = PRICES if prices is None else prices
     if "responses" in row:
         parts = [
-            (PRICES["web" if response["stage"] == "web" else "selection"], response["usage"] or {})
+            (prices["web" if response["stage"] == "web" else "selection"], response["usage"] or {})
             for response in row["responses"]
         ]
     else:
-        parts = [(PRICES["selection"], row["usage"])]
+        parts = [(prices["selection"], row["usage"])]
     return sum(
         usage.get("input_tokens", 0) * price[0] + usage.get("output_tokens", 0) * price[1]
         for price, usage in parts

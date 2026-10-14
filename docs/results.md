@@ -2,7 +2,7 @@
 
 ## Methodology
 
-Every published development comparison uses:
+Every published MAI hill-climb development comparison uses:
 
 - MAI-Code-1.1-Flash for every agent and stage;
 - 30 leakage-safe development cases per task, three rollouts each
@@ -28,7 +28,7 @@ as independent.
 |  | RFT Step 10 | **0.9248** | **23.10s** | 29,610 | **$8.90** | **Selected** |
 | Web (static) | Base | 0.6911 | 99.74s | 77,709 | $31.71 | |
 |  | Agent Optimized | **0.7286** | 100.97s | 97,156 | $38.53 | **Selected** |
-|  | RFT final | 0.7175 | **48.75s** | **37,278** | **$13.33** | Cost alternative |
+|  | RFT final | 0.7175 | **48.75s** | **≥ 37,278** | **≥ $13.33** | Token alternative |
 | Web (live) | Base | 0.2497 | 39.15s | **24,023** | $16.79 | |
 |  | Agent Optimized | 0.8292 | 20.00s | 25,236 | $13.19 | |
 |  | RFT final | **0.9025** | **19.80s** | 26,198 | **$12.56** | **Selected** |
@@ -51,9 +51,13 @@ fastest stage. Step 10 was preferred over the final checkpoint because it
 completed more episodes strictly.
 
 **Web (static)** uses the strict v5 clue, grounding, protocol, and product
-gates. Agent Optimized has the best score. Its RFT checkpoint is a cost
-alternative: 0.011 lower score for half the latency and about a third of the
-tokens and cost.
+gates. Agent Optimized has the best score. Its RFT checkpoint gives up 0.011
+score with lower recorded token consumption and latency. Twelve failed
+episodes lack usage, so its tokens and cost are lower bounds, not exact totals.
+
+The [README model comparison](../README.md#cost-comparison-with-gpt-56) compares
+these MAI choices with the best complete GPT-5.6 vanilla or agent-optimized
+runs, using per-model prices and explicit missing-usage caveats.
 
 **Web (live)** climbs at both steps:
 

@@ -27,6 +27,7 @@ jobs:
           python data/scripts/prepare.py
           python rft/scripts/prepare_data.py
           python evals/scripts/build_release_summary.py
+          python evals/scripts/compare_model_costs.py --check
           git diff --exit-code -- data/prepared evals/datasets rft/data
           git diff --exit-code -- evals/results/summary.json
 
