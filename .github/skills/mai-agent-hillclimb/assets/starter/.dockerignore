@@ -1,0 +1,6 @@
+*
+!requirements.txt
+!domain.py
+!grader.py
+!service.py
+!Dockerfile

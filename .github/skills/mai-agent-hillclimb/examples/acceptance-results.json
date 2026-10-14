@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-14",
+  "purpose": "Small live integration acceptance, not a benchmark or proof of general quality improvement",
+  "domain": "Synthetic incident triage, separate from ShoppingBench",
+  "verified_live": [
+    "Copied skill starter invokes MAI with the shared domain tool",
+    "Hosted source deployment and exact-version invocation",
+    "Authenticated HTTPS grader and tool endpoints match local hooks",
+    "Custom optimizer evaluator scores reviewed correct, incorrect and adversarial answers 1, 0 and 0",
+    "One-candidate optimizer search with explicit evaluator model, version and threshold",
+    "Independent matched development comparison rejects the optimizer nomination",
+    "Baseline selection is persisted before the sealed final split",
+    "Selected baseline redeployment passes a real hosted smoke invocation"
+  ],
+  "development": {
+    "cases": 3,
+    "rollouts_per_case": 2,
+    "baseline_quality": 1.0,
+    "baseline_failed_episodes": 0,
+    "candidate_quality": 0.6666666666666666,
+    "candidate_failed_episodes": 2,
+    "candidate_failure": "Output limit exhausted on reasoning tokens without a final answer",
+    "candidate_latency_ratio": 1.4555644438400765,
+    "quality_gain_clustered_ci95": [-1.0, 0.0],
+    "selected": "baseline"
+  },
+  "sealed_final": {
+    "cases": 3,
+    "rollouts_per_case": 1,
+    "quality": 1.0,
+    "failed_episodes": 0
+  },
+  "rft": {
+    "submitted_live": false,
+    "reason": "Observed calibration rewards were constant; no within-example learning signal",
+    "tested_locally": [
+      "Eligibility, data, policy, capability and endpoint-parity gates",
+      "File uploads and durable job receipts",
+      "Ambiguous submission blocks duplicate creation",
+      "Successful monitoring, checkpoint pagination and credential redaction"
+    ]
+  },
+  "cost": {
+    "basis": "GitHub Copilot public per-token reference, not Azure invoice pricing",
+    "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+    "retrieved_at": "2026-10-14",
+    "model": "MAI-Code-1.1-Flash",
+    "usd_per_million_tokens": {
+      "uncached_input": 0.20,
+      "cached_input": 0.02,
+      "output": 1.20
+    },
+    "baseline_six_episode_reference_serving_usd": 0.000532,
+    "candidate_six_episode_known_reference_serving_usd": 0.004296,
+    "candidate_serving_cost_complete": false,
+    "azure_experiment_total_usd": null,
+    "unpriced": ["Judge calls", "Optimizer calls", "Hosted sessions", "Endpoint replicas", "Registry and build", "Log Analytics"]
+  },
+  "limitations": [
+    "Tiny synthetic fixture; no statistical claim of general improvement",
+    "First completed optimizer run had evaluator-authentication errors; its quality scores were discarded",
+    "New-project/model provisioning templates compile but were not provisioned in live acceptance",
+    "RFT was intentionally not run without a learnable signal",
+    "Full repository suite retains its pre-existing README comparison-generator assertion failure"
+  ]
+}

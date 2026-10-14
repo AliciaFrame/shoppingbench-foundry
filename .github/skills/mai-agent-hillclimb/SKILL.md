@@ -1,9 +1,9 @@
 ---
 name: mai-agent-hillclimb
 description: >-
-  Set up and deploy MAI-powered hosted agents on Microsoft Foundry, measure a
-  baseline, run Agent Optimizer, use reinforcement fine-tuning only when
-  justified, and select and verify improvements in quality, latency, and cost.
+  Scaffolds and deploys MAI-powered hosted agents on Microsoft Foundry, measures a
+  baseline, runs Agent Optimizer, calibrates endpoint/tool graders and guarded
+  reinforcement fine-tuning, and verifies quality, latency, and cost.
   Use for hosted-agent onboarding, agent optimization, RFT experiment planning,
   checkpoint comparisons, and token-cost calculations for any use case.
 license: Apache-2.0
@@ -35,14 +35,26 @@ identifiers exist in that project.
    Foundry tools and schemas before calling them. Otherwise use the documented
    Azure CLI, azd, SDK, or REST paths in the phase references. Another skill is
    optional, never a prerequisite.
-4. Reuse the project's implementation and evaluation harness when sound.
-   If missing, implement domain-specific adapters using the contract. Do not
-   substitute ShoppingBench's tools or grader for the user's task.
+4. Reuse sound project adapters. For missing pieces, use
+   [the executable runbook](references/runbook.md): it bundles a hosted starter,
+   domain/tool hooks, canonical grader, optimizer evaluator, authenticated
+   endpoint service, provisioning templates, and guarded CLI paths.
+   Customize the rubric and datasets; never substitute example-domain quality.
 5. Resume from evidence under `.foundry/hillclimb/<run-id>`, not remembered job
    names. Check recorded code, data, model, evaluator, and pricing fingerprints.
    A changed contract starts a new run; never silently mix receipts.
 
 ## Phase routing
+
+Use [the executable runbook](references/runbook.md) for the actual commands and
+bundled interfaces; phase references below provide the decision and evidence
+requirements. No repository code or additional skill is needed.
+
+For a new project, start with the bundled scaffold, then adapt its domain hooks:
+
+```powershell
+python <SKILL_ROOT>\scripts\journey.py scaffold --output <new-agent-project>
+```
 
 | Phase | Required reference | Exit evidence |
 |---|---|---|

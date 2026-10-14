@@ -94,6 +94,12 @@ def call_cost(
     known = Decimal(0)
     missing = []
     usage = call["usage"]
+    if (
+        call.get("cache_write_mode") is not None
+        and call["cache_write_mode"] != price.get("cache_write_mode", "none")
+        and usage.get("cache_write_tokens") not in (None, 0)
+    ):
+        raise ValueError(f"{key}: recorded and priced cache-write modes disagree")
     for bucket in BUCKETS:
         count = token_count(usage.get(bucket), bucket)
         rate = amount(price["rates"].get(bucket), f"{key}.{bucket}")

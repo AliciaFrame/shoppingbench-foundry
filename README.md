@@ -223,9 +223,12 @@ guides hosted-agent setup, baseline evaluation, Agent Optimizer, justified RFT,
 and checkpoint selection/verification for any use case. ShoppingBench is an
 optional worked example, not a required runtime or evaluator.
 
-The skill includes its own setup and lifecycle references, project contract,
-Azure-first/GitHub-fallback pricing guidance, and a standard-library cost
-calculator. It does not require another Foundry skill to be loaded. Clone this
+The skill bundles a runnable hosted-agent starter, grader/evaluator and tool
+endpoints, isolated dataset/evaluation helpers, calibrated optimizer and RFT
+commands, sealed selection, and a standard-library cost calculator with
+Azure-first/GitHub-fallback pricing guidance. Follow its
+[executable runbook](.github/skills/mai-agent-hillclimb/references/runbook.md).
+It does not require another Foundry skill to be loaded. Clone this
 repository to use its project skill, or copy the entire skill directory into
 a supported project/personal skills location.
 

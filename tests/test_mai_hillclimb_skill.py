@@ -105,6 +105,12 @@ def test_context_tier_is_checked_per_call_not_episode_or_uncached_tokens(book, e
     assert costs.report(episodes[:1], book)["stages"]["baseline"]["serving_cost_complete"]
 
 
+def test_recorded_cache_write_semantics_must_match_the_price_snapshot(book, episodes):
+    episodes[0]["calls"][0]["cache_write_mode"] = "additional"
+    with pytest.raises(ValueError, match="modes disagree"):
+        costs.report(episodes[:1], book)
+
+
 @pytest.mark.parametrize(
     "invalid", ["unit", "placeholder-rate", "duplicates", "cache-mode", "currency"]
 )
