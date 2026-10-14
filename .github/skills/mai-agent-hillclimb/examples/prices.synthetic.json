@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "currency": "USD",
+  "prices": {
+    "policy-default": {
+      "model": "synthetic-policy-model",
+      "provider": "offline example",
+      "region": "not applicable",
+      "sku": "not applicable",
+      "tier": "flat",
+      "source_url": "https://example.invalid/synthetic-rates-not-a-price-quote",
+      "retrieved_at": "2026-10-14",
+      "basis": "synthetic",
+      "unit": "per_million_tokens",
+      "cache_write_mode": "replacement",
+      "min_context_tokens": 0,
+      "max_context_tokens": null,
+      "rates": {
+        "uncached_input_tokens": 1,
+        "cached_input_tokens": 0.1,
+        "cache_write_tokens": 1.5,
+        "output_tokens": 2
+      }
+    }
+  }
+}

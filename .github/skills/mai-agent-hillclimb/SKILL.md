@@ -1,0 +1,120 @@
+---
+name: mai-agent-hillclimb
+description: >-
+  Set up and deploy MAI-powered hosted agents on Microsoft Foundry, measure a
+  baseline, run Agent Optimizer, use reinforcement fine-tuning only when
+  justified, and select and verify improvements in quality, latency, and cost.
+  Use for hosted-agent onboarding, agent optimization, RFT experiment planning,
+  checkpoint comparisons, and token-cost calculations for any use case.
+license: Apache-2.0
+---
+
+# MAI-agent-hillclimb
+
+Run a measured journey: **set up -> baseline -> Agent Optimizer -> justified
+RFT -> select and verify**. This skill is self-contained: it does not require
+another Foundry skill, this repository's Python package, or a shopping domain.
+MAI is the intended policy model family, not a hardcoded model deployment or
+version. Respect an explicitly selected compatible model.
+
+All links below are relative to this skill directory, called `SKILL_ROOT`.
+Commands execute in the user's selected agent project, not necessarily this
+repository. Never assume that an example's tools, data, models, or resource
+identifiers exist in that project.
+
+## Entry and context
+
+1. Identify the requested phase and the selected agent root/environment.
+   Inspect only that root's code, deployment manifest, and `.foundry` metadata.
+   Resolve supplied values first; ask only for unresolved choices. If several
+   agent roots or environments are plausible, require an explicit selection.
+2. Read [the project contract](references/contract.md). Record the use case,
+   agent/runtime, tools, evaluator, datasets, target metrics, budget, and
+   acceptance policy before changing weights or searching configurations.
+3. Discover available interfaces. If Azure MCP is installed, retrieve current
+   Foundry tools and schemas before calling them. Otherwise use the documented
+   Azure CLI, azd, SDK, or REST paths in the phase references. Another skill is
+   optional, never a prerequisite.
+4. Reuse the project's implementation and evaluation harness when sound.
+   If missing, implement domain-specific adapters using the contract. Do not
+   substitute ShoppingBench's tools or grader for the user's task.
+5. Resume from evidence under `.foundry/hillclimb/<run-id>`, not remembered job
+   names. Check recorded code, data, model, evaluator, and pricing fingerprints.
+   A changed contract starts a new run; never silently mix receipts.
+
+## Phase routing
+
+| Phase | Required reference | Exit evidence |
+|---|---|---|
+| Create/connect project, models, hosted agent, tools | [Setup and deployment](references/setup.md) | Active version, identities/permissions, successful real smoke invocation |
+| Freeze and evaluate baseline | [Baseline and optimization](references/baseline-optimize.md) | Complete development receipts, quality/latency/usage/cost report |
+| Search agent configurations | [Baseline and optimization](references/baseline-optimize.md) | Nominated candidates independently evaluated and retained under the acceptance policy |
+| Calibrate and train if warranted | [RFT](references/rft.md) | Validated data, calibrated reward, parity check, approved job and monitoring evidence |
+| Compare checkpoints and verify final selection | [Selection and verification](references/select-verify.md) | Selected configuration/weights, matched comparison, sealed final result, deployment smoke test |
+| Retrieve prices and compute costs, at every phase | [Pricing and cost](references/pricing.md) | Dated source-backed price snapshot, measured-usage report, completeness and estimate labels |
+| Diagnose blocked or failed steps | [Troubleshooting](references/troubleshooting.md) | Explicit cause and a validated repair; no success-shaped fallback |
+
+Only read the references needed for the current phase. A user can stop after
+baseline or configuration optimization. RFT is optional, not the definition
+of success.
+
+## Gates that apply throughout
+
+- **Approval:** resource creation, permission grants, deployments, model
+  inference, optimizer jobs, training, and checkpoint hosting can be billable
+  or consequential. Confirm the scope, spending cap, and authorization before
+  executing them. Do not pre-approve unrestricted shell tools in this skill.
+- **Quality:** choose the evaluator before optimization. It may be a
+  deterministic test suite, calibrated semantic judge, human rubric, or a
+  combination. The same quality definition must compare all stages.
+- **Evidence:** include every scheduled episode in results. Preserve failed
+  episodes, observed per-call usage, elapsed time, and explicit errors.
+  Missing usage is unknown, not evidence of free inference. Retry transport
+  requests within a bounded policy, not successful samples until they win.
+- **Isolation:** keep optimizer search, RFT training/validation, development
+  selection, and sealed final data disjoint by the relevant connected group
+  (customer, document, session, entity, tool state, or other domain unit).
+- **Calibration:** training reward is not automatically evaluation quality.
+  Prove that it distinguishes desirable behavior, preserves important
+  invariants, and offers within-example variation before RFT.
+- **Selection:** set quality, safety, latency, and cost trade-offs in advance.
+  Neither an optimizer's judge score nor the final training checkpoint is an
+  automatic winner.
+- **Final test:** persist selection and `final_test_started` before inference.
+  Never reopen the final split to tune or pick a different candidate.
+- **Credentials:** use managed identity/Entra where supported. Store secret
+  references, not secrets, in metadata or reports. Historical resource/job
+  IDs are evidence, not configuration.
+- **State:** record pending/running/completed/failed operations and their IDs
+  immediately. A monitoring timeout is not permission to submit another job.
+  Clean up only resources or processes explicitly created for the run and
+  approved for deletion; do not remove shared infrastructure.
+
+## Self-contained local cost tool
+
+Read the pricing reference before normalizing provider usage. The helper uses
+only Python's standard library and makes **no network, model, or deployment
+calls**:
+
+```powershell
+python <SKILL_ROOT>\scripts\cost_report.py `
+  --receipts <run-directory>\episodes.jsonl `
+  --prices <run-directory>\prices.json `
+  --output <run-directory>\cost-report.json
+```
+
+It supports multiple models/call purposes, cached reads and writes, explicit
+context tiers, incomplete usage/rates, and separate run-level charges. It does
+not fetch or invent prices, judge quality, or approve cloud actions.
+
+An offline demonstration is included:
+
+```powershell
+python <SKILL_ROOT>\scripts\cost_report.py `
+  --receipts <SKILL_ROOT>\examples\episodes.synthetic.jsonl `
+  --prices <SKILL_ROOT>\examples\prices.synthetic.json
+```
+
+Those rates are deliberately synthetic, not a current MAI price quote.
+Use [the optional ShoppingBench example](references/shoppingbench.md) only
+when the user chooses that domain.

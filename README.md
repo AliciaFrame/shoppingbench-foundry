@@ -216,6 +216,27 @@ See [CHANGELOG.md](CHANGELOG.md) for v1/v2 workflow differences and release note
 | [`azure`](azure) | Azure deployment for the catalog, tool API, and RFT grader endpoints |
 | [`docs`](docs/README.md) | Architecture, results, reproducibility, and demo walkthrough |
 
+## Companion skill: MAI-agent-hillclimb
+
+The standalone [MAI-agent-hillclimb skill](.github/skills/mai-agent-hillclimb/SKILL.md)
+guides hosted-agent setup, baseline evaluation, Agent Optimizer, justified RFT,
+and checkpoint selection/verification for any use case. ShoppingBench is an
+optional worked example, not a required runtime or evaluator.
+
+The skill includes its own setup and lifecycle references, project contract,
+Azure-first/GitHub-fallback pricing guidance, and a standard-library cost
+calculator. It does not require another Foundry skill to be loaded. Clone this
+repository to use its project skill, or copy the entire skill directory into
+a supported project/personal skills location.
+
+Run its deliberately synthetic offline cost example:
+
+```powershell
+python .github\skills\mai-agent-hillclimb\scripts\cost_report.py `
+  --receipts .github\skills\mai-agent-hillclimb\examples\episodes.synthetic.jsonl `
+  --prices .github\skills\mai-agent-hillclimb\examples\prices.synthetic.json
+```
+
 ## Reproduce
 
 Deterministic artifacts, tests, and the release tables reproduce locally:

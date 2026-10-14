@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "run_id": "<unique-run-id>",
+  "use_case": "<user-task>",
+  "agent_root": "<selected-project>",
+  "environment": "<chosen-environment>",
+  "project_endpoint": "<resolved-Foundry-project-endpoint>",
+  "agent": {
+    "framework": "<existing-or-approved-framework>",
+    "entrypoint": "<application-entrypoint>",
+    "protocol": "<implemented-protocol-and-version>",
+    "model_deployment": "<available-MAI-or-selected-compatible-deployment>",
+    "tool_contract": "<project-tool-schema>"
+  },
+  "evaluation": {
+    "adapter_command": "<project-evaluation-command>",
+    "quality_evaluator": "<frozen-test-suite-or-calibrated-rubric>",
+    "primary_metric": "<metric>",
+    "direction": "<higher-or-lower-is-better>",
+    "failure_values": {},
+    "group_key": "<domain-connected-group>",
+    "datasets": {
+      "optimization": "<search-split>",
+      "training": "<RFT-training-split>",
+      "validation": "<RFT-validation-split>",
+      "development": "<selection-split>",
+      "final": "<sealed-final-split>"
+    }
+  },
+  "acceptance": {
+    "quality_target": null,
+    "max_quality_regression": null,
+    "latency_ceiling": null,
+    "serving_cost_ceiling": null
+  },
+  "budget": {
+    "currency": "USD",
+    "deployment_limit": null,
+    "inference_limit": null,
+    "optimization_limit": null,
+    "training_and_hosting_limit": null
+  },
+  "approvals": {
+    "provisioning": false,
+    "inference": false,
+    "optimization": false,
+    "training": false,
+    "final_test": false
+  },
+  "state": {
+    "phase": "setup",
+    "operation_ids": {},
+    "receipt_paths": {},
+    "fingerprints": {},
+    "selected_candidate": null,
+    "final_test_started": false
+  }
+}
