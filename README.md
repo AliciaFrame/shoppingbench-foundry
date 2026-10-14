@@ -11,6 +11,8 @@ in sequence:
 2. **Reinforcement fine-tuning (RFT)** changes the weights, and is used only
    where calibration shows a learnable signal.
 
+We demonstrate, across five scenarios, how Foundry's agent optimizer and reinforcement fine tuning can be used to achieve (or beat!) frontier performance at a fraction of the cost.
+
 ## What the benchmark tests
 
 ShoppingBench evaluates whether an agent can search a product catalog, inspect
@@ -139,10 +141,10 @@ See [`docs/results.md`](docs/results.md) for interpretation.
 <!-- model-cost-comparison:start -->
 ## Cost comparison with GPT-5.6
 
-We compare the published MAI-Code-1.1-Flash choices against each GPT-5.6
+To understand the tradeoffs in quality and cost versus frontier mode,s we compare the published MAI-Code-1.1-Flash choices against each GPT-5.6
 model's highest observed canonical score among available complete vanilla
-and agent-optimized runs. Each run uses the same 30 development cases
-and 3 rollouts (90 episodes); failed episodes remain zero-scored.
+and agent-optimized runs. We ran agent optimizer for GPT 5.6 Luna, Terra, and Sol to generate the best performing configuration for each agent. To measure quality and cost, each run uses the same 30 development cases
+and 3 rollouts (90 episodes); failed episodes remain zero-scored. We measured the total token counts and used published list prices.
 The two Web (static) rows show the accuracy choice and the RFT token alternative.
 Each model cell shows **score / recorded token cost (USD per 1,000 episodes)**.
 
@@ -156,11 +158,16 @@ Each model cell shows **score / recorded token cost (USD per 1,000 episodes)**.
 | Web&nbsp;live&nbsp;(RFT&nbsp;v6) | 0.903&nbsp;/&nbsp;$12.56 | **0.968\*&nbsp;🏆**&nbsp;/&nbsp;**$9.69&nbsp;💰** | 0.946\*&nbsp;/&nbsp;$30.96 | 0.941\*&nbsp;/&nbsp;$55.61 |
 
 **🏆** marks the highest measured score in each row (not a claim of
-statistical significance). **💰** marks the lowest recorded token cost
-among that row's runs. **\*** marks a selected agent-optimized GPT run; unmarked GPT
+statistical significance).
+
+**💰** marks the lowest recorded token cost
+among that row's runs. 
+
+**\*** marks a selected agent-optimized GPT run; unmarked GPT
 results are vanilla. These GPT runs use the MAI-tuned configuration, not
 independent GPT-specific tuning. Selection is among available complete runs,
 not every possible optimized configuration.
+
 MAI RFT checkpoints are Voucher step 10, Web (static) v5 final, and Web (live) v6 final.
 Excluded incomplete candidates: Luna Voucher optimized (47/90); Terra Web (static) optimized (85/90).
 
