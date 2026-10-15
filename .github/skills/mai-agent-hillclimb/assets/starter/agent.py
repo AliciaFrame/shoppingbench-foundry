@@ -16,6 +16,7 @@ from azure.ai.agentserver.responses.models import (
 )
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from domain import TOOL_DEFINITIONS, execute_tool
+from evaluation_auth import authorize_capture, redact_trace
 from openai import OpenAI
 from workload import decode_input, model_messages, skill_catalog
 
@@ -115,6 +116,14 @@ def _run_episode(item, calls, api):
     inputs = list(item["messages"])
     if inputs[0]["role"] == "system" and inputs[0]["content"].strip() == instructions.strip():
         inputs = inputs[1:]
+    if any(message["role"] not in ("user", "assistant") for message in inputs):
+        raise ValueError("Only the server-configured policy may supply system instructions")
+    expected_policy = item.get("expected_policy_sha256")
+    if (
+        expected_policy
+        and expected_policy != hashlib.sha256(instructions.strip().encode("utf-8")).hexdigest()
+    ):
+        raise ValueError("Workload policy does not match the deployed policy")
     inputs = model_messages({**item, "messages": inputs})
     trace = []
     max_steps = policy["max_tool_steps"]
@@ -165,10 +174,19 @@ def _run_episode(item, calls, api):
 
 async def handler(request, context, _cancellation_signal):
     inputs = await context.get_input_text() or ""
-    result = await asyncio.to_thread(run_episode, decode_input(inputs))
+    capture = authorize_capture(inputs, request.get("metadata") or {})
+    item = (
+        decode_input(inputs)
+        if os.getenv("HILLCLIMB_ENABLE_EVALUATION") == "1"
+        else {"messages": [{"role": "user", "content": inputs}]}
+    )
+    result = await asyncio.to_thread(run_episode, item)
     output_text = result["output_text"]
-    if (request.get("metadata") or {}).get("hillclimb_capture") == "v1":
-        output_text = json.dumps({"hillclimb_trace_version": 1, **result})
+    if capture:
+        trace = {"hillclimb_trace_version": 1, **result}
+        trace["output_tools"] = redact_trace(result["output_tools"])
+        trace["calls"] = redact_trace(result["calls"])
+        output_text = json.dumps(trace)
     usage_rows = [call["raw_usage"] for call in result["calls"]]
     usage = None
     if all(row is not None for row in usage_rows):

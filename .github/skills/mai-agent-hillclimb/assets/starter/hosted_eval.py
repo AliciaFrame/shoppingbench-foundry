@@ -7,6 +7,7 @@ from azure.ai.projects import AIProjectClient
 from azure.ai.projects.models import VersionRefIndicator
 from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
+from evaluation_auth import evaluation_key, evaluation_metadata
 from openai import APIError
 from workload import decode_trace, encode_input
 
@@ -14,6 +15,8 @@ from workload import decode_trace, encode_input
 def run_episode(item):
     name = os.environ["MAI_HOSTED_AGENT_NAME"]
     version = os.environ["MAI_HOSTED_AGENT_VERSION"]
+    inputs = encode_input(item)
+    evaluation_key()
     with AIProjectClient(
         endpoint=os.environ["MAI_PROJECT_ENDPOINT"],
         credential=DefaultAzureCredential(),
@@ -23,6 +26,9 @@ def run_episode(item):
         resource = project.agents.get_version(agent_name=name, agent_version=version)
         if resource.status != "active":
             raise RuntimeError(f"Hosted version {name}/{version} is not active: {resource.status}")
+        environment = getattr(resource.definition, "environment_variables", {}) or {}
+        if environment.get("HILLCLIMB_ENABLE_EVALUATION") != "1":
+            raise PermissionError("Hosted evaluation is not enabled on this exact agent version")
         session = project.agents.create_session(
             agent_name=name, version_indicator=VersionRefIndicator(agent_version=version)
         )
@@ -37,8 +43,8 @@ def run_episode(item):
                 )
             with project.get_openai_client(agent_name=name, max_retries=0, timeout=300) as api:
                 response = api.responses.create(
-                    input=encode_input(item),
-                    metadata={"hillclimb_capture": "v1"},
+                    input=inputs,
+                    metadata=evaluation_metadata(inputs),
                     extra_body={"agent_session_id": session.agent_session_id},
                 )
             if not response.output_text:

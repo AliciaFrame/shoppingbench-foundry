@@ -62,7 +62,10 @@ The helper rejects shared groups and identical messages across splits.
 Use `context` for model-visible documents/state; keep expected answers,
 criteria and other references outside it. Optimization sends the complete
 message history/context in a versioned envelope and reference data separately
-as `ground_truth`. The runtime unwraps only model-visible content, never labels.
+as `ground_truth`. Only an opted-in evaluation deployment unwraps workload
+envelopes, and remote envelopes can never introduce system/developer roles.
+Prepared training policies are represented by a hash checked against the
+server's configured policy, not by caller-supplied system instructions.
 
 ```powershell
 python $J prepare --data "$P\cases.jsonl" --tools "$P\tools.json" `
@@ -95,6 +98,22 @@ Copy-Item "$S\examples\cloud.example.json" "$P\cloud.json"
 Fill actual IDs, endpoints, versions, model format/SKU/capacity, unique resource
 names, and evaluator names in `cloud.json`. Store only environment-variable
 **names** for secrets. Verify CLI/model/region access and prices before approval.
+
+**Separate evaluation from ordinary serving.** Production defaults to
+`enable_evaluation: false`: workload-looking user text stays a user message,
+and request metadata cannot enable trace export. For hosted benchmarking and
+optimizer workloads, use an isolated evaluation agent with
+`enable_evaluation: true` and a versioned `evaluation_key_secret_uri` in
+`cloud.json`. This stores only a Key Vault reference in the agent manifest,
+never the signing key. Use a separately generated high-entropy signing key
+(at least 32 random bytes), not the grader/tool bearer token.
+
+After deployment returns the evaluation agent identity, give that identity
+**Key Vault Secrets User** at the approved secret scope before invoking it.
+The evaluation client also needs read access. Use the approved RBAC workflow,
+not an Owner grant or a directory-wide permission. Local-only testing can use
+`HILLCLIMB_EVALUATION_KEY` from an approved process secret source; never put its
+value in `cloud.json`, a command argument, dataset or source file.
 
 ## Provision and deploy
 
@@ -170,6 +189,14 @@ local process override alone is not a deployed configuration.
 Invoke with `hosted_eval.py` using the evaluation command below. It creates an
 exact-version session, invokes it, and stops its compute even on failure.
 Readiness alone is not a successful smoke test.
+For that privileged client, set `HILLCLIMB_EVALUATION_KEY_SECRET_URI` to the
+same versioned secret reference. It sends short-lived input-bound HMAC
+signatures, not the signing key. Capture is checked before inference, requires
+the server opt-in as well as the signature, and rejects expired/tampered
+requests and replayed nonces within the worker. Keep these endpoints isolated;
+the process-local replay cache is not a distributed authorization service.
+For an ordinary production smoke invocation, use the normal Responses/azd
+invoke path instead of requesting an evaluation trace.
 
 ## Evaluate and optimize
 
@@ -195,6 +222,11 @@ synthetic example. Serving usage, judge/optimizer calls, training and hosting
 are different costs. The bundled hosted evaluator requests an evaluation-only
 trace envelope, preserving tool names/arguments/results and per-model-call
 usage and policy identity. Ordinary user calls still return only the answer.
+Rich traces require the signing authorization above. Common credential-named
+tool/call fields are redacted, but authorized traces still contain private
+instructions, skill content, endpoints and domain records needed for evaluation.
+Protect the resulting artifacts and use synthetic or approved data; this is
+not a general-purpose PII scrubber.
 An older or custom hosted runtime without this contract fails explicitly;
 it must implement the trace adapter rather than invent an empty tool trace.
 Runtime failures score zero, stay in the
@@ -306,6 +338,13 @@ The deployment uses secret references and 2-5 replicas; inspect capacity,
 concurrency and external tool side effects for your workload. In a partial
 deployment, reconcile the registry build and set `service_image` (immutable
 digest) and `service_registry` to reuse it instead of rebuilding.
+Prefer a versioned `endpoint_token_secret_uri` for the grader/tool service:
+the CLI receives a Key Vault reference rather than the bearer token in its
+arguments. Its system identity needs secret-read permission before secret
+configuration. The process-environment fallback remains available for isolated
+development, but exposes the value to local process inspection while the CLI
+runs. Timeouts/launch failures suppress credential-bearing subprocess details;
+error receipts retain the reconciliation requirement, not the command secret.
 For semantic endpoints, set the public judge configuration in
 `endpoint_environment`. Deployment assigns a system identity; grant only its
 required model-inference role using the returned identity as

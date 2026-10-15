@@ -27,7 +27,15 @@ from journey import (
 )
 
 
+def sanitized_text(text, redact_values=()):
+    for token in (*redact_values, os.getenv("HILLCLIMB_ENDPOINT_TOKEN")):
+        if token:
+            text = text.replace(token, "<redacted>")
+    return text
+
+
 def command(argv, cwd, redact_values=()):
+    label = Path(argv[0]).name
     if argv[0] == "az" and "--subscription" in argv:
         index = argv.index("--subscription")
         argv = argv[:index] + argv[index + 2 :] + argv[index : index + 2]
@@ -42,18 +50,29 @@ def command(argv, cwd, redact_values=()):
         argv = [str(python), "-X", "utf8", "-IBm", "azure.cli", *argv[1:]]
     else:
         argv = [executable, *argv[1:]]
-    result = subprocess.run(
-        argv, cwd=cwd, capture_output=True, text=True, encoding="utf-8", check=False, timeout=1200
-    )
+    try:
+        result = subprocess.run(
+            argv,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+            timeout=1200,
+        )
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(
+            f"{label} timed out; command arguments and output were withheld. "
+            "Reconcile operation state before retrying."
+        ) from None
+    except (OSError, UnicodeError):
+        raise RuntimeError(
+            f"{label} could not execute or decode its output; details were withheld"
+        ) from None
     if result.returncode:
-        error = result.stderr or result.stdout
-        tokens = list(redact_values) + [os.getenv("HILLCLIMB_ENDPOINT_TOKEN")]
-        for token in tokens:
-            if not token:
-                continue
-            error = error.replace(token, "<redacted>")
+        error = sanitized_text(result.stderr or result.stdout, redact_values)
         raise RuntimeError(f"{argv[0]} failed ({result.returncode}): {error}")
-    return result.stdout
+    return sanitized_text(result.stdout, redact_values)
 
 
 def redact_credentials(value):
@@ -387,6 +406,10 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
 
 
 def optimizer_plan(project, config, validation_receipt):
+    if config.get("enable_evaluation") is not True:
+        raise ValueError(
+            "Workload-envelope optimization requires an isolated evaluation deployment"
+        )
     validated = read_json(validation_receipt)
     if not validated.get("passed"):
         raise ValueError("Optimizer requires successful known-response evaluator validation")
@@ -937,6 +960,16 @@ def cli_plan(action, project, config):
             if config.get("service_image")
             else ["--source", str(Path(project).resolve())]
         )
+        token_reference = config.get("endpoint_token_secret_uri")
+        if token_reference:
+            load_hook(SKILL / "assets" / "starter" / "evaluation_auth.py", "validate_secret_uri")(
+                token_reference
+            )
+        secret_value = (
+            f"keyvaultref:{token_reference},identityref:system"
+            if token_reference
+            else "<environment-secret>"
+        )
         return [
             az
             + [
@@ -979,7 +1012,7 @@ def cli_plan(action, project, config):
                 "-g",
                 rg,
                 "--secrets",
-                "endpoint-token=<environment-secret>",
+                f"endpoint-token={secret_value}",
                 "-o",
                 "none",
             ],
@@ -1087,6 +1120,22 @@ def wire_hosted(project, config):
             "MAI_MODEL_DEPLOYMENT_NAME": config["model"]["deployment"],
         }
     )
+    evaluation_enabled = config.get("enable_evaluation", False)
+    if not isinstance(evaluation_enabled, bool):
+        raise TypeError("enable_evaluation must be an explicit boolean")
+    environment = matches[0]["env"]
+    environment.pop("HILLCLIMB_EVALUATION_KEY", None)
+    environment["HILLCLIMB_ENABLE_EVALUATION"] = "1" if evaluation_enabled else "0"
+    if evaluation_enabled:
+        secret_uri = config.get("evaluation_key_secret_uri")
+        if not secret_uri:
+            raise ValueError("Hosted evaluation requires a signing-key Key Vault secret reference")
+        load_hook(SKILL / "assets" / "starter" / "evaluation_auth.py", "validate_secret_uri")(
+            secret_uri
+        )
+        environment["HILLCLIMB_EVALUATION_KEY_SECRET_URI"] = secret_uri
+    else:
+        environment.pop("HILLCLIMB_EVALUATION_KEY_SECRET_URI", None)
     if "model_override" in config:
         if config["model_override"]:
             matches[0]["env"]["MAI_MODEL_OVERRIDE"] = config["model_override"]
@@ -1248,7 +1297,10 @@ def main():
             output = command(argv, args.project, redact_values)
         except (RuntimeError, OSError, subprocess.TimeoutExpired) as error:
             state["status"] = "needs_reconciliation"
-            state["error"] = {"type": type(error).__name__, "message": str(error)}
+            state["error"] = {
+                "type": type(error).__name__,
+                "message": sanitized_text(str(error), redact_values),
+            }
             write_json(path, state)
             raise
         state["outputs"].append(output)

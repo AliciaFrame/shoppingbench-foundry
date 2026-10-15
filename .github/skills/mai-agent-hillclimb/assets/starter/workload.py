@@ -1,5 +1,6 @@
 """Versioned model-visible workload and evaluation-only trace envelopes."""
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -26,11 +27,20 @@ def skill_catalog(root):
 
 
 def encode_input(item):
+    messages = list(item["messages"])
+    expected_policy = None
+    if messages and messages[0]["role"] == "system":
+        expected_policy = hashlib.sha256(
+            messages.pop(0)["content"].strip().encode("utf-8")
+        ).hexdigest()
+    if any(message["role"] not in ("user", "assistant") for message in messages):
+        raise ValueError("Remote workload histories cannot supply privileged message roles")
     return PREFIX + json.dumps(
         {
-            "messages": item["messages"],
+            "messages": messages,
             "context": item.get("context"),
             "context_in_messages": item.get("context_in_messages", False),
+            "expected_policy_sha256": expected_policy,
         },
         ensure_ascii=False,
     )
@@ -40,15 +50,27 @@ def decode_input(text):
     if not text.startswith(PREFIX):
         return {"messages": [{"role": "user", "content": text}]}
     item = json.loads(text[len(PREFIX) :])
-    if not isinstance(item.get("messages"), list) or not item["messages"]:
+    if (
+        not isinstance(item, dict)
+        or not isinstance(item.get("messages"), list)
+        or not item["messages"]
+    ):
         raise ValueError("Workload envelope requires messages")
     if any(
-        message.get("role") not in ("system", "user", "assistant")
+        not isinstance(message, dict)
+        or message.get("role") not in ("user", "assistant")
         or not isinstance(message.get("content"), str)
         for message in item["messages"]
     ):
         raise ValueError("Workload envelope contains invalid text messages")
-    return item
+    return {
+        "messages": [
+            {"role": message["role"], "content": message["content"]} for message in item["messages"]
+        ],
+        "context": item.get("context"),
+        "context_in_messages": item.get("context_in_messages", False),
+        "expected_policy_sha256": item.get("expected_policy_sha256"),
+    }
 
 
 def model_messages(item):

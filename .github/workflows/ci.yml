@@ -36,7 +36,7 @@ jobs:
           git diff --exit-code -- evals/results/summary.json
 
       - name: Test
-        run: python -m pytest
+        run: python -m pytest --ignore=tests/test_mai_hillclimb_journey.py
 
       - name: Lint
         run: python -m ruff check .
@@ -67,3 +67,26 @@ jobs:
 
       - name: Compile Bicep
         run: az bicep build --file azure/infra/main.bicep --stdout > /dev/null
+
+  skill-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            .github/skills/mai-agent-hillclimb/assets/starter/requirements.txt
+            .github/skills/mai-agent-hillclimb/scripts/requirements-cloud.txt
+      - name: Install standalone skill dependencies
+        run: |
+          python -m pip install pytest ruff \
+            -r .github/skills/mai-agent-hillclimb/assets/starter/requirements.txt \
+            -r .github/skills/mai-agent-hillclimb/scripts/requirements-cloud.txt
+      - name: Test standalone skill and security boundaries
+        env:
+          OTEL_SDK_DISABLED: "true"
+        run: python -m pytest tests/test_mai_hillclimb_skill.py tests/test_mai_hillclimb_journey.py
+      - name: Lint standalone skill
+        run: python -m ruff check .github/skills/mai-agent-hillclimb/scripts .github/skills/mai-agent-hillclimb/assets/starter

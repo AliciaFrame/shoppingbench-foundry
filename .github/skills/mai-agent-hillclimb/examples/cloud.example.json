@@ -17,6 +17,8 @@
   "inference_role_definition_id": "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd",
   "runtime": "python_3_13",
   "model_override": null,
+  "enable_evaluation": false,
+  "evaluation_key_secret_uri": null,
   "model": {
     "deployment": "replace-with-deployment",
     "name": "replace-with-supported-MAI-model",
@@ -29,6 +31,7 @@
   "service_environment": "replace-with-unique-containerapp-environment",
   "service_url": "https://replace-with-deployed-service",
   "endpoint_token_env": "HILLCLIMB_ENDPOINT_TOKEN",
+  "endpoint_token_secret_uri": null,
   "endpoint_environment": {},
   "optimizer": {
     "dataset": "replace-with-optimizer-data-path-or-name",

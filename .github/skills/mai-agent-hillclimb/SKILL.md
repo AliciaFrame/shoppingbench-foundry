@@ -35,6 +35,9 @@ identifiers exist in that project.
    Foundry tools and schemas before calling them. Otherwise use the documented
    Azure CLI, azd, SDK, or REST paths in the phase references. Another skill is
    optional, never a prerequisite.
+   Discover pricing, quota, RBAC and Bicep routers as applicable too; do not
+   assume every Azure MCP installation exposes a Foundry router or identical
+   command names. Use the CLI/SDK fallback when a needed router is absent.
 4. Reuse sound project adapters. For missing pieces, use
    [the executable runbook](references/runbook.md): it bundles a hosted starter,
    domain/tool hooks, canonical grader, optimizer evaluator, authenticated
@@ -97,6 +100,10 @@ of success.
 - **Credentials:** use managed identity/Entra where supported. Store secret
   references, not secrets, in metadata or reports. Historical resource/job
   IDs are evidence, not configuration.
+- **Evaluation boundary:** ordinary hosted deployments do not unwrap workload
+  envelopes or expose rich traces. Isolated evaluation deployments require
+  explicit server opt-in and signed capture requests backed by a secret-store
+  key; request metadata alone never authorizes trace export.
 - **State:** record pending/running/completed/failed operations and their IDs
   immediately. A monitoring timeout is not permission to submit another job.
   Clean up only resources or processes explicitly created for the run and

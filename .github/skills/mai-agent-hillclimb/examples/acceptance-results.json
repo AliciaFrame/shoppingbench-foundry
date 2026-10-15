@@ -1,5 +1,21 @@
 {
   "date": "2026-10-14",
+  "security_followup": {
+    "date": "2026-10-14",
+    "focused_tests_passed": 70,
+    "repository_tests_passed": 223,
+    "pre_existing_repository_failures": 1,
+    "fixed": [
+      "Production treats workload envelopes as user text; remote evaluation cannot supply system/developer roles",
+      "Rich traces require server opt-in and input-bound signed requests with a secret-store key",
+      "Expired, tampered and worker-replayed trace requests are rejected before inference",
+      "Credential-named tool/call fields are redacted from authorized traces",
+      "Credential-bearing subprocess timeout details cannot reach tracebacks or error receipts",
+      "Key Vault references can avoid endpoint-token process arguments"
+    ],
+    "validation": "Local regressions and real SDK imports/events; Key Vault SDK validated in an isolated environment with mocked secret retrieval. No new cloud jobs were started.",
+    "deployment_requirement": "Use an isolated evaluation deployment with explicit opt-in and a versioned Key Vault signing-key reference. Production defaults remain disabled."
+  },
   "review_followup": {
     "date": "2026-10-14",
     "focused_tests_passed": 57,
