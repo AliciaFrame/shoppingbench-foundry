@@ -1,7 +1,5 @@
 # ShoppingBench agent hill climbing on Microsoft Foundry
 
-[![CI](https://github.com/AliciaFrame/shoppingbench-foundry/actions/workflows/ci.yml/badge.svg?branch=remediation%2Fv2-rft-hardening)](https://github.com/AliciaFrame/shoppingbench-foundry/actions/workflows/ci.yml?query=branch%3Aremediation%2Fv2-rft-hardening)
-
 This repository is a reproducible, end-to-end demonstration of improving five
 tool-using shopping agents built on **MAI-Code-1.1-Flash**, using two levers
 in sequence:
