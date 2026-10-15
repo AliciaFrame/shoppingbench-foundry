@@ -450,6 +450,14 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
 
 
 def optimizer_plan(project, config, validation_receipt):
+    if config["optimizer"].get("evaluator_type", "prompt") != "prompt":
+        raise ValueError(
+            "This optimizer helper requires a calibrated prompt-rubric evaluator. "
+            "Code evaluators are validated for ordinary evaluation, not established as "
+            "supported by Agent Optimizer. Use the documented azd route for built-in "
+            "evaluators such as builtin.task_adherence; retain the canonical grader "
+            "for independent acceptance."
+        )
     if config.get("enable_evaluation") is not True:
         raise ValueError(
             "Workload-envelope optimization requires an isolated evaluation deployment"

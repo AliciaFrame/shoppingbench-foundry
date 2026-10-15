@@ -28,6 +28,14 @@
       "framed_known_label_remote_mae": 0.0,
       "original_search_limitation": "Captured answers already scored perfectly; that search had no demonstrated quality headroom"
     },
+    "evaluator_support_correction": {
+      "source": "https://learn.microsoft.com/azure/foundry/agents/how-to/create-optimizer-dataset#customize-evaluators-advanced",
+      "documented_optimizer_types": ["Built-in evaluators", "Custom rubric evaluators"],
+      "correction": "Ordinary code-evaluator calibration did not establish Agent Optimizer support. The helper now blocks code-evaluator optimization submissions.",
+      "next_nomination_metric": "builtin.task_adherence",
+      "independent_acceptance": "Unchanged canonical factual grader, safety audit and matched latency/cost evidence",
+      "causality_limit": "This support gap is distinct from DNS failures; it is not proven to explain all native-run failures"
+    },
     "revised_data": {
       "targeted_search_cases": 12,
       "fresh_development_cases": 24,
@@ -45,7 +53,7 @@
       "causality_limit": "DNS failure was observed after native failures; it is not proven to explain every earlier failure",
       "cleanup": "Job cancellation confirmed; native session cleanup pending data-plane recovery"
     },
-    "focused_local_tests_passed": 75,
+    "focused_local_tests_passed": 76,
     "rft": "not requested or submitted",
     "cost": {
       "matched_savings": null,

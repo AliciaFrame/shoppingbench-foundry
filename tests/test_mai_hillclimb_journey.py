@@ -1848,3 +1848,10 @@ def test_code_evaluator_calibration_uses_real_content_block_transport(project):
     assert json.loads(data["response"]) == [
         {"type": "output_text", "text": label["sample"]["output_text"]}
     ]
+
+
+def test_optimizer_rejects_code_evaluator_before_reading_validation(project):
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    config["optimizer"]["evaluator_type"] = "code"
+    with pytest.raises(ValueError, match="Code evaluators.*ordinary evaluation"):
+        cloud.optimizer_plan(project, config, project / "does-not-exist.json")
