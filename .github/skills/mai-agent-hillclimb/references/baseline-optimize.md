@@ -91,3 +91,10 @@ trade-offs must be explicit, not retrospectively called an accuracy win.
 
 Record the retained configuration and measured deltas. Stop here if the goal
 is met, RFT is unsupported, or evidence does not justify training.
+
+Native candidate evaluation runs can use adaptive subsets. A run-local
+`datasource_item_id` is not a stable dataset case identifier: match stored
+case IDs or query/reference fingerprints, and report the actual coverage.
+Do not zero-fill cases that the native run never scheduled or compare its
+reported averages as though baseline and candidate had identical coverage.
+Keep optimizer search evidence separate from a held-out serving comparison.

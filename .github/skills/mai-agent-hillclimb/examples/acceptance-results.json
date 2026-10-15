@@ -2,7 +2,7 @@
   "date": "2026-10-15",
   "nyc_parking_exercise": {
     "date": "2026-10-15",
-    "status": "blocked; no optimization-improvement claim",
+    "status": "SDK invocation and built-in optimizer exercise completed; baseline retained, no production-improvement claim",
     "model": "MAI-Code-1.1-Flash",
     "tool": "Foundry WebSearchToolboxTool exposed over authenticated Toolbox MCP",
     "public_reference": "https://portal.311.nyc.gov/article/?kanumber=KA-01011",
@@ -11,7 +11,9 @@
       "Hosted agent deployment and signed exact-version tool-using invocation",
       "Native Foundry web-search discovery, invocation and citation capture",
       "Nine reviewed good, bad and adversarial code-evaluator labels: remote MAE 0",
-      "After native target failures, a fresh independent hosted diagnostic scored 1.0"
+      "After native target failures, a fresh independent hosted diagnostic scored 1.0",
+      "Plain agent invocation succeeded through Azure MCP and the Python SDK",
+      "Documented Python SDK optimizer flow completed with builtin.task_adherence and two candidates"
     ],
     "diagnostic_baseline": {
       "episodes": 34,
@@ -32,7 +34,7 @@
       "source": "https://learn.microsoft.com/azure/foundry/agents/how-to/create-optimizer-dataset#customize-evaluators-advanced",
       "documented_optimizer_types": ["Built-in evaluators", "Custom rubric evaluators"],
       "correction": "Ordinary code-evaluator calibration did not establish Agent Optimizer support. The helper now blocks code-evaluator optimization submissions.",
-      "next_nomination_metric": "builtin.task_adherence",
+      "verified_nomination_metric": "builtin.task_adherence plus explicit task-level criteria",
       "independent_acceptance": "Unchanged canonical factual grader, safety audit and matched latency/cost evidence",
       "causality_limit": "This support gap is distinct from DNS failures; it is not proven to explain all native-run failures"
     },
@@ -49,15 +51,41 @@
       "matched_comparison_completed": false,
       "candidate_deployed": false,
       "manual_replay_attempts": "Input-validation failures excluded; not successful end-to-end evidence",
-      "latest_blocker": "Advertised project data-plane hostname returns NXDOMAIN while Azure control plane reports the account Succeeded",
+      "connectivity": "Local DNS failures eventually cleared; Azure MCP and minimal Python SDK invocations both returned real responses",
       "causality_limit": "DNS failure was observed after native failures; it is not proven to explain every earlier failure",
-      "cleanup": "Job cancellation confirmed; native session cleanup pending data-plane recovery"
+      "builtin_run": {
+        "status": "succeeded",
+        "completed_candidates": 2,
+        "baseline_composite_score": 0.8020833333333334,
+        "candidate_1_composite_score": 0.9375,
+        "candidate_2_composite_score": 0.9208333333333334,
+        "shared_task_adherence_score": 1.0,
+        "composite_note": "Task-level criteria also contribute; the composite is not the shared task-adherence score alone",
+        "baseline_reported_average_latency_seconds": 53.715,
+        "best_reported_average_latency_seconds": 114.481,
+        "baseline_reported_average_tokens": 4958.166666666667,
+        "best_reported_average_tokens": 12163,
+        "telemetry_limit": "Native reported averages use different adaptive case subsets, not a controlled matched serving comparison",
+        "existing_output_replay": {
+          "matching": "Persistent reference case IDs, not per-run datasource row numbers",
+          "baseline_search_cases": 12,
+          "best_returned_search_cases": 9,
+          "baseline_factual_quality_on_same_nine_cases": 0.9527777777777777,
+          "best_factual_quality_on_those_search_cases": 1.0,
+          "held_out_validation": false
+        },
+        "monitoring": "Local Azure CLI credential refresh timed out; the existing cloud job continued. Final success and all candidates were retrieved afterward without resubmission.",
+        "decision": "Keep baseline version 1 serving. Higher search score alone does not justify promotion, particularly with higher reported latency and tokens."
+      },
+      "cleanup": "Completed run has no active or creating test sessions; useful agent/model/toolbox dependencies retained"
     },
     "focused_local_tests_passed": 76,
     "rft": "not requested or submitted",
     "cost": {
       "matched_savings": null,
       "total_serving_usd": null,
+      "optimizer_agent_policy_reference_estimate_usd": 0.1739884,
+      "estimate_basis": "312638 input and 92884 output policy tokens at frozen GitHub reference rates of USD 0.20 and 1.20 per million; not Azure invoice pricing",
       "limitation": "Native grounding/tool-side usage, optimizer and hosting charges are not fully priced; no total-dollar savings claim"
     }
   },
