@@ -9,3 +9,4 @@ __pycache__/
 service.py
 Dockerfile
 cloud.json
+hosted_eval.py

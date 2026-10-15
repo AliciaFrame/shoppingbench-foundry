@@ -227,6 +227,8 @@ The skill bundles a runnable hosted-agent starter, grader/evaluator and tool
 endpoints, isolated dataset/evaluation helpers, calibrated optimizer and RFT
 commands, sealed selection, and a standard-library cost calculator with
 Azure-first/GitHub-fallback pricing guidance. Follow its
+Matched reports compare quality, latency, serving savings, cost per successful
+task, and experiment investment/break-even without treating unknown costs as zero. Follow its
 [executable runbook](.github/skills/mai-agent-hillclimb/references/runbook.md).
 It does not require another Foundry skill to be loaded. Clone this
 repository to use its project skill, or copy the entire skill directory into

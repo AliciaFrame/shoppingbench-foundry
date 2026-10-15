@@ -8,6 +8,7 @@ from azure.ai.projects.models import VersionRefIndicator
 from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 from openai import APIError
+from workload import decode_trace, encode_input
 
 
 def run_episode(item):
@@ -36,23 +37,15 @@ def run_episode(item):
                 )
             with project.get_openai_client(agent_name=name, max_retries=0, timeout=300) as api:
                 response = api.responses.create(
-                    input=item["messages"],
+                    input=encode_input(item),
+                    metadata={"hillclimb_capture": "v1"},
                     extra_body={"agent_session_id": session.agent_session_id},
                 )
             if not response.output_text:
                 raise RuntimeError("Hosted agent returned an empty answer")
+            result = decode_trace(response.output_text)
             return {
-                "output_text": response.output_text,
-                "output_tools": [],
-                "calls": [
-                    {
-                        "model": os.environ["MAI_MODEL_DEPLOYMENT_NAME"],
-                        "purpose": "inference",
-                        "aggregated": True,
-                        "cache_write_mode": os.getenv("MAI_CACHE_WRITE_MODE", "none"),
-                        "raw_usage": response.usage.model_dump() if response.usage else None,
-                    }
-                ],
+                **result,
                 "hosted_agent": {
                     "name": name,
                     "version": version,

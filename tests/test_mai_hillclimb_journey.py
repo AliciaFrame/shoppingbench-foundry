@@ -1,9 +1,11 @@
+import asyncio
 import copy
 import importlib.util
 import json
 import shutil
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -15,6 +17,7 @@ SCRIPTS = SKILL / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 try:
     import cloud
+    import cost_report
     import journey
 finally:
     sys.path.pop(0)
@@ -39,7 +42,11 @@ def prepared(project):
 def write_adapter(project):
     path = project / "fake_adapter.py"
     path.write_text(
-        "import json\n"
+        "import json, hashlib, os\nfrom pathlib import Path\n"
+        "def policy_contract():\n"
+        "    return {'model': os.getenv('MAI_MODEL_OVERRIDE', 'policy'),\n"
+        "            'instructions': Path(__file__).with_name('instructions.md').read_text(),\n"
+        "            'domain_sha256': hashlib.sha256(Path(__file__).with_name('domain.py').read_bytes()).hexdigest()}\n"
         "def run_episode(item):\n"
         "    if item.get('fail'): raise RuntimeError('tool unavailable')\n"
         "    return {'output_text': json.dumps(item['expected']), 'calls': [\n"
@@ -49,6 +56,13 @@ def write_adapter(project):
         encoding="utf-8",
     )
     return path
+
+
+def write_cost_report(candidate, output):
+    book = journey.read_json(SKILL / "examples" / "prices.synthetic.json")
+    book["prices"]["policy"] = copy.deepcopy(book["prices"]["policy-default"])
+    result = cost_report.report(journey.read_jsonl(candidate), book)
+    journey.write_json(output, result)
 
 
 def make_receipts(project, prepared, split, adapter):
@@ -258,6 +272,8 @@ def test_identical_prompts_cannot_be_hidden_by_renaming_groups(project):
     rows[-1]["messages"] = copy.deepcopy(rows[0]["messages"])
     with pytest.raises(ValueError, match="Identical prompt"):
         journey.validate_data(rows)
+    rows[0]["context"] = {"document": "different independent document"}
+    journey.validate_data(rows)
 
 
 def test_training_instructions_are_bound_without_leaking_into_selection_data(project, prepared):
@@ -402,17 +418,7 @@ def test_final_selection_is_persisted_and_never_reopened(project, prepared):
     candidate = make_receipts(project, prepared, "development", adapter)
     approval = project / "approval.json"
     cost_report = project / "costs.json"
-    journey.write_json(
-        cost_report,
-        {
-            "stages": {
-                "base": {
-                    "episodes": 6,
-                    "serving_cost_complete": True,
-                }
-            }
-        },
-    )
+    write_cost_report(candidate, cost_report)
     journey.write_json(
         approval,
         {
@@ -460,17 +466,7 @@ def test_selection_rejects_changed_domain_and_unapproved_tradeoffs(project, prep
     candidate = make_receipts(project, prepared, "development", adapter)
     approval = project / "approval.json"
     cost_report = project / "costs.json"
-    journey.write_json(
-        cost_report,
-        {
-            "stages": {
-                "base": {
-                    "episodes": 6,
-                    "serving_cost_complete": True,
-                }
-            }
-        },
-    )
+    write_cost_report(candidate, cost_report)
     body = {
         "candidate_sha256": journey.digest(candidate),
         "quality": True,
@@ -553,9 +549,15 @@ def test_rft_plan_gates_calibration_data_and_endpoint_parity(project, prepared):
     combined, calibration = calibration_fixture(project, prepared)
     config = journey.read_json(SKILL / "examples" / "cloud.example.json")
     config["rft"]["min_train_examples"] = 3
+    config["rft"]["calibration_adapter"] = "fake_adapter.py"
+    config["rft"]["source_deployment"] = "policy"
     config["rft"]["capability_evidence"].update(
         source="verified-test-capability",
-        checked_at="2026-10-14",
+        checked_at=datetime.now(UTC).date().isoformat(),
+        model=config["rft"]["model"],
+        source_deployment="policy",
+        region=config["region"],
+        training_type=config["rft"]["training_type"],
         reinforcement_supported=True,
         agentic_supported=True,
     )
@@ -775,7 +777,12 @@ def test_optimizer_sdk_requires_calibrated_frozen_judge(project, prepared, monke
         "config": {"evaluator_sha256": journey.digest(project / "evaluator.md")},
         "project_endpoint": config["project_endpoint"],
         "evaluator_settings": {
+            "evaluator_name": config["optimizer"]["evaluator"],
             "evaluator_version": config["optimizer"]["evaluator_version"],
+            "data_mapping": {
+                key: "{{item." + value + "}}"
+                for key, value in config["optimizer"]["data_mapping"].items()
+            },
             "initialization_parameters": {
                 "model": config["optimizer"]["eval_model"],
                 "threshold": 0.75,
@@ -927,3 +934,539 @@ def test_endpoint_grader_invariants_dominate_partial_credit(project):
     invalid["weights"] = {"team": float("nan"), "severity": 1}
     with pytest.raises(ValueError, match="finite"):
         grader({"output_text": "{}"}, invalid)
+
+
+def validated_optimizer(project, prepared):
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    config["optimizer"]["dataset"] = str(prepared / "optimizer.jsonl")
+    path = project / "validated-optimizer.json"
+    journey.write_json(
+        path,
+        {
+            "passed": True,
+            "config": {"evaluator_sha256": journey.digest(project / "evaluator.md")},
+            "project_endpoint": config["project_endpoint"],
+            "evaluator_settings": {
+                "evaluator_name": config["optimizer"]["evaluator"],
+                "evaluator_version": config["optimizer"]["evaluator_version"],
+                "initialization_parameters": {
+                    "model": config["optimizer"]["eval_model"],
+                    "threshold": config["optimizer"]["pass_threshold"],
+                },
+                "data_mapping": {
+                    key: "{{item." + value + "}}"
+                    for key, value in config["optimizer"]["data_mapping"].items()
+                },
+            },
+        },
+    )
+    return config, path
+
+
+def test_optimizer_preserves_history_context_reference_criteria_and_skills(project):
+    rows = journey.read_jsonl(project / "cases.example.jsonl")
+    row = rows[0]
+    row["messages"] = [
+        {"role": "user", "content": "Earlier request"},
+        {"role": "assistant", "content": "Earlier answer"},
+        {"role": "user", "content": "Now use the supplied document"},
+    ]
+    row["context"] = {"document": "model-visible evidence"}
+    row["expected"] = {"answer": "reference-only answer"}
+    row["criteria"] = [{"name": "grounded", "instruction": "Cite the supplied document"}]
+    journey.write_jsonl(project / "rich.jsonl", rows)
+    prepared = project / "rich-prepared"
+    journey.prepare(project / "rich.jsonl", prepared)
+    skill = project / "skills" / "grounding" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: grounding\ndescription: Cite evidence\n---\nFull skill body\n")
+    config, validation = validated_optimizer(project, prepared)
+    plan = cloud.optimizer_plan(project, config, validation)
+    optimization = plan["optimization_configuration"]
+    case = optimization["evaluation_configuration"]["training_set"]["source"]["test_cases"][0]
+    decode = journey.load_hook(project / "workload.py", "decode_input")
+    model_input = decode(case["query"])
+    assert model_input["messages"] == row["messages"]
+    assert model_input["context"] == row["context"]
+    assert "reference-only answer" not in case["query"]
+    reference = json.loads(case["ground_truth"])
+    assert reference["expected"] == row["expected"] and reference["criteria"] == row["criteria"]
+    assert optimization["baseline_agent_configuration"]["skills"][0]["body"] == "Full skill body"
+    assert "skills" in optimization["agent_optimization_space"]["target_attributes"]
+
+
+def test_optimizer_rejects_different_evaluator_identity_even_when_version_matches(
+    project, prepared
+):
+    config, validation = validated_optimizer(project, prepared)
+    config["optimizer"]["evaluator"] = "different-evaluator"
+    with pytest.raises(ValueError, match="changed after validation"):
+        cloud.optimizer_plan(project, config, validation)
+
+
+def test_cost_report_is_bound_to_exact_receipts_and_recomputed_metrics(project, prepared):
+    adapter = write_adapter(project)
+    receipts = make_receipts(project, prepared, "development", adapter)
+    output = project / "costs.json"
+    write_cost_report(receipts, output)
+    rows, recorded = journey.read_jsonl(receipts), journey.read_json(output)
+    cost_report.verify_report(rows, recorded)
+    unrelated = copy.deepcopy(rows)
+    unrelated[0]["calls"][0]["raw_usage"]["output_tokens"] += 100
+    with pytest.raises(ValueError, match="exact evaluation receipts"):
+        cost_report.verify_report(unrelated, recorded)
+    recorded["stages"]["base"]["serving_cost"] = 0
+    with pytest.raises(ValueError, match="recomputed"):
+        cost_report.verify_report(rows, recorded)
+
+
+def test_rft_calibration_rejects_mixed_policy_and_implementation(project, prepared):
+    receipts, _calibration = calibration_fixture(project, prepared)
+    rows = journey.read_jsonl(receipts)
+    rows[0]["policy_contract"]["model"] = "different-model"
+    rows[0]["policy_sha256"] = journey.value_digest(rows[0]["policy_contract"])
+    journey.write_jsonl(receipts, rows)
+    result = journey.calibrate(
+        receipts,
+        project / "grader.py",
+        project / "labels.example.jsonl",
+        project / "mixed.json",
+        min_cases=3,
+    )
+    assert not result["eligible"]
+    assert any("frozen policy" in reason for reason in result["reasons"])
+
+
+def test_rft_cannot_reuse_calibration_after_changing_model_or_domain(
+    project, prepared, monkeypatch
+):
+    combined, calibration = calibration_fixture(project, prepared)
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    config["rft"].update(calibration_adapter="fake_adapter.py", source_deployment="policy")
+    monkeypatch.setenv("MAI_MODEL_OVERRIDE", "different-checkpoint")
+    with pytest.raises(ValueError, match="changed after calibration"):
+        cloud.rft_plan(
+            project, config, prepared, calibration, combined, project / "labels.example.jsonl", None
+        )
+    monkeypatch.delenv("MAI_MODEL_OVERRIDE")
+    with (project / "domain.py").open("a", encoding="utf-8") as handle:
+        handle.write("\n# Changed tool implementation\n")
+    with pytest.raises(ValueError, match="changed after calibration"):
+        cloud.rft_plan(
+            project, config, prepared, calibration, combined, project / "labels.example.jsonl", None
+        )
+
+
+def test_model_configuration_beats_bootstrap_deployment_and_override_is_explicit(
+    project, monkeypatch
+):
+    monkeypatch.setenv("MAI_MODEL_DEPLOYMENT_NAME", "base-deployment")
+    monkeypatch.setenv("MAI_OPENAI_BASE_URL", "https://model.example/openai/v1")
+    hook = journey.load_hook(project / "agent.py", "policy_contract")
+    from azure.ai.agentserver.optimization import OptimizationConfig
+
+    monkeypatch.setitem(
+        hook.__globals__,
+        "configuration",
+        lambda: OptimizationConfig(
+            model="selected-checkpoint",
+            instructions="Selected instructions",
+            tool_definitions=[],
+        ),
+    )
+    assert hook()["model"] == "selected-checkpoint"
+    monkeypatch.setenv("MAI_MODEL_OVERRIDE", "explicit-override")
+    assert hook()["model"] == "explicit-override"
+    assert hook()["model_override"] == "explicit-override"
+
+
+def test_hosted_adapter_preserves_per_call_usage_tool_results_and_policy(project, monkeypatch):
+    monkeypatch.setenv("MAI_HOSTED_AGENT_NAME", "test-agent")
+    monkeypatch.setenv("MAI_HOSTED_AGENT_VERSION", "7")
+    monkeypatch.setenv("MAI_PROJECT_ENDPOINT", "https://project.example")
+    run = journey.load_hook(project / "hosted_eval.py", "run_episode")
+    trace = {
+        "hillclimb_trace_version": 1,
+        "output_text": "answer",
+        "output_tools": [{"name": "lookup", "arguments": {"id": "a"}, "output": {"fact": 1}}],
+        "calls": [
+            {
+                "model": "selected",
+                "purpose": "inference",
+                "raw_usage": {"input_tokens": 22, "output_tokens": 3},
+            }
+        ],
+        "policy_contract": {"model": "selected", "tools": ["lookup"]},
+    }
+    requests, stopped = [], []
+
+    def create_response(**kwargs):
+        requests.append(kwargs)
+        return SimpleNamespace(output_text=json.dumps(trace))
+
+    project_api = SimpleNamespace(
+        agents=SimpleNamespace(
+            get_version=lambda **_kwargs: SimpleNamespace(status="active"),
+            create_session=lambda **_kwargs: SimpleNamespace(
+                status="active", agent_session_id="s1"
+            ),
+            stop_session=lambda **kwargs: stopped.append(kwargs),
+        ),
+        get_openai_client=lambda **_kwargs: Context(
+            SimpleNamespace(responses=SimpleNamespace(create=create_response))
+        ),
+    )
+    monkeypatch.setitem(run.__globals__, "AIProjectClient", lambda **_kwargs: Context(project_api))
+    item = {
+        "messages": [
+            {"role": "assistant", "content": "Earlier"},
+            {"role": "user", "content": "Now"},
+        ],
+        "context": {"document": "evidence"},
+        "expected": {"secret_reference": "not model input"},
+    }
+    result = run(item)
+    assert result["output_tools"] == trace["output_tools"] and result["calls"] == trace["calls"]
+    assert requests[0]["metadata"] == {"hillclimb_capture": "v1"}
+    assert "secret_reference" not in requests[0]["input"]
+    assert stopped == [{"agent_name": "test-agent", "session_id": "s1"}]
+    trace["hillclimb_trace_version"] = 0
+    with pytest.raises(ValueError, match="versioned"):
+        run(item)
+
+
+def test_semantic_grader_usage_is_charged_as_evaluation_not_serving(project, prepared):
+    adapter = write_adapter(project)
+    grader = project / "usage_grader.py"
+    grader.write_text(
+        "def grade(sample,item): return 0.5\n"
+        "def grade_with_usage(sample,item):\n"
+        "    return {'score':0.5,'calls':[{'model':'judge','purpose':'evaluation',\n"
+        "      'pricing_key':'judge','raw_usage':{'input_tokens':30,'output_tokens':10,\n"
+        "      'input_tokens_details':{'cached_tokens':0}}}]}\n",
+        encoding="utf-8",
+    )
+    output = project / "semantic.jsonl"
+    journey.evaluate(prepared / "development.jsonl", adapter, grader, output, "semantic")
+    rows = journey.read_jsonl(output)
+    assert [call["purpose"] for call in rows[0]["calls"]] == ["inference", "evaluation"]
+    assert rows[0]["metrics"]["quality"] == 0.5
+
+
+def savings_fixture(project, prepared):
+    adapter = write_adapter(project)
+    receipts = make_receipts(project, prepared, "development", adapter)
+    baseline = journey.read_jsonl(receipts)
+    for row in baseline:
+        row["stage"] = "baseline"
+        row["calls"][0]["pricing_key"] = "policy-default"
+        row["latency_seconds"] = 2
+    candidate = copy.deepcopy(baseline)
+    for row in candidate:
+        row["stage"] = "optimized"
+        row["episode_id"] = "optimized:" + row["episode_id"]
+        row["calls"][0]["raw_usage"]["output_tokens"] = 10
+        row["calls"][0]["usage"]["output_tokens"] = 10
+        row["latency_seconds"] = 1
+    book = journey.read_json(SKILL / "examples" / "prices.synthetic.json")
+    return baseline, candidate, book
+
+
+def test_matched_savings_reports_quality_latency_cost_success_and_break_even(project, prepared):
+    baseline, candidate, book = savings_fixture(project, prepared)
+    charges = [
+        {
+            "stage": "optimized",
+            "purpose": "training",
+            "amount": 0.01,
+            "currency": "USD",
+            "label": "Test training",
+            "source": "synthetic test quote",
+        }
+    ]
+    result = cost_report.savings_report(
+        baseline + candidate,
+        book,
+        "baseline",
+        charges=charges,
+        ledger_complete=True,
+    )
+    comparison = result["comparisons"]["optimized"]
+    assert comparison["quality_delta"] == 0 and comparison["latency_ratio"] == 0.5
+    assert comparison["serving_savings_per_task"] == pytest.approx(0.00002)
+    assert comparison["incremental_experiment_investment"] == 0.01
+    assert comparison["break_even_tasks"] == 500
+    assert comparison["forecast_net_savings"] == pytest.approx(0.01)
+    assert result["stages"]["optimized"]["successful_tasks"] == 6
+    cost_report.verify_report(candidate, result)
+
+
+def test_savings_does_not_invent_roi_or_drop_failures(project, prepared):
+    baseline, candidate, book = savings_fixture(project, prepared)
+    candidate[0].update(status="failed", usage_complete=False)
+    candidate[0]["metrics"]["quality"] = 0
+    result = cost_report.savings_report(baseline + candidate, book, "baseline")
+    comparison = result["comparisons"]["optimized"]
+    assert result["stages"]["optimized"]["episodes"] == 6
+    assert result["stages"]["optimized"]["successful_tasks"] == 5
+    assert comparison["serving_savings_percent"] is None
+    assert comparison["break_even_tasks"] is None and comparison["forecast_net_savings"] is None
+    with pytest.raises(ValueError, match="identical scheduled"):
+        cost_report.savings_report(baseline + candidate[:-1], book, "baseline")
+
+
+def test_optimizer_and_rft_receipts_feed_experiment_ledger(project, prepared):
+    baseline, candidate, book = savings_fixture(project, prepared)
+    operation = {
+        "stage": "optimized",
+        "kind": "optimizer",
+        "receipt_sha256": "receipt-proof",
+        "model_pricing_keys": {"policy": "policy-default"},
+        "receipt": {
+            "job": {
+                "optimization_configuration": {
+                    "baseline_agent_configuration": {"current_model": "policy"}
+                },
+                "result": {
+                    "token_usage": [
+                        {
+                            "stage": "agent",
+                            "input_tokens": 100,
+                            "cached_tokens": 0,
+                            "output_tokens": 20,
+                        },
+                        {
+                            "stage": "evaluation",
+                            "model": "unknown-judge",
+                            "input_tokens": 40,
+                            "cached_tokens": 0,
+                            "output_tokens": 10,
+                        },
+                    ]
+                },
+            }
+        },
+    }
+    operations = [
+        operation,
+        {
+            "stage": "optimized",
+            "kind": "rft",
+            "receipt_sha256": "training-proof",
+            "receipt": {"job_id": "ft-test"},
+        },
+    ]
+    result = cost_report.savings_report(
+        baseline + candidate, book, "baseline", operations=operations, ledger_complete=True
+    )
+    stage = result["stages"]["optimized"]
+    assert stage["known_cost_by_purpose"]["optimizer"] > 0
+    assert stage["serving_cost_complete"] and not stage["experiment_cost_complete"]
+    assert {charge["purpose"] for charge in stage["unpriced_charges"]} == {"evaluation", "training"}
+    assert result["comparisons"]["optimized"]["break_even_tasks"] is None
+
+
+def test_hosted_real_response_events_keep_normal_output_and_opt_in_trace(project, monkeypatch):
+    handler = journey.load_hook(project / "agent.py", "handler")
+    from azure.ai.agentserver.responses import CreateResponse
+
+    trace = {
+        "output_text": '{"answer":"done"}',
+        "output_tools": [{"name": "lookup", "arguments": {"id": "one"}, "output": "fact"}],
+        "calls": [{"model": "selected", "raw_usage": None}],
+        "policy_contract": {"model": "selected"},
+    }
+    received = []
+
+    def run(item):
+        received.append(item)
+        return trace
+
+    monkeypatch.setitem(handler.__globals__, "run_episode", run)
+
+    async def input_text():
+        return "Question"
+
+    async def invoke(metadata):
+        request = CreateResponse(input="Question", metadata=metadata)
+        context = SimpleNamespace(response_id="resp_test", get_input_text=input_text)
+        events = await handler(request, context, None)
+        outputs = [event async for event in events]
+        return outputs[-1]["response"]["output"][0]["content"][0]["text"]
+
+    assert asyncio.run(invoke({})) == trace["output_text"]
+    captured = json.loads(asyncio.run(invoke({"hillclimb_capture": "v1"})))
+    assert captured["hillclimb_trace_version"] == 1
+    assert captured["output_tools"] == trace["output_tools"]
+    assert captured["policy_contract"] == trace["policy_contract"]
+    assert received[0] == {"messages": [{"role": "user", "content": "Question"}]}
+
+
+def test_deterministic_grader_enforces_tool_order_arguments_and_forbidden_actions(project):
+    grade = journey.load_hook(project / "grader.py", "grade")
+    item = {
+        "expected": {"answer": "done"},
+        "required_tool_calls": [
+            {"name": "search", "arguments": {"q": "evidence"}},
+            {"name": "inspect"},
+        ],
+        "forbidden_tools": ["purchase"],
+    }
+    sample = {
+        "output_text": '{"answer":"done"}',
+        "output_tools": [
+            {"name": "search", "arguments": {"q": "evidence"}},
+            {"name": "inspect"},
+        ],
+    }
+    assert grade(sample, item) == 1
+    sample["output_tools"].reverse()
+    assert grade(sample, item) == 0
+    sample["output_tools"].reverse()
+    sample["output_tools"].append({"name": "purchase"})
+    assert grade(sample, item) == 0
+
+
+def test_training_materializes_context_once_and_resolves_full_policy_instructions(project):
+    adapter = write_adapter(project)
+    rows = journey.read_jsonl(project / "cases.example.jsonl")
+    row = next(row for row in rows if row["split"] == "train")
+    row["context"] = {"document": "Serving and training must both see this"}
+    journey.write_jsonl(project / "context.jsonl", rows)
+    prepared = project / "prepared-context"
+    journey.prepare(
+        project / "context.jsonl", prepared, project / "tools.json", policy_adapter=adapter
+    )
+    train = journey.read_jsonl(prepared / "train.jsonl")[0]
+    visible = journey.load_hook(project / "workload.py", "model_messages")(train)
+    assert visible[0]["role"] == "system"
+    assert sum("Serving and training" in message["content"] for message in visible) == 1
+    assert train["context_in_messages"]
+    assert not any("expected" in message["content"] for message in visible)
+
+
+def test_training_and_serving_tool_trace_shapes_share_the_same_process_grade(project):
+    grade = journey.load_hook(project / "grader.py", "grade")
+    item = {
+        "expected": {"answer": "done"},
+        "required_tool_calls": [{"name": "lookup", "arguments": {"id": "one"}}],
+    }
+    serving = {
+        "output_text": '{"answer":"done"}',
+        "output_tools": [{"name": "lookup", "arguments": {"id": "one"}}],
+    }
+    training = {
+        "output_text": '{"answer":"done"}',
+        "output_tools": [
+            {"type": "function", "function": {"name": "lookup", "arguments": '{"id":"one"}'}}
+        ],
+    }
+    assert grade(serving, item) == grade(training, item) == 1
+    training["output_tools"][0]["function"]["arguments"] = "invalid"
+    assert grade(training, item) == 0
+
+
+def test_optimizer_plan_round_trips_through_real_sdk_without_losing_references(project, prepared):
+    from azure.ai.projects.models import AgentOptimizationJob
+
+    config, validation = validated_optimizer(project, prepared)
+    plan = cloud.optimizer_plan(project, config, validation)
+    serialized = AgentOptimizationJob(plan).as_dict()
+    expected = plan["optimization_configuration"]["evaluation_configuration"]
+    actual = serialized["optimization_configuration"]["evaluation_configuration"]
+    assert (
+        actual["training_set"]["source"]["test_cases"]
+        == expected["training_set"]["source"]["test_cases"]
+    )
+    assert actual["evaluators"] == expected["evaluators"]
+
+
+def test_endpoint_plan_assigns_identity_after_creation_and_keeps_keys_out_of_config(project):
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    config["endpoint_environment"] = {
+        "MAI_JUDGE_BASE_URL": "https://judge.example/openai/v1",
+        "MAI_JUDGE_DEPLOYMENT_NAME": "judge",
+        "MAI_JUDGE_PRICING_KEY": "judge-price",
+    }
+    plan = cloud.cli_plan("deploy-endpoints", project, config)
+    assert "up" in plan[0] and "identity" in plan[1]
+    assert "MAI_JUDGE_PRICING_KEY=judge-price" in plan[-1]
+    config["endpoint_environment"]["MAI_JUDGE_API_KEY"] = "must-not-be-in-json"
+    with pytest.raises(ValueError, match="credentials"):
+        cloud.cli_plan("deploy-endpoints", project, config)
+
+
+def test_savings_cli_produces_matched_three_stage_report(project, prepared):
+    baseline, candidate, book = savings_fixture(project, prepared)
+    rft = copy.deepcopy(candidate)
+    for row in rft:
+        row["stage"] = "rft"
+        row["episode_id"] = "rft:" + row["episode_id"]
+    files = []
+    for stage, rows in (("base", baseline), ("optimized", candidate), ("rft", rft)):
+        path = project / f"{stage}-savings.jsonl"
+        journey.write_jsonl(path, rows)
+        files.append(path)
+    price_path = project / "prices.json"
+    journey.write_json(price_path, book)
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-S",
+            str(SCRIPTS / "cost_report.py"),
+            "--receipts",
+            *map(str, files),
+            "--prices",
+            str(price_path),
+            "--baseline-stage",
+            "baseline",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    report = json.loads(result.stdout)
+    assert set(report["comparisons"]) == {"optimized", "rft"}
+    assert report["comparisons"]["rft"]["serving_savings_per_task"] > 0
+    assert report["comparisons"]["rft"]["break_even_tasks"] is None
+
+
+def test_deployment_rewires_selected_checkpoint_instead_of_leaving_base_manifest(project):
+    import yaml
+
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    config["model"]["deployment"] = "checkpoint-deployment"
+    config["model_override"] = "checkpoint-deployment"
+    (project / "azure.yaml").write_text(
+        "services:\n  agent:\n    host: azure.ai.agent\n"
+        "    env:\n      MAI_MODEL_DEPLOYMENT_NAME: base\n",
+        encoding="utf-8",
+    )
+    cloud.wire_hosted(project, config)
+    manifest = yaml.safe_load((project / "azure.yaml").read_text(encoding="utf-8"))
+    environment = manifest["services"]["agent"]["env"]
+    assert environment["MAI_MODEL_DEPLOYMENT_NAME"] == "checkpoint-deployment"
+    assert environment["MAI_MODEL_OVERRIDE"] == "checkpoint-deployment"
+    metadata = yaml.safe_load((project / "metadata.yaml").read_text(encoding="utf-8"))
+    assert metadata["model"] == "checkpoint-deployment"
+    config["model_override"] = None
+    cloud.wire_hosted(project, config)
+    manifest = yaml.safe_load((project / "azure.yaml").read_text(encoding="utf-8"))
+    assert "MAI_MODEL_OVERRIDE" not in manifest["services"]["agent"]["env"]
+
+
+def test_semantic_judging_latency_is_not_reported_as_serving_latency(project, prepared):
+    adapter = write_adapter(project)
+    grader = project / "slow_grader.py"
+    grader.write_text(
+        "import time\ndef grade(sample,item):\n    time.sleep(0.02)\n    return 1.0\n",
+        encoding="utf-8",
+    )
+    output = project / "separate-latency.jsonl"
+    journey.evaluate(prepared / "development.jsonl", adapter, grader, output, "base")
+    for row in journey.read_jsonl(output):
+        assert row["evaluation_latency_seconds"] >= 0.02
+        assert row["latency_seconds"] < row["evaluation_latency_seconds"]
+        assert row["episode_elapsed_seconds"] == pytest.approx(
+            row["latency_seconds"] + row["evaluation_latency_seconds"]
+        )

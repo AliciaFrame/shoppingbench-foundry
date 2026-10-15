@@ -43,16 +43,26 @@ The scaffold refuses existing destinations and includes a project-local
 | `tool-probes.example.jsonl` | Probe every tool, representative arguments, boundaries, and isolated state |
 
 For unstructured or semantic tasks, replace the JSON-field grader with the
-domain rubric. A Python training grader cannot call a judge or external API:
+bundled `semantic_grader.py` (copy it to `grader.py`) and customize
+`judge-rubric.md`. Set `MAI_JUDGE_BASE_URL`, `MAI_JUDGE_DEPLOYMENT_NAME` and
+`MAI_JUDGE_PRICING_KEY`; use Entra or the optional `MAI_JUDGE_API_KEY`.
+The evaluation adapter records these judge calls separately from serving.
+A Python training grader cannot call a judge or external API:
 use the endpoint path for such rewards. Do not reward a valid format instead
 of task correctness. The example's positive field weights give partial credit;
 its invariants override partial credit.
+It also supports `required_tool_calls` (ordered subset matches on name,
+arguments and/or result) and `forbidden_tools` as zero-reward process gates.
 
 Each case has `id`, `group`, `split`, `messages` ending in a user turn, and
 reference fields needed by the grader. Split names are `optimizer`, `train`,
 `validation`, `development`, `final`. Assign connected groups before splitting;
 renaming IDs does not make related documents/customers/sessions independent.
 The helper rejects shared groups and identical messages across splits.
+Use `context` for model-visible documents/state; keep expected answers,
+criteria and other references outside it. Optimization sends the complete
+message history/context in a versioned envelope and reference data separately
+as `ground_truth`. The runtime unwraps only model-visible content, never labels.
 
 ```powershell
 python $J prepare --data "$P\cases.jsonl" --tools "$P\tools.json" `
@@ -64,6 +74,14 @@ optimizer rows, and adds selected system instructions to training/validation
 rows only. It rejects conflicting existing system messages. Prepare again in
 a **new** directory after selecting a different policy; recalibrate that data.
 Never put reference answers into prompts merely to satisfy an evaluator.
+
+For RFT, prepare from the **resolved selected policy**, including skill bodies:
+use `--policy-adapter "$P\agent.py"` instead of `--instructions`. This requires
+runtime packages and actual model configuration to be set first. Task context
+is materialized into training messages exactly once. Calibration receipts must
+record the same model, endpoint, instructions, tools, domain implementation,
+runtime limits and implementation fingerprint; changing any requires new
+rollouts and calibration.
 
 Install cloud/runtime dependencies in the chosen isolated environment:
 
@@ -139,6 +157,16 @@ $env:MAI_HOSTED_AGENT_NAME = "<agent-name>"
 $env:MAI_HOSTED_AGENT_VERSION = "<exact-active-version>"
 ```
 
+`MAI_MODEL_DEPLOYMENT_NAME` bootstraps an unconfigured agent. A loaded candidate's
+model takes precedence. To deliberately compare a different checkpoint, set
+`MAI_MODEL_OVERRIDE`; this explicit override is recorded in policy provenance.
+Do not assume changing a deployment environment variable overrides a loaded
+candidate. Clear the override before comparing the original policy.
+For deployment, set the equivalent explicit `model_override` in `cloud.json`
+when pinning a checkpoint over a loaded candidate. `deploy-hosted` rewires the
+manifest/model metadata from the selected configuration before packaging; a
+local process override alone is not a deployed configuration.
+
 Invoke with `hosted_eval.py` using the evaluation command below. It creates an
 exact-version session, invokes it, and stops its compute even on failure.
 Readiness alone is not a successful smoke test.
@@ -149,6 +177,10 @@ Use `agent.py` for per-model-call usage and tool traces, or `hosted_eval.py` for
 the real hosted path. An existing project can supply its own
 `run_episode(item) -> {output_text, output_tools, calls}` adapter. Each call
 records model, purpose, and raw Responses usage. Never fabricate absent usage.
+For RFT, custom adapters must also return `policy_contract` or expose a
+`policy_contract()` hook describing the resolved model, instructions, tools,
+domain implementation and runtime settings. Missing or mixed policy provenance
+blocks calibration. The bundled local and hosted adapters already implement it.
 
 ```powershell
 & $PY $J evaluate --data "$P\prepared\development.jsonl" `
@@ -160,9 +192,12 @@ records model, purpose, and raw Responses usage. Never fabricate absent usage.
 
 Freeze a source-backed `prices.json` using the pricing reference, not the
 synthetic example. Serving usage, judge/optimizer calls, training and hosting
-are different costs. The hosted adapter exposes aggregate token usage, not
-per-call context sizes; context-tiered pricing therefore remains unverifiable
-until a per-call trace is available. Runtime failures score zero, stay in the
+are different costs. The bundled hosted evaluator requests an evaluation-only
+trace envelope, preserving tool names/arguments/results and per-model-call
+usage and policy identity. Ordinary user calls still return only the answer.
+An older or custom hosted runtime without this contract fails explicitly;
+it must implement the trace adapter rather than invent an empty tool trace.
+Runtime failures score zero, stay in the
 denominator, emit explicit errors, and make `evaluate` exit nonzero.
 
 Register the customized `evaluator.md`, then submit the explicit optimizer spec:
@@ -186,6 +221,12 @@ query-shaped search dataset, evaluator and candidate limit. Optimizer catalog
 bindings currently expose `query`, `response`, `tool_calls`, `tool_definitions`;
 do not register a `sample/item` evaluator as an optimizer evaluator. The
 registered prompt evaluator uses `query/response` and returns `{"result": score}`.
+It can use `ground_truth` for each example's references. Configure canonical
+runtime fields in `optimizer.data_mapping`; unsupported aliases are rejected.
+Skills from the metadata's `skill_dir` (default `skills`) are included with
+their names, descriptions and bodies. Hosted optimizer service tool telemetry
+may still depend on platform instrumentation; independently validate process
+quality using the explicit trace adapter rather than trusting absent traces.
 The SDK path explicitly supplies its judge deployment, threshold and version;
 setting only an optimizer-wide eval model is insufficient for custom evaluators.
 Known-label validation must complete with actual numeric scores and acceptable
@@ -242,6 +283,9 @@ gates, not universal statistical proof: set domain thresholds before seeing
 results. A constant reward or failed parity blocks submission. Test omissions,
 incorrect tool arguments, injection, truncation and fluent-but-wrong answers.
 Do not weaken a rubric merely to manufacture variation.
+For a semantic grader, observed regrading disagreement is bounded by the declared
+MAE tolerance rather than requiring exact deterministic equality. Calibration
+judge calls are recorded in the calibration report for the experiment ledger.
 
 For endpoint grading/tool calling, provision the bundled authenticated service:
 
@@ -262,6 +306,12 @@ The deployment uses secret references and 2-5 replicas; inspect capacity,
 concurrency and external tool side effects for your workload. In a partial
 deployment, reconcile the registry build and set `service_image` (immutable
 digest) and `service_registry` to reuse it instead of rebuilding.
+For semantic endpoints, set the public judge configuration in
+`endpoint_environment`. Deployment assigns a system identity; grant only its
+required model-inference role using the returned identity as
+`inference_principal_id`. No API keys belong in this JSON. Use
+`rft.parity_tolerance` for predeclared semantic-score tolerance (default zero
+for deterministic parity), and calibrate it before training.
 
 Confirm current RFT model/region/SKU and agentic-access support; record dated
 capability evidence in configuration. Match each example's function schemas
@@ -285,6 +335,10 @@ automatically retry. A monitoring timeout resumes the **same** job.
 `grader_type: endpoint` adds runtime secret headers without storing them.
 Neither model catalog membership nor a historical success proves current RFT
 access. The tiny incident example is expected to fail learnability gates.
+Capability evidence must name the exact training model, inference deployment,
+region and training SKU, and be no older than seven days. This is an explicit
+verified-access attestation: private agentic-RFT feature flags are not inferred
+from a generic catalog listing. `rft.source_deployment` must match calibration.
 
 Use `deploy-checkpoint --training-receipt "$P\rft.json"` after success, with
 `model.name` set to a recorded checkpoint/model ID, the supported deployment
@@ -292,6 +346,12 @@ SKU, and a unique deployment name. Compare several justified checkpoints
 using the same adapter/grader/development data, not training reward.
 
 ## Select and seal
+
+First generate the matched quality/latency/cost/savings comparison described
+in [pricing and cost](pricing.md#matched-savings-and-investment). It can compare
+baseline, optimized and RFT stages together, importing optimizer and calibration
+usage and explicit training/hosting charges. Unknown investment costs suppress
+break-even and net-savings claims; cheap but unsuccessful tasks are not wins.
 
 Create an acceptance JSON containing actual `candidate_sha256`,
 `cost_report_sha256`, booleans `quality`, `safety`, `latency`, `cost`, and a
@@ -312,6 +372,9 @@ Selection verifies implementation/model, grader, cost-report and dataset
 fingerprints. An exclusive seal is persisted before final inference; failures
 do not unlock it. Do not reopen final data to choose a different candidate.
 Deploy the selected exact version/weights and perform a separate smoke test.
+The cost report must match the exact candidate receipt fingerprint, and its
+metrics are recomputed from the frozen price snapshot and ledger. Matching
+only the episode count is no longer sufficient.
 
 ## Resume and clean up
 

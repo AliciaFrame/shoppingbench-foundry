@@ -118,6 +118,9 @@ python <SKILL_ROOT>\scripts\cost_report.py `
 It supports multiple models/call purposes, cached reads and writes, explicit
 context tiers, incomplete usage/rates, and separate run-level charges. It does
 not fetch or invent prices, judge quality, or approve cloud actions.
+For matched baseline/optimized/RFT savings, add `--baseline-stage` and supply
+each stage's receipts. The pricing reference covers operation-ledger ingestion,
+cost per successful task, savings, and guarded break-even/ROI projections.
 
 An offline demonstration is included:
 

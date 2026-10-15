@@ -1,0 +1,40 @@
+[
+  {
+    "path": "optimizer.json",
+    "stage": "agent-optimized",
+    "kind": "optimizer",
+    "model_pricing_keys": {
+      "<policy-deployment>": "policy",
+      "<judge-model-id-from-job-usage>": "evaluation",
+      "<optimizer-model-id-from-job-usage>": "optimizer"
+    },
+    "charges": [
+      {
+        "purpose": "hosting",
+        "label": "Experiment hosting and endpoint service period",
+        "amount": null,
+        "currency": "USD",
+        "source": "pending actual Azure usage or approved quote"
+      }
+    ]
+  },
+  {
+    "path": "calibration.json",
+    "stage": "rft",
+    "kind": "calibration"
+  },
+  {
+    "path": "rft.json",
+    "stage": "rft",
+    "kind": "rft",
+    "charges": [
+      {
+        "purpose": "training",
+        "label": "Training job",
+        "amount": null,
+        "currency": "USD",
+        "source": "pending billed training usage"
+      }
+    ]
+  }
+]

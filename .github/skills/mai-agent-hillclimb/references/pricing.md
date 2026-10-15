@@ -137,3 +137,63 @@ plus experiment cost and any approved training amortization/break-even
 analysis. A shorter output does not guarantee fewer total tokens: repeated
 input context and expensive reasoning matter. Never claim an unpriced
 candidate is the cheapest.
+
+## Matched savings and investment
+
+The same bundled calculator compares two or more stages, without dropping
+failed episodes:
+
+```powershell
+python <SKILL_ROOT>\scripts\cost_report.py `
+  --receipts <run>\baseline.jsonl <run>\optimized.jsonl <run>\rft.jsonl `
+  --baseline-stage baseline --success-threshold 0.75 --forecast-tasks 100000 `
+  --prices <run>\prices.json --operations <run>\operations.json `
+  --charges <run>\charges.json --ledger-complete --output <run>\savings.json
+```
+
+Omit the RFT receipts if training was not justified. Cases, rollout counts,
+data, grader, adapter and connected groups must match across stages.
+The report includes quality delta, latency ratio, serving savings per task
+and per 1,000 tasks, percentage savings, cost per successful task at the
+declared quality threshold, incremental experiment investment, break-even
+task volume, and projected net savings. Failed attempts remain in serving
+cost and in the scheduled denominator. Unknown costs stay null, not zero.
+Serving latency ends when the agent returns; judge/evaluation latency is
+recorded separately and does not inflate the model's answer latency.
+
+Start from [the operation-ledger example](../examples/operations.example.json).
+It imports saved optimizer `token_usage` by purpose and model, semantic
+calibration judge calls, and RFT receipts. Map the actual model identifiers in
+job usage to pricebook keys. Aggregate optimizer usage cannot establish
+per-call context tiers: a bounded/context-tiered rate stays unpriced. A
+missing training charge automatically becomes an unknown training cost.
+Endpoint-graded RFT also creates an unknown external evaluation charge unless
+that cost is explicitly inventoried (including a documented zero for a
+deterministic endpoint with no judge-model calls).
+Add explicit source-backed hosting, tool fees, registry and other non-token
+charges; inventory completeness is not inferred from the existence of a job.
+
+Paths in the operation ledger are relative to that ledger. Each stage's
+ledger represents the investment required to reach that deployment. For an
+RFT candidate that builds on configuration optimization, include both the
+prior optimizer receipt and the training receipt in that stage. Reusing the
+same receipt twice **within one stage** is rejected to prevent double counting.
+The same receipt may appear in alternative stages' investment scenarios.
+
+`--ledger-complete` explicitly attests that all relevant experiment components
+are inventoried, including unknown charges. Without that attestation, investment,
+break-even and projected net savings remain unknown even if observed serving
+usage is complete. With unknown inventoried rates they also remain unknown.
+Per-stage `experiment_cost_complete` covers only recorded components; the
+separate `experiment_ledger_complete` flag covers inventory scope.
+
+Incremental investment is the positive difference between candidate and
+baseline recorded non-serving experiment costs. Break-even is that investment
+divided by positive serving savings per scheduled task, rounded up. This is
+a fixed-rate projection, not a guarantee of future traffic, model behavior,
+quality or Azure invoice savings. Apply the quality/safety acceptance policy
+before promoting an apparently cheaper candidate.
+
+Reports retain exact receipt fingerprints, prices, operation receipts and
+charges. Selection recomputes stage metrics and rejects a cost report from a
+different same-sized run or independently modified totals.

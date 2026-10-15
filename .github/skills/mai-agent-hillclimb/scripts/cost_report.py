@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from collections import Counter
@@ -122,10 +123,142 @@ def numeric(value: Decimal | None) -> float | None:
     return float(round(value, 10)) if value is not None else None
 
 
+def fingerprint(value: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    ).hexdigest()
+
+
+def operation_charges(
+    operations: list[dict[str, Any]], book: dict[str, Any]
+) -> list[dict[str, Any]]:
+    charges = []
+    seen = set()
+    for operation in operations:
+        stage = operation["stage"]
+        identity = (stage, operation["receipt_sha256"])
+        if identity in seen:
+            raise ValueError("Duplicate operation receipt would double-count experiment cost")
+        seen.add(identity)
+        receipt = operation["receipt"]
+        job = receipt.get("job", {})
+        if operation["kind"] == "optimizer":
+            usage = job.get("result", {}).get("token_usage")
+            if not usage:
+                charges.append(
+                    {
+                        "stage": stage,
+                        "purpose": "optimizer",
+                        "amount": None,
+                        "currency": book["currency"],
+                        "label": "Missing optimizer usage",
+                        "source": operation["receipt_sha256"],
+                    }
+                )
+            for row in usage or []:
+                purpose = "evaluation" if row["stage"] == "evaluation" else "optimizer"
+                model = (
+                    row.get("model")
+                    or job["optimization_configuration"]["baseline_agent_configuration"][
+                        "current_model"
+                    ]
+                )
+                key = operation.get("model_pricing_keys", {}).get(model)
+                known, complete = Decimal(0), False
+                if key:
+                    call = {
+                        "pricing_key": key,
+                        "context_input_tokens": None,
+                        "usage": {
+                            "uncached_input_tokens": (
+                                row["input_tokens"] - row["cached_tokens"]
+                                if row.get("input_tokens") is not None
+                                and row.get("cached_tokens") is not None
+                                else None
+                            ),
+                            "cached_input_tokens": row.get("cached_tokens"),
+                            "cache_write_tokens": row.get("cache_write_tokens", 0),
+                            "output_tokens": row.get("output_tokens"),
+                        },
+                    }
+                    # Aggregates cannot prove per-call context tiers or cache-write semantics.
+                    price = book["prices"][key]
+                    if (
+                        price.get("min_context_tokens", 0) == 0
+                        and price.get("max_context_tokens") is None
+                        and not row.get("cache_write_tokens")
+                    ):
+                        known, complete, _missing = call_cost(call, book)
+                charges.append(
+                    {
+                        "stage": stage,
+                        "purpose": purpose,
+                        "amount": numeric(known) if complete else None,
+                        "known_amount": numeric(known),
+                        "currency": book["currency"],
+                        "label": f"Optimizer {row['stage']} usage for {model}",
+                        "source": operation["receipt_sha256"],
+                    }
+                )
+        elif operation["kind"] == "calibration":
+            for call in receipt.get("calls", []):
+                known, complete, _missing = call_cost(call, book)
+                charges.append(
+                    {
+                        "stage": stage,
+                        "purpose": "evaluation",
+                        "amount": numeric(known) if complete else None,
+                        "known_amount": numeric(known),
+                        "currency": book["currency"],
+                        "label": "Recorded calibration judge call",
+                        "source": operation["receipt_sha256"],
+                    }
+                )
+        elif operation["kind"] == "rft":
+            if not any(charge["purpose"] == "training" for charge in operation.get("charges", [])):
+                charges.append(
+                    {
+                        "stage": stage,
+                        "purpose": "training",
+                        "amount": None,
+                        "currency": book["currency"],
+                        "label": "Unpriced RFT job",
+                        "source": operation["receipt_sha256"],
+                    }
+                )
+            grader = (
+                receipt.get("config", {})
+                .get("plan", {})
+                .get("method", {})
+                .get("reinforcement", {})
+                .get("grader", {})
+            )
+            if grader.get("type") == "endpoint" and not any(
+                charge["purpose"] == "evaluation" for charge in operation.get("charges", [])
+            ):
+                charges.append(
+                    {
+                        "stage": stage,
+                        "purpose": "evaluation",
+                        "amount": None,
+                        "currency": book["currency"],
+                        "label": "Unpriced external endpoint grader",
+                        "source": operation["receipt_sha256"],
+                    }
+                )
+        else:
+            raise ValueError("Operation kind must be optimizer, calibration or rft")
+        for charge in operation.get("charges", []):
+            charges.append({**charge, "stage": stage})
+    return charges
+
+
 def report(
     episodes: list[dict[str, Any]],
     book: dict[str, Any],
     charges: list[dict[str, Any]] | None = None,
+    operations: list[dict[str, Any]] | None = None,
+    ledger_complete: bool = False,
 ) -> dict[str, Any]:
     validate_prices(book)
     if not episodes:
@@ -200,12 +333,14 @@ def report(
                         "call_index": index,
                         "pricing_key": call["pricing_key"],
                         "missing_buckets": missing,
+                        "purpose": purpose,
                     }
                 )
         if not episode["usage_complete"]:
             data["incomplete_usage_episodes"] += 1
             data["serving_complete"] = data["experiment_complete"] = False
-    for charge in charges or []:
+    all_charges = (charges or []) + operation_charges(operations or [], book)
+    for charge in all_charges:
         stage = charge["stage"]
         if stage not in stages:
             raise ValueError(f"Charge references unknown stage: {stage}")
@@ -221,6 +356,9 @@ def report(
         cost = amount(charge["amount"], "charge amount")
         data = stages[stage]
         if cost is None:
+            known = amount(charge.get("known_amount", 0), "known charge amount")
+            if known:
+                data["purposes"][purpose] = data["purposes"].get(purpose, Decimal(0)) + known
             data["unpriced_charges"].append({"purpose": purpose, "label": charge["label"]})
             data["experiment_complete"] = False
             if purpose == "serving":
@@ -236,6 +374,7 @@ def report(
         experiment = sum(data["purposes"].values(), Decimal(0))
         output[stage] = {
             "episodes": data["episodes"],
+            "receipts_sha256": fingerprint([row for row in episodes if row["stage"] == stage]),
             "failed_episodes": data["failed_episodes"],
             "rollouts_per_case": dict(data["rollouts"]),
             "metrics": {
@@ -265,6 +404,12 @@ def report(
             "pricing_bases": sorted(data["bases"]),
             "serving_cost_complete": data["serving_complete"],
             "experiment_cost_complete": data["experiment_complete"],
+            "nonserving_cost_complete": not data["unpriced_charges"]
+            and not any(
+                call["pricing_key"]
+                for call in data["missing_calls"]
+                if call.get("purpose") != "inference"
+            ),
             "incomplete_usage_episodes": data["incomplete_usage_episodes"],
             "unpriced_call_count": len(data["missing_calls"]),
             "incomplete_calls": data["missing_calls"],
@@ -275,22 +420,203 @@ def report(
         "currency": book["currency"],
         "cost_type": "recorded-usage estimate, not an invoice",
         "price_snapshot": book,
+        "receipts_sha256": fingerprint(episodes),
+        "charges": charges or [],
+        "operations": operations or [],
+        "experiment_ledger_complete": ledger_complete,
         "stages": output,
     }
 
 
+def verify_report(episodes: list[dict[str, Any]], recorded: dict[str, Any]) -> None:
+    stages = {row["stage"] for row in episodes}
+    regenerated = report(
+        episodes,
+        recorded["price_snapshot"],
+        [row for row in recorded.get("charges", []) if row["stage"] in stages],
+        [row for row in recorded.get("operations", []) if row["stage"] in stages],
+        recorded.get("experiment_ledger_complete", False),
+    )
+    for stage in stages:
+        if (
+            recorded["stages"][stage].get("receipts_sha256")
+            != regenerated["stages"][stage]["receipts_sha256"]
+        ):
+            raise ValueError("Cost report does not belong to these exact evaluation receipts")
+        if regenerated["stages"][stage] != recorded["stages"][stage]:
+            # Savings adds two derived success metrics, verified by the savings command itself.
+            original = {
+                key: value
+                for key, value in recorded["stages"][stage].items()
+                if key not in ("successful_tasks", "cost_per_successful_task")
+            }
+            if regenerated["stages"][stage] != original:
+                raise ValueError(
+                    "Cost report metrics differ from recomputed receipt/pricing evidence"
+                )
+
+
+def savings_report(
+    episodes,
+    book,
+    baseline_stage,
+    success_threshold=0.75,
+    volume=1000,
+    charges=None,
+    operations=None,
+    ledger_complete=False,
+):
+    if not 0 <= success_threshold <= 1 or volume < 1:
+        raise ValueError("Success threshold must be in [0,1] and forecast volume positive")
+    result = report(episodes, book, charges, operations, ledger_complete)
+    by_stage = {}
+    for row in episodes:
+        by_stage.setdefault(row["stage"], []).append(row)
+    if baseline_stage not in by_stage or len(by_stage) < 2:
+        raise ValueError("Savings comparison requires baseline and at least one candidate")
+
+    def index(rows):
+        indexed = {}
+        for row in rows:
+            if row.get("split") != "development":
+                raise ValueError("Savings requires development evaluation receipts")
+            key = (row["case_id"], row["rollout"])
+            if key in indexed:
+                raise ValueError("Duplicate matched episode")
+            indexed[key] = row
+        return indexed
+
+    baseline = index(by_stage[baseline_stage])
+    comparisons = {}
+    for stage, rows in by_stage.items():
+        indexed = index(rows)
+        if indexed.keys() != baseline.keys():
+            raise ValueError("Cost savings requires identical scheduled cases and rollouts")
+        for key, row in indexed.items():
+            if any(
+                row.get(field) != baseline[key].get(field)
+                for field in ("data_sha256", "grader_sha256", "adapter_sha256", "group")
+            ):
+                raise ValueError("Cost savings requires matched data, grader, adapter and groups")
+        current = result["stages"][stage]
+        successes = sum(
+            row["status"] == "success" and row["metrics"]["quality"] >= success_threshold
+            for row in rows
+        )
+        current["successful_tasks"] = successes
+        current["cost_per_successful_task"] = (
+            current["serving_cost"] / successes
+            if successes and current["serving_cost_complete"]
+            else None
+        )
+        if stage == baseline_stage:
+            continue
+        old = result["stages"][baseline_stage]
+        old_cost, new_cost = old["serving_cost"], current["serving_cost"]
+        per_task_amount = (
+            (amount(old_cost, "baseline serving cost") - amount(new_cost, "candidate serving cost"))
+            / Decimal(len(rows))
+            if old_cost is not None and new_cost is not None
+            else None
+        )
+        per_task = float(per_task_amount) if per_task_amount is not None else None
+        investments_complete = (
+            ledger_complete
+            and old["nonserving_cost_complete"]
+            and current["nonserving_cost_complete"]
+        )
+        overhead = lambda entry: sum(
+            amount(value, "overhead")
+            for purpose, value in entry["known_cost_by_purpose"].items()
+            if purpose not in ("inference", "serving")
+        )
+        investment = (
+            max(overhead(current) - overhead(old), Decimal(0)) if investments_complete else None
+        )
+        comparisons[stage] = {
+            "quality_delta": current["metrics"]["quality"]["mean"]
+            - old["metrics"]["quality"]["mean"],
+            "latency_ratio": (
+                current["mean_latency_seconds"] / old["mean_latency_seconds"]
+                if old["mean_latency_seconds"] and current["mean_latency_seconds"] is not None
+                else None
+            ),
+            "serving_savings_per_task": per_task,
+            "serving_savings_per_1k": per_task * 1000 if per_task is not None else None,
+            "serving_savings_percent": (
+                (old_cost - new_cost) / old_cost * 100
+                if old_cost and new_cost is not None
+                else None
+            ),
+            "incremental_experiment_investment": numeric(investment),
+            "break_even_tasks": (
+                math.ceil(investment / per_task_amount)
+                if investment is not None and per_task is not None and per_task > 0
+                else None
+            ),
+            "forecast_tasks": volume,
+            "forecast_net_savings": (
+                per_task * volume - float(investment)
+                if per_task is not None and investment is not None
+                else None
+            ),
+            "cost_basis": "recorded price snapshot; reference estimates are not invoice savings",
+        }
+    result.update(
+        baseline_stage=baseline_stage, comparisons=comparisons, success_threshold=success_threshold
+    )
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--receipts", type=Path, required=True)
+    parser.add_argument("--receipts", type=Path, nargs="+", required=True)
     parser.add_argument("--prices", type=Path, required=True)
     parser.add_argument("--charges", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--operations", type=Path)
+    parser.add_argument("--baseline-stage")
+    parser.add_argument("--success-threshold", type=float, default=0.75)
+    parser.add_argument("--forecast-tasks", type=int, default=1000)
+    parser.add_argument(
+        "--ledger-complete",
+        action="store_true",
+        help="Attest that all experiment charges are inventoried, including explicit unknowns",
+    )
     args = parser.parse_args()
-    with args.receipts.open(encoding="utf-8") as handle:
-        episodes = [json.loads(line) for line in handle if line.strip()]
+    episodes = []
+    for path in args.receipts:
+        with path.open(encoding="utf-8") as handle:
+            episodes.extend(json.loads(line) for line in handle if line.strip())
     book = json.loads(args.prices.read_text(encoding="utf-8"))
     charges = json.loads(args.charges.read_text(encoding="utf-8")) if args.charges else None
-    result = report(episodes, book, charges)
+    operations = []
+    if args.operations:
+        for operation in json.loads(args.operations.read_text(encoding="utf-8")):
+            path = Path(operation.pop("path"))
+            if not path.is_absolute():
+                path = args.operations.parent / path
+            operations.append(
+                {
+                    **operation,
+                    "receipt": json.loads(path.read_text(encoding="utf-8")),
+                    "receipt_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                }
+            )
+    result = (
+        savings_report(
+            episodes,
+            book,
+            args.baseline_stage,
+            args.success_threshold,
+            args.forecast_tasks,
+            charges,
+            operations,
+            args.ledger_complete,
+        )
+        if args.baseline_stage
+        else report(episodes, book, charges, operations, args.ledger_complete)
+    )
     rendered = json.dumps(result, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

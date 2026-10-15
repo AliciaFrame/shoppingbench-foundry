@@ -10,16 +10,19 @@ import subprocess
 import time
 import urllib.request
 import uuid
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from journey import (
     SKILL,
     digest,
+    implementation_digest,
     load_hook,
     read_json,
     read_jsonl,
     score,
     validate_data,
+    value_digest,
     write_json,
 )
 
@@ -108,6 +111,7 @@ def register_evaluator(project, config, receipt):
     path = claim(
         receipt, "register-evaluator", {"evaluator_sha256": digest(Path(project) / "evaluator.md")}
     )
+    mapping = evaluator_mapping(config)
     definition = PromptBasedEvaluatorDefinition(
         prompt_text=(Path(project) / "evaluator.md").read_text(encoding="utf-8"),
         init_parameters={
@@ -117,8 +121,8 @@ def register_evaluator(project, config, receipt):
         },
         data_schema={
             "type": "object",
-            "properties": {"query": {"type": "string"}, "response": {"type": "string"}},
-            "required": ["query", "response"],
+            "properties": {key: runtime_field_schema(key) for key in mapping},
+            "required": list(mapping),
         },
         metrics={
             "quality": EvaluatorMetric(
@@ -178,12 +182,23 @@ def endpoint_parity(project, config, labels, tool_probes, output):
         raise ValueError("Training service must use HTTPS")
     reviewed = read_jsonl(labels)
     probes = read_jsonl(tool_probes)
+    tolerance = config.get("rft", {}).get("parity_tolerance", 0)
+    if not isinstance(tolerance, (float, int)) or not 0 <= tolerance <= 1:
+        raise ValueError("Endpoint parity tolerance must be in [0,1]")
+    differences = []
     for row in reviewed:
         expected = score(grader, row["sample"], row["item"])
         actual = http_post(
             endpoint + "/grade", {"sample": row["sample"], "item": row["item"]}, token
         )["reward"]
-        if abs(actual - expected) > 1e-9:
+        if (
+            not isinstance(actual, (int, float))
+            or not math.isfinite(actual)
+            or not 0 <= actual <= 1
+        ):
+            raise ValueError(f"Endpoint returned an invalid reward for {row['id']}")
+        differences.append(abs(actual - expected))
+        if differences[-1] > tolerance + 1e-9:
             raise ValueError(f"Endpoint grader parity failed for {row['id']}")
     for index, probe in enumerate(probes):
         local = execute_tool(probe["name"], probe["arguments"])
@@ -206,9 +221,53 @@ def endpoint_parity(project, config, labels, tool_probes, output):
         "service_url": endpoint,
         "graded_samples": len(reviewed),
         "tool_names": sorted({probe["name"] for probe in probes}),
+        "parity_tolerance": tolerance,
+        "max_score_difference": max(differences),
     }
     write_json(output, report)
     return report
+
+
+def evaluator_mapping(config):
+    mapping = config["optimizer"].get(
+        "data_mapping",
+        {
+            "query": "query",
+            "response": "response",
+            "ground_truth": "ground_truth",
+        },
+    )
+    allowed = {"query", "response", "ground_truth", "tool_calls", "tool_definitions"}
+    if not mapping or any(value not in allowed or key != value for key, value in mapping.items()):
+        raise ValueError("Evaluator mappings must use supported optimizer runtime fields")
+    return mapping
+
+
+def runtime_field_schema(name):
+    return (
+        {"type": "array", "items": {"type": "object"}}
+        if name in ("tool_calls", "tool_definitions")
+        else {"type": "string"}
+    )
+
+
+def evaluator_data(label):
+    item = label["item"]
+    encode = load_hook(SKILL / "assets" / "starter" / "workload.py", "encode_input")
+    return {
+        "query": encode(item),
+        "response": label["sample"]["output_text"],
+        "ground_truth": json.dumps(
+            {
+                key: value
+                for key, value in item.items()
+                if key not in ("messages", "context", "tools")
+            },
+            sort_keys=True,
+        ),
+        "tool_calls": label["sample"].get("output_tools", []),
+        "tool_definitions": item.get("tools", []),
+    }
 
 
 def validate_evaluator(project, config, labels, receipt, timeout=600):
@@ -239,7 +298,9 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
             "model": settings["eval_model"],
             "threshold": settings["pass_threshold"],
         },
-        "data_mapping": {"query": "{{item.query}}", "response": "{{item.response}}"},
+        "data_mapping": {
+            key: "{{item." + value + "}}" for key, value in evaluator_mapping(config).items()
+        },
     }
     with (
         project_client(config["project_endpoint"]) as project_api,
@@ -252,6 +313,7 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
                 row.get("evaluator_version") == criterion["evaluator_version"]
                 and row.get("evaluator_name") == criterion["evaluator_name"]
                 and row.get("initialization_parameters") == criterion["initialization_parameters"]
+                and row.get("data_mapping") == criterion["data_mapping"]
                 for row in criteria
             ):
                 raise ValueError("Evaluator runtime settings differ from the persisted evaluation")
@@ -266,10 +328,9 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
                     "item_schema": {
                         "type": "object",
                         "properties": {
-                            "query": {"type": "string"},
-                            "response": {"type": "string"},
+                            key: runtime_field_schema(key) for key in evaluator_data(reviewed[0])
                         },
-                        "required": ["query", "response"],
+                        "required": list(evaluator_data(reviewed[0])),
                     },
                 },
                 testing_criteria=[criterion],
@@ -284,15 +345,7 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
                     "type": "jsonl",
                     "source": {
                         "type": "file_content",
-                        "content": [
-                            {
-                                "item": {
-                                    "query": label["item"]["messages"][-1]["content"],
-                                    "response": label["sample"]["output_text"],
-                                }
-                            }
-                            for label in reviewed
-                        ],
+                        "content": [{"item": evaluator_data(label)} for label in reviewed],
                     },
                 },
                 extra_headers=headers,
@@ -342,13 +395,16 @@ def optimizer_plan(project, config, validation_receipt):
     settings = config["optimizer"]
     expected = validated["evaluator_settings"]
     if (
-        expected["evaluator_version"] != settings["evaluator_version"]
+        expected.get("evaluator_name") != settings["evaluator"]
+        or expected["evaluator_version"] != settings["evaluator_version"]
         or expected["initialization_parameters"]
         != {
             "model": settings["eval_model"],
             "threshold": settings["pass_threshold"],
         }
         or validated["project_endpoint"] != config["project_endpoint"]
+        or expected.get("data_mapping")
+        != {key: "{{item." + value + "}}" for key, value in evaluator_mapping(config).items()}
     ):
         raise ValueError(
             "Optimizer evaluator model/version/threshold/project changed after validation"
@@ -372,7 +428,10 @@ def optimizer_plan(project, config, validation_receipt):
                     "type": "target_completion",
                     "source": {
                         "type": "inline",
-                        "test_cases": [{"query": row["query"]} for row in rows],
+                        "test_cases": [
+                            {"query": row["query"], "ground_truth": row["ground_truth"]}
+                            for row in rows
+                        ],
                     },
                 },
                 "evaluators": [
@@ -391,12 +450,20 @@ def optimizer_plan(project, config, validation_receipt):
             "baseline_agent_configuration": {
                 "system_prompt": (Path(project) / "instructions.md").read_text(encoding="utf-8"),
                 "current_model": config["model"]["deployment"],
-                "skills": [],
+                "skills": optimizer_skills(project),
                 "tools": read_json(Path(project) / "tools.json"),
             },
-            "agent_optimization_space": {"target_attributes": ["instructions", "tools"]},
+            "agent_optimization_space": {
+                "target_attributes": ["instructions", "tools"]
+                + (["skills"] if optimizer_skills(project) else []),
+            },
         },
     }
+
+
+def optimizer_skills(project):
+    catalog = load_hook(SKILL / "assets" / "starter" / "workload.py", "skill_catalog")
+    return catalog(project)
 
 
 def submit_optimizer(config, plan, receipt):
@@ -485,6 +552,18 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
         raise ValueError("Reviewed calibration labels changed")
     if calibration["grader_sha256"] != digest(project / "grader.py"):
         raise ValueError("Grader changed after calibration")
+    adapter = project / config["rft"].get("calibration_adapter", "agent.py")
+    current_policy = load_hook(adapter, "policy_contract")()
+    if (
+        calibration.get("policy_sha256") != value_digest(current_policy)
+        or calibration.get("implementation_sha256") != implementation_digest(adapter)
+        or calibration.get("adapter_sha256") != [digest(adapter)]
+    ):
+        raise ValueError(
+            "Model, policy, tools, runtime or implementation changed after calibration"
+        )
+    if current_policy["model"] != config["rft"]["source_deployment"]:
+        raise ValueError("RFT source deployment differs from the calibrated inference model")
     manifest = read_json(prepared / "manifest.json")
     all_rows = []
     for split, expected_hash in manifest["files"].items():
@@ -500,7 +579,7 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
         raise ValueError("Calibration must cover the submitted training and validation data")
     train = read_jsonl(prepared / "train.jsonl")
     validation = read_jsonl(prepared / "validation.jsonl")
-    instructions = (project / "instructions.md").read_text(encoding="utf-8").strip()
+    instructions = current_policy["instructions"].strip()
     for row in train + validation:
         if (
             row["messages"][0]["role"] != "system"
@@ -512,6 +591,19 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
     capability = config["rft"]["capability_evidence"]
     if not capability.get("source") or not capability.get("checked_at"):
         raise ValueError("Current model/region/SKU access evidence is required")
+    age = (datetime.now(UTC).date() - date.fromisoformat(capability["checked_at"][:10])).days
+    if not 0 <= age <= 7:
+        raise ValueError("RFT capability evidence must be checked within the last seven days")
+    target = {
+        "model": config["rft"]["model"],
+        "region": config["region"],
+        "training_type": config["rft"]["training_type"],
+        "source_deployment": current_policy["model"],
+    }
+    if any(capability.get(key) != value for key, value in target.items()):
+        raise ValueError(
+            "Capability evidence does not cover this exact RFT model/region/SKU/policy"
+        )
     if not capability.get("reinforcement_supported"):
         raise ValueError("Selected model does not have confirmed reinforcement support")
     base_url = config["rft"]["base_url"]
@@ -538,6 +630,8 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
             raise ValueError("Endpoint changed after parity")
         if parity["labels_sha256"] != digest(labels_path):
             raise ValueError("Endpoint parity must cover reviewed calibration labels")
+        if parity.get("parity_tolerance", 0) != config["rft"].get("parity_tolerance", 0):
+            raise ValueError("Endpoint parity tolerance changed after validation")
         if {tool["name"] for tool in tools} - set(parity["tool_names"]):
             raise ValueError("Every training tool must have a parity probe")
         grader = {
@@ -549,6 +643,8 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
         }
     elif config["rft"]["grader_type"] != "python":
         raise ValueError("Bundled RFT submission supports python or endpoint graders")
+    elif load_hook(project / "grader.py", "grade").__globals__.get("REQUIRES_NETWORK"):
+        raise ValueError("Network/semantic graders require endpoint grading, not Python RFT")
     if tools and config["rft"]["grader_type"] != "endpoint":
         raise ValueError("Tool-calling RFT requires endpoint parity in this starter")
     if tools and not capability.get("agentic_supported"):
@@ -829,6 +925,13 @@ def cli_plan(action, project, config):
         return [["azd", "deploy", "--no-prompt", "-o", "json"]]
     if action == "deploy-endpoints":
         name = config["service_name"]
+        endpoint_env = config.get("endpoint_environment", {})
+        if any(
+            key != "MAI_JUDGE_PRICING_KEY"
+            and ("KEY" in key.upper() or "TOKEN" in key.upper() or "SECRET" in key.upper())
+            for key in endpoint_env
+        ):
+            raise ValueError("Endpoint environment configuration must not contain credentials")
         source = (
             ["--image", config["service_image"], "--registry-server", config["service_registry"]]
             if config.get("service_image")
@@ -856,6 +959,19 @@ def cli_plan(action, project, config):
             az
             + [
                 "containerapp",
+                "identity",
+                "assign",
+                "--name",
+                name,
+                "-g",
+                rg,
+                "--system-assigned",
+                "-o",
+                "json",
+            ],
+            az
+            + [
+                "containerapp",
                 "secret",
                 "set",
                 "--name",
@@ -877,6 +993,7 @@ def cli_plan(action, project, config):
                 rg,
                 "--set-env-vars",
                 "HILLCLIMB_ENDPOINT_TOKEN=secretref:endpoint-token",
+                *[f"{key}={value}" for key, value in endpoint_env.items()],
                 "--min-replicas",
                 "2",
                 "--max-replicas",
@@ -970,6 +1087,11 @@ def wire_hosted(project, config):
             "MAI_MODEL_DEPLOYMENT_NAME": config["model"]["deployment"],
         }
     )
+    if "model_override" in config:
+        if config["model_override"]:
+            matches[0]["env"]["MAI_MODEL_OVERRIDE"] = config["model_override"]
+        else:
+            matches[0]["env"].pop("MAI_MODEL_OVERRIDE", None)
     matches[0]["sessionConfiguration"] = {"idleTimeoutSeconds": 120}
     path.write_text(yaml.safe_dump(manifest, sort_keys=False), encoding="utf-8")
     metadata_path = Path(project) / "metadata.yaml"
@@ -1112,6 +1234,8 @@ def main():
         print(json.dumps(submit_optimizer(config, plan, args.receipt), indent=2))
         return
     path = claim(args.receipt, args.action, {"sha256": digest(args.config), "plan": plan})
+    if args.action == "deploy-hosted":
+        wire_hosted(args.project, config)
     state = read_json(path)
     state["outputs"] = []
     redact_values = []

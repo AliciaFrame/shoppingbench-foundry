@@ -1,12 +1,13 @@
 """Responses-compatible hosted agent and directly callable evaluation adapter."""
 
 import asyncio
+import hashlib
 import json
 import os
 from contextlib import contextmanager
 from pathlib import Path
 
-from azure.ai.agentserver.optimization import OptimizationConfig, load_config
+from azure.ai.agentserver.optimization import OptimizationConfig, Skill, load_config
 from azure.ai.agentserver.responses import ResponseEventStream, ResponsesAgentServerHost
 from azure.ai.agentserver.responses.models import (
     ResponseUsage,
@@ -16,9 +17,9 @@ from azure.ai.agentserver.responses.models import (
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from domain import TOOL_DEFINITIONS, execute_tool
 from openai import OpenAI
+from workload import decode_input, model_messages, skill_catalog
 
 ROOT = Path(__file__).resolve().parent
-app = ResponsesAgentServerHost()
 
 
 @contextmanager
@@ -36,10 +37,11 @@ def client():
 
 
 def configuration():
-    configured = load_config(
-        config_dir=os.getenv("OPTIMIZATION_LOCAL_DIR", str(ROOT)),
-        credential=DefaultAzureCredential(),
-    )
+    with DefaultAzureCredential() as credential:
+        configured = load_config(
+            config_dir=os.getenv("OPTIMIZATION_LOCAL_DIR", str(ROOT)),
+            credential=credential,
+        )
     candidate = os.getenv("OPTIMIZATION_CANDIDATE_ID")
     if (
         candidate
@@ -51,6 +53,7 @@ def configuration():
         instructions=(ROOT / "instructions.md").read_text(encoding="utf-8"),
         model=os.environ["MAI_MODEL_DEPLOYMENT_NAME"],
         tool_definitions=json.loads((ROOT / "tools.json").read_text(encoding="utf-8")),
+        skills=[Skill(**item) for item in skill_catalog(ROOT)],
     )
 
 
@@ -61,6 +64,34 @@ def response_tools(definitions):
         else tool
         for tool in definitions
     ]
+
+
+def policy_contract():
+    config = configuration()
+    explicit = os.getenv("MAI_MODEL_OVERRIDE")
+    configured = config.model
+    model = explicit or configured or os.getenv("MAI_MODEL_DEPLOYMENT_NAME")
+    if not model:
+        raise ValueError("A resolved model deployment is required")
+    instructions = config.compose_instructions()
+    for skill in config.skills or []:
+        instructions += f"\n\n## Skill: {skill.name}\n{skill.body}"
+    if config.skills_dir:
+        for path in sorted(Path(config.skills_dir).rglob("SKILL.md")):
+            instructions += "\n\n" + path.read_text(encoding="utf-8")
+    return {
+        "model": model,
+        "model_override": explicit,
+        "endpoint": os.environ["MAI_OPENAI_BASE_URL"],
+        "instructions": instructions,
+        "tools": response_tools(
+            config.tool_definitions if config.tool_definitions is not None else TOOL_DEFINITIONS
+        ),
+        "temperature": config.temperature,
+        "max_tool_steps": int(os.getenv("MAI_MAX_TOOL_STEPS", "6")),
+        "max_output_tokens": int(os.getenv("MAI_MAX_OUTPUT_TOKENS", "1024")),
+        "domain_sha256": hashlib.sha256((ROOT / "domain.py").read_bytes()).hexdigest(),
+    }
 
 
 class EpisodeFailure(RuntimeError):
@@ -79,16 +110,14 @@ def run_episode(item):
 
 
 def _run_episode(item, calls, api):
-    config = configuration()
-    instructions = config.compose_instructions()
-    model = os.getenv("MAI_MODEL_DEPLOYMENT_NAME") or config.model
-    if not model:
-        raise ValueError("A model deployment is required")
+    policy = policy_contract()
+    instructions, model = policy["instructions"], policy["model"]
     inputs = list(item["messages"])
     if inputs[0]["role"] == "system" and inputs[0]["content"].strip() == instructions.strip():
         inputs = inputs[1:]
+    inputs = model_messages({**item, "messages": inputs})
     trace = []
-    max_steps = int(os.getenv("MAI_MAX_TOOL_STEPS", "6"))
+    max_steps = policy["max_tool_steps"]
     if max_steps < 1:
         raise ValueError("MAI_MAX_TOOL_STEPS must be positive")
     for _ in range(max_steps):
@@ -96,11 +125,9 @@ def _run_episode(item, calls, api):
             model=model,
             instructions=instructions,
             input=inputs,
-            tools=response_tools(
-                config.tool_definitions if config.tool_definitions is not None else TOOL_DEFINITIONS
-            ),
-            max_output_tokens=int(os.getenv("MAI_MAX_OUTPUT_TOKENS", "1024")),
-            **({"temperature": config.temperature} if config.temperature is not None else {}),
+            tools=policy["tools"],
+            max_output_tokens=policy["max_output_tokens"],
+            **({"temperature": policy["temperature"]} if policy["temperature"] is not None else {}),
         )
         raw_usage = response.usage.model_dump() if response.usage else None
         calls.append(
@@ -120,6 +147,7 @@ def _run_episode(item, calls, api):
                 "output_text": response.output_text,
                 "output_tools": trace,
                 "calls": calls,
+                "policy_contract": policy,
             }
         for call in tool_calls:
             arguments = json.loads(call.arguments)
@@ -135,12 +163,12 @@ def _run_episode(item, calls, api):
     raise RuntimeError("Tool-step limit exceeded")
 
 
-@app.response_handler
 async def handler(request, context, _cancellation_signal):
-    inputs = await context.get_input_text()
-    result = await asyncio.to_thread(
-        run_episode, {"messages": [{"role": "user", "content": inputs}]}
-    )
+    inputs = await context.get_input_text() or ""
+    result = await asyncio.to_thread(run_episode, decode_input(inputs))
+    output_text = result["output_text"]
+    if (request.get("metadata") or {}).get("hillclimb_capture") == "v1":
+        output_text = json.dumps({"hillclimb_trace_version": 1, **result})
     usage_rows = [call["raw_usage"] for call in result["calls"]]
     usage = None
     if all(row is not None for row in usage_rows):
@@ -167,8 +195,8 @@ async def handler(request, context, _cancellation_signal):
         yield message.emit_added()
         text = message.add_text_content()
         yield text.emit_added()
-        yield text.emit_delta(result["output_text"])
-        yield text.emit_text_done(result["output_text"])
+        yield text.emit_delta(output_text)
+        yield text.emit_text_done(output_text)
         yield text.emit_done()
         yield message.emit_done()
         yield stream.emit_completed(usage=usage)
@@ -176,5 +204,11 @@ async def handler(request, context, _cancellation_signal):
     return events()
 
 
+def create_app():
+    app = ResponsesAgentServerHost()
+    app.response_handler(handler)
+    return app
+
+
 if __name__ == "__main__":
-    app.run()
+    create_app().run()

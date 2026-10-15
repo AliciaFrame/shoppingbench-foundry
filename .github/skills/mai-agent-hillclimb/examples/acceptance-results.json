@@ -1,5 +1,22 @@
 {
   "date": "2026-10-14",
+  "review_followup": {
+    "date": "2026-10-14",
+    "focused_tests_passed": 57,
+    "repository_tests_passed": 210,
+    "pre_existing_repository_failures": 1,
+    "verified_locally": [
+      "Optimizer preserves conversation history, model-visible context, private references, criteria and skill bodies through real SDK serialization",
+      "RFT calibration is bound to one resolved model/policy and implementation; changed evidence is rejected",
+      "Hosted evaluation trace envelopes preserve tool arguments/results and per-call usage through actual Responses events",
+      "Explicit model overrides and checkpoint deployment wiring cannot silently retain the bootstrap model",
+      "Cost reports are fingerprinted and recomputed against exact evaluation receipts",
+      "Three-stage matched savings report, successful-task cost, operation-ledger ingestion and guarded break-even projections",
+      "Deterministic tool-process grading and semantic judge usage accounting"
+    ],
+    "additional_live_cloud_jobs": 0,
+    "limitation": "Follow-up fixes have local regression and real SDK protocol/serialization coverage; they do not claim a new live optimizer or successful RFT training run."
+  },
   "purpose": "Small live integration acceptance, not a benchmark or proof of general quality improvement",
   "domain": "Synthetic incident triage, separate from ShoppingBench",
   "verified_live": [

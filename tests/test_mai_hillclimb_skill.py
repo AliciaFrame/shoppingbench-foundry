@@ -158,4 +158,4 @@ def test_skill_runs_after_copying_only_its_folder_without_repository_or_packages
     for path in copied.rglob("*.md"):
         for target in re.findall(r"\]\(([^)]+)\)", path.read_text(encoding="utf-8")):
             if not target.startswith(("https://", "#")):
-                assert (path.parent / target).is_file(), (path, target)
+                assert (path.parent / target.split("#", 1)[0]).is_file(), (path, target)

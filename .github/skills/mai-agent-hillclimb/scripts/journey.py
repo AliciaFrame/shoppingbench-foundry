@@ -50,6 +50,12 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def value_digest(value):
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    ).hexdigest()
+
+
 def implementation_digest(adapter):
     root = Path(adapter).resolve().parent
     selected = []
@@ -65,6 +71,9 @@ def implementation_digest(adapter):
     selected.append(("model", os.getenv("MAI_MODEL_DEPLOYMENT_NAME")))
     selected.append(("endpoint", os.getenv("MAI_OPENAI_BASE_URL")))
     for variable in (
+        "MAI_MODEL_OVERRIDE",
+        "MAI_JUDGE_BASE_URL",
+        "MAI_JUDGE_DEPLOYMENT_NAME",
         "MAI_PROJECT_ENDPOINT",
         "MAI_HOSTED_AGENT_NAME",
         "MAI_HOSTED_AGENT_VERSION",
@@ -124,7 +133,7 @@ def validate_data(rows):
             raise ValueError(f"RFT example {row['id']} must end in a user message")
         if any(not isinstance(message.get("content"), str) for message in messages):
             raise ValueError(f"Example {row['id']} requires text message content")
-        prompt = json.dumps(messages, sort_keys=True)
+        prompt = json.dumps({"messages": messages, "context": row.get("context")}, sort_keys=True)
         if prompt in prompts and prompts[prompt] != row["split"]:
             raise ValueError("Identical prompt messages leak across dataset splits")
         prompts[prompt] = row["split"]
@@ -137,9 +146,14 @@ def validate_data(rows):
     return groups
 
 
-def prepare(data, output, tools_path=None, instructions_path=None):
+def prepare(data, output, tools_path=None, instructions_path=None, policy_adapter=None):
     rows = read_jsonl(data)
     validate_data(rows)
+    model_messages = load_hook(SKILL / "assets" / "starter" / "workload.py", "model_messages")
+    for row in rows:
+        if row["split"] in ("train", "validation") and row.get("context") is not None:
+            row["messages"] = model_messages(row)
+            row["context_in_messages"] = True
     if tools_path:
         definitions = read_json(tools_path)
         schemas = [
@@ -155,8 +169,14 @@ def prepare(data, output, tools_path=None, instructions_path=None):
             if "tools" in row and row["tools"] != schemas:
                 raise ValueError("Existing per-example schemas differ from selected tools")
             row["tools"] = schemas
-    if instructions_path:
-        instructions = Path(instructions_path).read_text(encoding="utf-8").strip()
+    if instructions_path and policy_adapter:
+        raise ValueError("Choose instructions or a resolved policy adapter, not both")
+    if instructions_path or policy_adapter:
+        instructions = (
+            load_hook(policy_adapter, "policy_contract")()["instructions"].strip()
+            if policy_adapter
+            else Path(instructions_path).read_text(encoding="utf-8").strip()
+        )
         if not instructions:
             raise ValueError("Training instructions cannot be empty")
         for row in rows:
@@ -175,6 +195,7 @@ def prepare(data, output, tools_path=None, instructions_path=None):
         raise FileExistsError(f"Do not overwrite prepared data: {output}")
     output.mkdir(parents=True)
     counts = {}
+    encode_input = load_hook(SKILL / "assets" / "starter" / "workload.py", "encode_input")
     for split in SPLITS:
         subset = [row for row in rows if row["split"] == split]
         if split == "optimizer":
@@ -182,7 +203,15 @@ def prepare(data, output, tools_path=None, instructions_path=None):
                 {
                     **row,
                     "name": row["id"],
-                    "query": row["messages"][-1]["content"],
+                    "query": encode_input(row),
+                    "ground_truth": json.dumps(
+                        {
+                            key: value
+                            for key, value in row.items()
+                            if key not in ("messages", "context", "tools")
+                        },
+                        sort_keys=True,
+                    ),
                     "item": row,
                     "criteria": row.get(
                         "criteria",
@@ -282,6 +311,13 @@ def evaluate(
             raise ValueError("Sealed final data changed")
         if state["implementation_sha256"] != implementation_hash:
             raise ValueError("Selected implementation or model configuration changed")
+        current_policy = run.__globals__.get("policy_contract")
+        if (
+            state.get("policy_sha256")
+            and callable(current_policy)
+            and value_digest(current_policy()) != state["policy_sha256"]
+        ):
+            raise ValueError("Selected resolved model/policy changed")
         with Path(str(final_state) + ".started").open("x", encoding="utf-8") as lock:
             lock.write(stage)
         state["final_test_started"] = True
@@ -310,15 +346,43 @@ def evaluate(
                 }
                 try:
                     result = run(row)
+                    receipt["latency_seconds"] = time.monotonic() - started
                     receipt["sample"] = {
                         "output_text": result["output_text"],
                         "output_tools": result.get("output_tools", []),
                     }
                     if "hosted_agent" in result:
                         receipt["hosted_agent"] = result["hosted_agent"]
+                    policy = result.get("policy_contract")
+                    if policy is None and callable(run.__globals__.get("policy_contract")):
+                        policy = run.__globals__["policy_contract"]()
+                    if policy is not None:
+                        receipt["policy_contract"] = policy
+                        receipt["policy_sha256"] = value_digest(policy)
+                        if (
+                            splits == {"final"}
+                            and state.get("policy_sha256") != receipt["policy_sha256"]
+                        ):
+                            raise ValueError(
+                                "Final hosted runtime does not match the selected policy"
+                            )
                     calls, complete = normalize_calls(result["calls"], price_key)
                     receipt.update(calls=calls, usage_complete=complete)
-                    receipt["metrics"]["quality"] = score(grader, receipt["sample"], row)
+                    detailed = grader.__globals__.get("grade_with_usage")
+                    if callable(detailed):
+                        judgment = detailed(receipt["sample"], row)
+                        judge_calls, judge_complete = normalize_calls(judgment["calls"], price_key)
+                        if any(call["purpose"] != "evaluation" for call in judge_calls):
+                            raise ValueError("Grader calls must have evaluation purpose")
+                        receipt["calls"].extend(judge_calls)
+                        receipt["usage_complete"] = complete and judge_complete
+                        receipt["metrics"]["quality"] = score(
+                            lambda _sample, _item, value=judgment["score"]: value,
+                            receipt["sample"],
+                            row,
+                        )
+                    else:
+                        receipt["metrics"]["quality"] = score(grader, receipt["sample"], row)
                     receipt["status"] = "success"
                 except Exception as error:  # noqa: BLE001 - persist every failed scheduled episode
                     # Episode failures remain in the denominator and are visible to the caller.
@@ -326,10 +390,18 @@ def evaluate(
                     if getattr(error, "__notes__", None):
                         receipt["error"]["notes"] = error.__notes__
                     if getattr(error, "calls", None):
-                        receipt["calls"], _ = normalize_calls(error.calls, price_key)
+                        observed, _ = normalize_calls(error.calls, price_key)
+                        # Adapter errors hold all inference calls; judge errors hold only judge calls.
+                        if observed and all(call["purpose"] == "evaluation" for call in observed):
+                            receipt["calls"].extend(observed)
+                        else:
+                            receipt["calls"] = observed
                     receipt["usage_complete"] = False
                     print(f"Episode {receipt['episode_id']} failed: {error}", file=sys.stderr)
-                receipt["latency_seconds"] = time.monotonic() - started
+                elapsed = time.monotonic() - started
+                receipt.setdefault("latency_seconds", elapsed)
+                receipt["evaluation_latency_seconds"] = elapsed - receipt["latency_seconds"]
+                receipt["episode_elapsed_seconds"] = elapsed
                 handle.write(json.dumps(receipt, allow_nan=False) + "\n")
                 handle.flush()
     receipts = read_jsonl(output)
@@ -354,6 +426,19 @@ def calibrate(
     receipts = read_jsonl(receipts_path)
     grader = load_hook(grader_path, "grade")
     labels = read_jsonl(labels_path)
+    calibration_calls = []
+
+    def calibrated_score(sample, item):
+        detailed = grader.__globals__.get("grade_with_usage")
+        if not callable(detailed):
+            return score(grader, sample, item)
+        judgment = detailed(sample, item)
+        calls, _complete = normalize_calls(judgment["calls"], "judge")
+        if any(call["purpose"] != "evaluation" for call in calls):
+            raise ValueError("Calibration judge calls must have evaluation purpose")
+        calibration_calls.extend(calls)
+        return score(lambda _sample, _item: judgment["score"], sample, item)
+
     ids = set()
     errors = []
     for label in labels:
@@ -363,9 +448,11 @@ def calibrate(
         human = label["human_score"]
         if not isinstance(human, (int, float)) or not math.isfinite(human) or not 0 <= human <= 1:
             raise ValueError("Human scores must be finite and within [0,1]")
-        errors.append(abs(score(grader, label["sample"], label["item"]) - human))
+        errors.append(abs(calibrated_score(label["sample"], label["item"]) - human))
     groups = {}
     seen = set()
+    policies = set()
+    implementations = set()
     reasons = []
     for receipt in receipts:
         key = (receipt["case_id"], receipt["rollout"])
@@ -376,15 +463,26 @@ def calibrate(
             raise ValueError("Calibration must use training/validation rollouts, not final/dev")
         if receipt["grader_sha256"] != digest(grader_path):
             raise ValueError("Calibration grader changed after rollout collection")
+        if not receipt.get("policy_contract") or receipt.get("policy_sha256") != value_digest(
+            receipt["policy_contract"]
+        ):
+            reasons.append("Calibration requires resolved model/policy provenance")
+        else:
+            policies.add(receipt["policy_sha256"])
+        implementations.add(receipt["implementation_sha256"])
         if receipt["status"] == "failed":
             reasons.append("Runtime failures present: fix infrastructure before training")
             continue
-        reward = score(grader, receipt["sample"], receipt["item"])
-        if abs(reward - receipt["metrics"]["quality"]) > 1e-9:
-            raise ValueError("Local grader parity mismatch")
+        reward = calibrated_score(receipt["sample"], receipt["item"])
+        if abs(reward - receipt["metrics"]["quality"]) > (
+            max_label_mae if grader.__globals__.get("REQUIRES_NETWORK") else 1e-9
+        ):
+            reasons.append("Local grader parity mismatch")
         groups.setdefault(receipt["case_id"], []).append(reward)
     if len(groups) < min_cases:
         reasons.append(f"Need at least {min_cases} successful calibration cases")
+    if len(policies) != 1 or len(implementations) != 1:
+        reasons.append("Calibration must use one frozen policy/model and implementation")
     if any(len(values) < 2 for values in groups.values()):
         reasons.append("At least two rollouts per calibration example are required")
     fraction = sum(max(values) > min(values) for values in groups.values()) / max(len(groups), 1)
@@ -414,6 +512,10 @@ def calibrate(
         "receipts_sha256": digest(receipts_path),
         "labels_sha256": digest(labels_path),
         "data_sha256": sorted({row["data_sha256"] for row in receipts}),
+        "policy_sha256": next(iter(policies)) if len(policies) == 1 else None,
+        "implementation_sha256": next(iter(implementations)) if len(implementations) == 1 else None,
+        "adapter_sha256": sorted({row["adapter_sha256"] for row in receipts}),
+        "calls": calibration_calls,
     }
     write_json(output, report)
     return report
@@ -571,6 +673,9 @@ def select(candidate_path, approval_path, adapter, grader, final_data, output, c
         raise ValueError("Selection requires a rationale and cost evidence fingerprint")
     if digest(cost_report_path) != approval["cost_report_sha256"]:
         raise ValueError("Approved cost report changed")
+    from cost_report import verify_report
+
+    verify_report(candidate, read_json(cost_report_path))
     stages = {row["stage"] for row in candidate}
     if len(stages) != 1 or any(row["split"] != "development" for row in candidate):
         raise ValueError("Select one development-evaluated candidate")
@@ -586,6 +691,13 @@ def select(candidate_path, approval_path, adapter, grader, final_data, output, c
         raise ValueError("Candidate implementation changed after evaluation")
     if any(row["grader_sha256"] != digest(grader) for row in candidate):
         raise ValueError("Candidate grader changed after evaluation")
+    policies = {row.get("policy_sha256") for row in candidate}
+    if len(policies) != 1:
+        raise ValueError("Selection requires one frozen candidate policy")
+    selected_policy = policies.pop()
+    current = load_hook(adapter, "run_episode").__globals__.get("policy_contract")
+    if selected_policy and callable(current) and value_digest(current()) != selected_policy:
+        raise ValueError("Candidate resolved model/policy changed after evaluation")
     final_rows = read_jsonl(final_data)
     if any(row["split"] != "final" for row in final_rows):
         raise ValueError("Final data must contain only the final split")
@@ -595,6 +707,7 @@ def select(candidate_path, approval_path, adapter, grader, final_data, output, c
         "candidate_sha256": digest(candidate_path),
         "adapter_sha256": digest(adapter),
         "implementation_sha256": implementation,
+        "policy_sha256": selected_policy,
         "grader_sha256": digest(grader),
         "final_data_sha256": digest(final_data),
         "approval": approval,
@@ -614,6 +727,7 @@ def main():
     data.add_argument("--output", required=True)
     data.add_argument("--tools")
     data.add_argument("--instructions")
+    data.add_argument("--policy-adapter")
     evaluation = sub.add_parser("evaluate")
     for field in ("data", "adapter", "grader", "output", "stage"):
         evaluation.add_argument(f"--{field}", required=True)
@@ -646,7 +760,7 @@ def main():
     if args.command == "scaffold":
         result = scaffold(args.output)
     elif args.command == "prepare":
-        result = prepare(args.data, args.output, args.tools, args.instructions)
+        result = prepare(args.data, args.output, args.tools, args.instructions, args.policy_adapter)
     elif args.command == "evaluate":
         result = evaluate(
             args.data,
