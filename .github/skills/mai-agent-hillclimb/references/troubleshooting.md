@@ -12,6 +12,9 @@
 | Higher optimizer/training score, worse task result | Compare with the frozen quality evaluator and inspect reward shortcuts, leaked labels, missing invariants or drift. Do not promote automatically. |
 | RFT stuck waiting for capacity | Monitor the existing job, verify supported SKU/region and approved budget. A queued job is not justification for repeated submissions. |
 | Grader throttling/errors | Measure latency and concurrency, align judge capacity and retry only transient transport failures. Do not return success-like scores on judge failure. |
+| Valid optimizer answers all score zero | Inspect the actual mapped response framing. Use the code-evaluator transport adapter and validate framed good/bad/adversarial labels remotely; replay captured answers through the unchanged canonical grader. |
+| Native baseline repeatedly fails with zero outputs | Distinguish target execution from grading. Preserve native run IDs/errors, check exact-version invocation and session logs, and stop owned retrying jobs before another submission. |
+| Project hostname returns NXDOMAIN | Check the resource and advertised endpoint through the Azure control plane, and compare DNS with an independent known host. A successful ARM state does not prove data-plane availability. Do not recreate shared resources, change machine DNS, or invent a replacement endpoint. Preserve cleanup-pending state if session stop cannot reach the data plane. |
 | Higher tokens after RFT | Split ordinary/cached input, output/reasoning, replayed context and auxiliary calls. Training proxies are not actual cost measurements. |
 | Prices unavailable or mismatched | Follow Azure-first then GitHub fallback, verify units/tier/provider, preserve unresolved rates. Do not guess zero or mix currencies. |
 | Resume would mix runs | Compare code, prompts, tools, data, model/deployment, evaluator/judge and price fingerprints. Start a new output under a changed contract. |

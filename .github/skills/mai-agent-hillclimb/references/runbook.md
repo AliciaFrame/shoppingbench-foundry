@@ -231,8 +231,29 @@ An older or custom hosted runtime without this contract fails explicitly;
 it must implement the trace adapter rather than invent an empty tool trace.
 Runtime failures score zero, stay in the
 denominator, emit explicit errors, and make `evaluate` exit nonzero.
+For a smoke test or a bounded collection worker, repeat `--case-id` to select
+explicit cases while retaining the full source dataset fingerprint. It is
+not allowed on the sealed final split. A parallel collector must aggregate
+and verify the complete planned case/rollout set before comparing stages;
+filtered samples must not masquerade as a complete benchmark.
 
 Register the customized `evaluator.md`, then submit the explicit optimizer spec:
+
+For reference-checkable tasks, set `optimizer.evaluator_type: code` to register
+the canonical `grader.py` with a bundled transport adapter instead. Keep the
+grader's local `grade(sample, item)` contract: `sample.output_text` is the
+answer and `item` is the original reference. The generated catalog entry point
+decodes mapped `response` content-block frames and serialized `ground_truth`
+before calling that unchanged grader. Known-response validation deliberately
+uses the same content-block framing seen in optimizer output; both grader
+and adapter fingerprints bind the validation evidence. Do not teach domain
+grading logic to interpret service transport arrays as application answers.
+Use a pure, sandbox-compatible implementation; even some standard-library
+modules such as `urllib.parse` are disallowed. Validate known-response scores remotely before collecting
+the official baseline or starting optimization. This allows the same grader
+code to score search and independent hosted runs rather than relying on a
+different judge. `max_concurrent_agent_runs` bounds native search evaluation
+concurrency independently from the number of candidate configurations.
 
 ```powershell
 & $PY $C register-evaluator --project $P --config "$P\cloud.json" `

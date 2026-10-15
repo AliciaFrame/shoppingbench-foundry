@@ -67,6 +67,12 @@ than assuming old optimizer JSON/YAML fields remain supported.
 Persist the returned run ID immediately. Monitor that run, not a new
 submission; capture candidates and optimizer scores. If monitoring fails,
 retrieve the existing operation before attempting any resubmission.
+Inspect the underlying baseline evaluation early. Replay captured answers
+through the canonical grader if valid answers receive zero; catalog response
+bindings may contain serialized text-content blocks, not raw answer JSON.
+An evaluation with zero outputs or repeated target-execution failures is an
+infrastructure failure, not evidence of poor model quality. Stop the owned
+job's retries before debugging or submitting a corrected search.
 
 ## Independently accept or reject
 

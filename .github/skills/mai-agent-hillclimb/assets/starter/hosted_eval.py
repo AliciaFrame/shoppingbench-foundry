@@ -17,12 +17,15 @@ def run_episode(item):
     version = os.environ["MAI_HOSTED_AGENT_VERSION"]
     inputs = encode_input(item)
     evaluation_key()
-    with AIProjectClient(
-        endpoint=os.environ["MAI_PROJECT_ENDPOINT"],
-        credential=DefaultAzureCredential(),
-        allow_preview=True,
-        retry_total=0,
-    ) as project:
+    with (
+        DefaultAzureCredential(process_timeout=60) as credential,
+        AIProjectClient(
+            endpoint=os.environ["MAI_PROJECT_ENDPOINT"],
+            credential=credential,
+            allow_preview=True,
+            retry_total=0,
+        ) as project,
+    ):
         resource = project.agents.get_version(agent_name=name, agent_version=version)
         if resource.status != "active":
             raise RuntimeError(f"Hosted version {name}/{version} is not active: {resource.status}")

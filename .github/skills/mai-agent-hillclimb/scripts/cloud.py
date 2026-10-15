@@ -13,6 +13,7 @@ import uuid
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+from evaluator_adapter import code_source
 from journey import (
     SKILL,
     digest,
@@ -122,37 +123,51 @@ def project_client(endpoint):
 
 def register_evaluator(project, config, receipt):
     from azure.ai.projects.models import (
+        CodeBasedEvaluatorDefinition,
         EvaluatorMetric,
         EvaluatorVersion,
         PromptBasedEvaluatorDefinition,
     )
 
     path = claim(
-        receipt, "register-evaluator", {"evaluator_sha256": digest(Path(project) / "evaluator.md")}
+        receipt,
+        "register-evaluator",
+        evaluator_fingerprint(project, config),
     )
     mapping = evaluator_mapping(config)
-    definition = PromptBasedEvaluatorDefinition(
-        prompt_text=(Path(project) / "evaluator.md").read_text(encoding="utf-8"),
-        init_parameters={
-            "type": "object",
-            "properties": {"model": {"type": "string"}, "threshold": {"type": "number"}},
-            "required": ["model", "threshold"],
-        },
-        data_schema={
-            "type": "object",
-            "properties": {key: runtime_field_schema(key) for key in mapping},
-            "required": list(mapping),
-        },
-        metrics={
-            "quality": EvaluatorMetric(
-                type="continuous",
-                desirable_direction="increase",
-                min_value=0,
-                max_value=1,
-                threshold=0.75,
-            )
-        },
-    )
+    schema = {
+        "type": "object",
+        "properties": {key: runtime_field_schema(key) for key in mapping},
+        "required": list(mapping),
+    }
+    metrics = {
+        "quality": EvaluatorMetric(
+            type="continuous",
+            desirable_direction="increase",
+            min_value=0,
+            max_value=1,
+            threshold=0.75,
+        )
+    }
+    if config["optimizer"].get("evaluator_type", "prompt") == "code":
+        definition = CodeBasedEvaluatorDefinition(
+            code_text=code_source(evaluator_source(project, config).read_text(encoding="utf-8")),
+            data_schema=schema,
+            metrics=metrics,
+        )
+    elif config["optimizer"].get("evaluator_type", "prompt") == "prompt":
+        definition = PromptBasedEvaluatorDefinition(
+            prompt_text=evaluator_source(project, config).read_text(encoding="utf-8"),
+            init_parameters={
+                "type": "object",
+                "properties": {"model": {"type": "string"}, "threshold": {"type": "number"}},
+                "required": ["model", "threshold"],
+            },
+            data_schema=schema,
+            metrics=metrics,
+        )
+    else:
+        raise ValueError("Optimizer evaluator_type must be prompt or code")
     with project_client(config["project_endpoint"]) as client:
         evaluator = client.evaluators.create_version(
             name=config["optimizer"]["evaluator"],
@@ -166,7 +181,7 @@ def register_evaluator(project, config, receipt):
         state = {
             "status": "completed",
             "evaluator": evaluator.as_dict(),
-            "evaluator_sha256": digest(Path(project) / "evaluator.md"),
+            **evaluator_fingerprint(project, config),
         }
         write_json(path, state)
         return state
@@ -247,6 +262,21 @@ def endpoint_parity(project, config, labels, tool_probes, output):
     return report
 
 
+def evaluator_source(project, config):
+    return Path(project) / (
+        "grader.py" if config["optimizer"].get("evaluator_type") == "code" else "evaluator.md"
+    )
+
+
+def evaluator_fingerprint(project, config):
+    result = {"evaluator_sha256": digest(evaluator_source(project, config))}
+    if config["optimizer"].get("evaluator_type") == "code":
+        result["transport_adapter_sha256"] = digest(
+            Path(__file__).with_name("evaluator_adapter.py")
+        )
+    return result
+
+
 def evaluator_mapping(config):
     mapping = config["optimizer"].get(
         "data_mapping",
@@ -270,12 +300,16 @@ def runtime_field_schema(name):
     )
 
 
-def evaluator_data(label):
+def evaluator_data(label, config=None):
     item = label["item"]
     encode = load_hook(SKILL / "assets" / "starter" / "workload.py", "encode_input")
     return {
         "query": encode(item),
-        "response": label["sample"]["output_text"],
+        "response": (
+            json.dumps([{"type": "output_text", "text": label["sample"]["output_text"]}])
+            if config and config["optimizer"].get("evaluator_type") == "code"
+            else label["sample"]["output_text"]
+        ),
         "ground_truth": json.dumps(
             {
                 key: value
@@ -285,7 +319,10 @@ def evaluator_data(label):
             sort_keys=True,
         ),
         "tool_calls": label["sample"].get("output_tools", []),
-        "tool_definitions": item.get("tools", []),
+        "tool_definitions": [
+            {"type": "function", **tool["function"]} if "function" in tool else tool
+            for tool in item.get("tools", [])
+        ],
     }
 
 
@@ -293,7 +330,7 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
     path = Path(receipt)
     fingerprints = {
         "labels_sha256": digest(labels),
-        "evaluator_sha256": digest(Path(project) / "evaluator.md"),
+        **evaluator_fingerprint(project, config),
     }
     resuming = path.exists()
     if resuming:
@@ -307,6 +344,7 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
     state = read_json(path)
     reviewed = read_jsonl(labels)
     settings = config["optimizer"]
+    mapping = evaluator_mapping(config)
     headers = {"Foundry-Features": "Evaluations=V1Preview"}
     criterion = {
         "type": "azure_ai_evaluator",
@@ -346,10 +384,8 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
                     "type": "custom",
                     "item_schema": {
                         "type": "object",
-                        "properties": {
-                            key: runtime_field_schema(key) for key in evaluator_data(reviewed[0])
-                        },
-                        "required": list(evaluator_data(reviewed[0])),
+                        "properties": {key: runtime_field_schema(key) for key in mapping.values()},
+                        "required": list(mapping.values()),
                     },
                 },
                 testing_criteria=[criterion],
@@ -364,7 +400,15 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
                     "type": "jsonl",
                     "source": {
                         "type": "file_content",
-                        "content": [{"item": evaluator_data(label)} for label in reviewed],
+                        "content": [
+                            {
+                                "item": {
+                                    field: evaluator_data(label, config)[field]
+                                    for field in mapping.values()
+                                }
+                            }
+                            for label in reviewed
+                        ],
                     },
                 },
                 extra_headers=headers,
@@ -413,7 +457,10 @@ def optimizer_plan(project, config, validation_receipt):
     validated = read_json(validation_receipt)
     if not validated.get("passed"):
         raise ValueError("Optimizer requires successful known-response evaluator validation")
-    if validated["config"]["evaluator_sha256"] != digest(Path(project) / "evaluator.md"):
+    if any(
+        validated["config"].get(key) != value
+        for key, value in evaluator_fingerprint(project, config).items()
+    ):
         raise ValueError("Optimizer evaluator changed after validation")
     settings = config["optimizer"]
     expected = validated["evaluator_settings"]
@@ -468,6 +515,7 @@ def optimizer_plan(project, config, validation_receipt):
                     }
                 ],
                 "evaluation_model": {"model": settings["eval_model"]},
+                "max_concurrent_agent_runs": settings.get("max_concurrent_agent_runs", 1),
             },
             "candidate_search_configuration": {"max_candidates": settings["max_candidates"]},
             "baseline_agent_configuration": {
@@ -1255,7 +1303,7 @@ def main():
     elif args.action == "register-evaluator":
         plan = {
             "name": config["optimizer"]["evaluator"],
-            "source_sha256": digest(Path(args.project) / "evaluator.md"),
+            "source_sha256": digest(evaluator_source(args.project, config)),
         }
     elif args.action == "deploy-checkpoint":
         training = read_json(args.training_receipt)

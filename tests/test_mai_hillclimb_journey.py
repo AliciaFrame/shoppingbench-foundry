@@ -1762,3 +1762,89 @@ def test_successful_cli_output_redacts_secrets_before_persistence(project, monke
     assert (
         cloud.command(["az", "account", "show"], project, [key]) == "output containing <redacted>"
     )
+
+
+def test_code_evaluator_registers_exact_grader_without_requiring_prompt_file(project, monkeypatch):
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    config["optimizer"]["evaluator_type"] = "code"
+    (project / "evaluator.md").unlink()
+    recorded = []
+
+    def create(**kwargs):
+        recorded.append(kwargs["evaluator_version"].as_dict())
+        return SimpleNamespace(
+            as_dict=lambda: {"name": config["optimizer"]["evaluator"], "version": "1"}
+        )
+
+    api = SimpleNamespace(evaluators=SimpleNamespace(create_version=create))
+    monkeypatch.setattr(cloud, "project_client", lambda _endpoint: Context(api))
+    result = cloud.register_evaluator(project, config, project / "registered-code.json")
+    definition = recorded[0]["definition"]
+    assert definition["type"] == "code"
+    assert definition["code_text"].startswith((project / "grader.py").read_text(encoding="utf-8"))
+    assert "_hillclimb_canonical_grade = grade" in definition["code_text"]
+    assert result["evaluator_sha256"] == journey.digest(project / "grader.py")
+    assert definition["data_schema"]["required"] == ["query", "response", "ground_truth"]
+
+
+def test_evaluator_validation_normalizes_function_tool_schema(project):
+    item = journey.read_jsonl(project / "cases.example.jsonl")[0]
+    item["tools"] = journey.read_json(project / "tools.json")
+    data = cloud.evaluator_data({"item": item, "sample": {"output_text": "{}"}})
+    assert data["tool_definitions"][0]["name"] == "lookup_policy"
+    assert "function" not in data["tool_definitions"][0]
+
+
+def test_filtered_case_collection_keeps_full_data_fingerprint_and_seals_final(project, prepared):
+    adapter = write_adapter(project)
+    data = prepared / "development.jsonl"
+    selected = journey.read_jsonl(data)[0]["id"]
+    output = project / "selected-cases.jsonl"
+    summary = journey.evaluate(
+        data, adapter, project / "grader.py", output, "base", rollouts=2, case_ids=[selected]
+    )
+    rows = journey.read_jsonl(output)
+    assert summary["episodes"] == 2
+    assert {row["case_id"] for row in rows} == {selected}
+    assert all(row["data_sha256"] == journey.digest(data) for row in rows)
+    assert all(row["case_selection"] == [selected] for row in rows)
+    with pytest.raises(ValueError, match="cannot be partially"):
+        journey.evaluate(
+            prepared / "final.jsonl",
+            adapter,
+            project / "grader.py",
+            project / "partial-final.jsonl",
+            "base",
+            case_ids=["final-0"],
+        )
+
+
+def test_code_grader_transport_frames_do_not_change_canonical_scores(project):
+    source = (project / "grader.py").read_text(encoding="utf-8")
+    generated = project / "catalog_runtime.py"
+    generated.write_text(cloud.code_source(source), encoding="utf-8")
+    remote = journey.load_hook(generated, "grade")
+    local = journey.load_hook(project / "grader.py", "grade")
+    item = {"expected": {"answer": "correct"}}
+    mapped = {"ground_truth": json.dumps(item)}
+    for answer in ('{"answer":"correct"}', '{"answer":"wrong"}', "not JSON"):
+        expected = local({"output_text": answer}, item)
+        for response in (
+            answer,
+            json.dumps([{"type": "output_text", "text": answer}]),
+            [{"type": "output_text", "text": answer}],
+        ):
+            assert remote({}, {**mapped, "response": response}) == expected
+    invalid_model_answer = json.dumps([{"type": "output_text", "text": '{"answer":"correct"}'}])
+    response = json.dumps([{"type": "output_text", "text": invalid_model_answer}])
+    assert remote({}, {**mapped, "response": response}) == 0
+
+
+def test_code_evaluator_calibration_uses_real_content_block_transport(project):
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    config["optimizer"]["evaluator_type"] = "code"
+    label = journey.read_jsonl(project / "labels.example.jsonl")[0]
+    data = cloud.evaluator_data(label, config)
+    assert json.loads(data["response"]) == [
+        {"type": "output_text", "text": label["sample"]["output_text"]}
+    ]

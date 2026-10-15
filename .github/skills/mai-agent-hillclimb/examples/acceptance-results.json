@@ -1,5 +1,58 @@
 {
-  "date": "2026-10-14",
+  "date": "2026-10-15",
+  "nyc_parking_exercise": {
+    "date": "2026-10-15",
+    "status": "blocked; no optimization-improvement claim",
+    "model": "MAI-Code-1.1-Flash",
+    "tool": "Foundry WebSearchToolboxTool exposed over authenticated Toolbox MCP",
+    "public_reference": "https://portal.311.nyc.gov/article/?kanumber=KA-01011",
+    "runtime": {"max_output_tokens": 4096, "max_tool_steps": 8},
+    "verified_live": [
+      "Hosted agent deployment and signed exact-version tool-using invocation",
+      "Native Foundry web-search discovery, invocation and citation capture",
+      "Nine reviewed good, bad and adversarial code-evaluator labels: remote MAE 0",
+      "After native target failures, a fresh independent hosted diagnostic scored 1.0"
+    ],
+    "diagnostic_baseline": {
+      "episodes": 34,
+      "quality": 0.8724264705882353,
+      "operational_failures": 2,
+      "native_search_calls": 43,
+      "limitation": "Informed targeted search and overlapped optimizer load; not held-out improvement evidence or a matched latency/cost control"
+    },
+    "transport_repair": {
+      "cause": "Optimizer response mapping supplied serialized content blocks to a grader expecting application JSON",
+      "captured_answers_replayed_locally": 15,
+      "canonical_mean": 1.0,
+      "normalized_mean": 1.0,
+      "framed_known_label_remote_mae": 0.0,
+      "original_search_limitation": "Captured answers already scored perfectly; that search had no demonstrated quality headroom"
+    },
+    "revised_data": {
+      "targeted_search_cases": 12,
+      "fresh_development_cases": 24,
+      "sealed_final_cases": 12,
+      "development_source": "Fresh questions using the official NYC311 2025 calendar",
+      "final_test_opened": false
+    },
+    "optimizer": {
+      "invalid_transport_job": "cancelled; no result retained",
+      "corrected_job": "cancelled after two native baseline attempts failed with zero outputs",
+      "matched_comparison_completed": false,
+      "candidate_deployed": false,
+      "manual_replay_attempts": "Input-validation failures excluded; not successful end-to-end evidence",
+      "latest_blocker": "Advertised project data-plane hostname returns NXDOMAIN while Azure control plane reports the account Succeeded",
+      "causality_limit": "DNS failure was observed after native failures; it is not proven to explain every earlier failure",
+      "cleanup": "Job cancellation confirmed; native session cleanup pending data-plane recovery"
+    },
+    "focused_local_tests_passed": 75,
+    "rft": "not requested or submitted",
+    "cost": {
+      "matched_savings": null,
+      "total_serving_usd": null,
+      "limitation": "Native grounding/tool-side usage, optimizer and hosting charges are not fully priced; no total-dollar savings claim"
+    }
+  },
   "security_followup": {
     "date": "2026-10-14",
     "focused_tests_passed": 70,

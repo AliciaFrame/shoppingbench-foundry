@@ -38,6 +38,7 @@
     "eval_model": "replace-with-judge-deployment",
     "optimize_model": "replace-with-optimizer-deployment",
     "evaluator": "replace-with-registered-evaluator",
+    "evaluator_type": "prompt",
     "evaluator_version": "replace-with-registered-version",
     "pass_threshold": 0.75,
     "max_label_mae": 0.1,
@@ -47,6 +48,7 @@
       "ground_truth": "ground_truth"
     },
     "max_candidates": 2,
+    "max_concurrent_agent_runs": 1,
     "operation_id": "replace-after-submission",
     "candidate_id": "replace-after-inspection"
   },

@@ -76,6 +76,23 @@ not an excuse to report success.
 Use bounded smoke tests. Stop only the temporary process you started after
 testing. Avoid mutating shared production tool state.
 
+### Native web search in hosted code
+
+For a hosted custom tool loop, inspect the current
+[Foundry web-search guidance](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/web-search?pivots=python)
+and available Toolbox APIs. The live MAI exercise used a `WebSearchToolboxTool`
+exposed by a versioned Foundry Toolbox MCP endpoint, not a replacement HTTP
+search scraper or an assumed prompt-agent `WebSearchTool` integration.
+Discover its actual tool name and argument schema before wiring the domain
+adapter. The tested MCP path required an Entra token for
+`https://ai.azure.com/.default`, the
+`Foundry-Features: Toolboxes=V1Preview` header, and call metadata containing the
+resolved policy deployment name, model name and model version in `model_info`.
+Keep the model identity and optional domain filters explicit. Preserve returned
+text, annotations/citations and actual search queries in authorized tool traces.
+Do not infer tool-side tokens or a zero grounding charge from missing usage.
+Review the service's grounding data-transfer terms before sending private data.
+
 ## 4. Initialize and choose deployment mode
 
 After approval, an existing project and model can initialize a hosted agent

@@ -283,7 +283,15 @@ def normalize_calls(calls, price_key):
 
 
 def evaluate(
-    data, adapter, grader_path, output, stage, rollouts=1, price_key="policy", final_state=None
+    data,
+    adapter,
+    grader_path,
+    output,
+    stage,
+    rollouts=1,
+    price_key="policy",
+    final_state=None,
+    case_ids=None,
 ):
     if rollouts < 1:
         raise ValueError("Rollouts must be positive")
@@ -292,6 +300,13 @@ def evaluate(
     splits = {row["split"] for row in rows}
     if len(splits) != 1:
         raise ValueError("Evaluate exactly one split at a time")
+    if case_ids is not None:
+        if splits == {"final"}:
+            raise ValueError("A sealed final evaluation cannot be partially selected")
+        selected = set(case_ids)
+        if not selected or not selected.issubset({row["id"] for row in rows}):
+            raise ValueError("Case selection must name existing examples")
+        rows = [row for row in rows if row["id"] in selected]
     if Path(output).exists():
         raise FileExistsError(f"Receipts already exist: {output}")
     run = load_hook(adapter, "run_episode")
@@ -333,6 +348,7 @@ def evaluate(
                     "group": row["group"],
                     "split": row["split"],
                     "rollout": rollout,
+                    "case_selection": sorted(case_ids) if case_ids is not None else None,
                     "stage": stage,
                     "item": row,
                     "data_sha256": digest(data),
@@ -734,6 +750,7 @@ def main():
     evaluation.add_argument("--rollouts", type=int, default=1)
     evaluation.add_argument("--price-key", default="policy")
     evaluation.add_argument("--final-state")
+    evaluation.add_argument("--case-id", action="append")
     calibration = sub.add_parser("calibrate")
     for field in ("receipts", "grader", "labels", "output"):
         calibration.add_argument(f"--{field}", required=True)
@@ -771,6 +788,7 @@ def main():
             args.rollouts,
             args.price_key,
             args.final_state,
+            args.case_id,
         )
     elif args.command == "calibrate":
         if args.min_cases < 1 or not 0 < args.min_variable_fraction <= 1:
