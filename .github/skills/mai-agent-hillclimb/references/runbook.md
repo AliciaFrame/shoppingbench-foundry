@@ -141,9 +141,12 @@ For RFT, prepare from the **resolved selected policy**, including skill bodies:
 use `--policy-adapter "$P\agent.py"` instead of `--instructions`. This requires
 runtime packages and actual model configuration to be set first. Task context
 is materialized into training messages exactly once. MAI reinforcement examples
-remain system-message-free; the manifest binds the resolved policy fingerprint,
-and submission verifies that fingerprint against calibration and current
-runtime policy. Existing system messages are rejected before upload.
+remain system-message-free; the resolved selected policy is materialized as a
+fixed leading user message because the trainer must see it, then bound by
+manifest fingerprint. Calibration uses that exact no-system prompt shape rather
+than also supplying server instructions. Submission verifies the fingerprint,
+materialized policy, calibration and current runtime policy. Existing system
+messages and duplicate policy materialization are rejected before upload.
 Calibration receipts must
 record the same model, endpoint, instructions, tools, domain implementation,
 runtime limits and implementation fingerprint; changing any requires new
