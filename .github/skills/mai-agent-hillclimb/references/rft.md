@@ -21,6 +21,11 @@ quietly substitute a different training method.
 - Bind each example to the optimized instructions/tool contract. Validate
   required messages, per-example schemas, references and final output shape
   against the selected training service's current requirements.
+- If the selected service rejects system messages, materialize the frozen task
+  policy in its supported model-visible prompt shape and fingerprint it. Merely
+  recording a policy hash while omitting the policy from trainer inputs can turn
+  a calibrated task into zero-reward training. Calibration must use the exact
+  same prompt hierarchy and must not also inject a duplicate server instruction.
 - Keep reference labels out of agent-visible inputs. If an external step
   cannot execute during training, capture its evidence once, review it,
   freeze it as trusted input, and later test the full live serving pipeline.

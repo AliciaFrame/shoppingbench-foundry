@@ -26,6 +26,7 @@ from journey import (
     read_json,
     read_jsonl,
     score,
+    training_policy_message,
     validate_data,
     value_digest,
     write_json,
@@ -1027,6 +1028,15 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
     for row in train + validation:
         if any(message["role"] == "system" for message in row["messages"]):
             raise ValueError("Reinforcement examples must not contain system messages")
+        if not row["messages"] or row["messages"][0] != {
+            "role": "user",
+            "content": training_policy_message(current_policy["instructions"]),
+        }:
+            raise ValueError("Reinforcement examples must materialize the selected policy")
+    if manifest.get("training_policy_message_sha256") != value_digest(
+        training_policy_message(current_policy["instructions"])
+    ):
+        raise ValueError("Prepared training policy materialization changed")
     if len(train) < config["rft"]["min_train_examples"] or len(validation) < 1:
         raise ValueError("Too few training/validation examples for selected service")
     capability = config["rft"]["capability_evidence"]
