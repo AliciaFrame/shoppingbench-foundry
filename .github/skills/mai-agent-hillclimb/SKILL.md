@@ -49,6 +49,13 @@ identifiers exist in that project.
 
 ## Phase routing
 
+For an existing optimization-ready hosted agent, start with the
+[ordinary SDK happy path](references/runbook.md#existing-agent-sdk-happy-path):
+**plain smoke -> built-in optimization -> monitor -> isolated candidate**.
+It needs no custom evaluator registration, signing key or RFT service.
+Use rich capture only when needed for independent evaluation; custom rubrics,
+graders and RFT remain advanced opt-in paths.
+
 Use [the executable runbook](references/runbook.md) for the actual commands and
 bundled interfaces; phase references below provide the decision and evidence
 requirements. No repository code or additional skill is needed.
@@ -82,6 +89,9 @@ of success.
 - **Quality:** choose the evaluator before optimization. It may be a
   deterministic test suite, calibrated semantic judge, human rubric, or a
   combination. The same quality definition must compare all stages.
+  For grounded generation, verify claim-level support from observed evidence:
+  valid citations alone are not faithfulness. Calibrate semantic grading or
+  source review with valid-link/unsupported-claim negative examples.
 - **Evidence:** include every scheduled episode in results. Preserve failed
   episodes, observed per-call usage, elapsed time, and explicit errors.
   Missing usage is unknown, not evidence of free inference. Retry transport
@@ -108,6 +118,8 @@ of success.
   immediately. A monitoring timeout is not permission to submit another job.
   Clean up only resources or processes explicitly created for the run and
   approved for deletion; do not remove shared infrastructure.
+  A disconnected local monitor is not a failed cloud job. Resume the recorded
+  ID after repairing access; never submit a replacement to recover monitoring.
 
 ## Self-contained local cost tool
 

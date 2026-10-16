@@ -18,6 +18,63 @@ live verification from mocked paths and records the rejected optimizer candidate
 
 ## Start and adapt
 
+### Existing-agent SDK happy path
+
+For an existing optimization-ready agent, fill
+[the minimal built-in configuration](../examples/cloud.builtin.example.json)
+with the actual project, immutable baseline version, deployed models and a
+prepared optimizer-only dataset. Keep existing configuration files; do not
+overwrite them with template placeholders. The full cloud example remains
+available for provisioning, custom rubrics and RFT.
+Use the matching local baseline source/configuration (`instructions.md`,
+`tools.json`, `metadata.yaml`), not an unrelated empty working directory.
+The built-in path also accepts the official single-turn JSONL shape
+(`name`, `query`, optional string `ground_truth` and `criteria`). If split
+annotations are present they must be `optimizer`. For unannotated files,
+review group-disjointness yourself: selecting a file as search data is not
+proof that it is isolated from development or final data.
+
+With `S`, `P`, `PY` and `C` resolved as below, use the same native SDK path
+throughout:
+
+```powershell
+& $PY $C smoke --project $P --config "$P\cloud.json" `
+  --receipt "$P\smoke.json" --execute --approve-billable
+& $PY $C optimize --project $P --config "$P\cloud.json" `
+  --receipt "$P\optimizer.json" --execute --approve-billable
+& $PY $C optimizer-monitor --project $P --config "$P\cloud.json" `
+  --receipt "$P\optimizer.json" --execute
+& $PY $C optimizer-results --project $P --config "$P\cloud.json" `
+  --optimization-receipt "$P\optimizer.json" --output "$P\native-results.json" `
+  --receipt "$P\native-export.json" --execute
+& $PY $C deploy-candidate --project $P --config "$P\cloud.json" `
+  --optimization-receipt "$P\optimizer.json" --candidate-id "<nominated-candidate-id>" `
+  --receipt "$P\candidate-deploy.json" --execute --approve-billable
+```
+
+First inspect plans without `--execute`. `smoke` is an ordinary invocation:
+no grader, evaluation metadata or signing-key lookup. Built-in optimization
+registers frozen task data, preserves per-task criteria, and requires no local
+rubric or custom-evaluator validation receipt. Single-turn tasks use plain user
+queries; history/context envelopes still require an isolated evaluation agent.
+Use precise task criteria and validate project quality independently.
+
+Candidate application uses the public SDK code-upload API, not a CLI-local
+"last optimization job" value. It supports the bundled code-based starter's
+root metadata and default optimization directories; custom config directories
+and image-only agents fail explicitly rather than silently ignoring mutations.
+Instructions, model, tools and skill bodies are materialized in the uploaded
+configuration. Existing `@latest` traffic rules are frozen to their current
+versions before creating the evaluation version; other serving rules are
+preserved. Ordinary traffic does **not** switch to the candidate. Use the
+returned exact version for held-out evaluation and promote separately only
+after acceptance.
+
+Read-only monitoring retries transient failures within a bound and persists
+`monitor.disconnected` separately from remote job status. Resume the same
+receipt after access recovery. Submission/upload ambiguity requires
+reconciliation, not a different receipt or another job.
+
 Set absolute paths in PowerShell; `P` is a new agent project, not the skill:
 
 ```powershell
@@ -241,8 +298,9 @@ Agent Optimizer documents **built-in evaluators and custom rubric evaluators**,
 not arbitrary code graders. See the current
 [optimizer evaluator support](https://learn.microsoft.com/azure/foundry/agents/how-to/create-optimizer-dataset#customize-evaluators-advanced).
 Successful ordinary evaluator calibration does not establish optimizer support.
-For the bundled SDK optimization helper, register and calibrate the customized
-prompt rubric in `evaluator.md`, then submit the explicit spec below.
+Use `evaluator_type: builtin` for the simple SDK path above. For a custom prompt
+rubric, select `evaluator_type: prompt`, register and calibrate `evaluator.md`,
+then submit the explicit spec below.
 
 For **ordinary reference-checkable evaluation**, `optimizer.evaluator_type: code`
 registers the canonical `grader.py` with a bundled transport adapter. This setting
@@ -276,8 +334,7 @@ concurrency independently from the number of candidate configurations.
   --receipt "$P\optimizer.json" --timeout 3600 --execute
 ```
 
-For a built-in nomination evaluator, use the documented CLI instead of registering
-a replacement or passing it through the custom-rubric helper:
+The documented azd CLI remains an alternative for a CLI-managed project:
 
 ```powershell
 Push-Location $P
@@ -298,7 +355,7 @@ azd project files requires the documented interactive instruction flow instead;
 do not silently omit baseline instructions with `--no-prompt`.
 Use precise per-task criteria where required, preserve the returned operation ID,
 and independently score nominations with `grader.py`. Task adherence is not proof
-of calendar factual accuracy, safety or cost savings.
+of factual accuracy, source faithfulness, safety or cost savings.
 
 The helper bundles the instruction/config binding, immutable baseline version,
 query-shaped search dataset, evaluator and candidate limit. Optimizer catalog
@@ -311,13 +368,14 @@ Skills from the metadata's `skill_dir` (default `skills`) are included with
 their names, descriptions and bodies. Hosted optimizer service tool telemetry
 may still depend on platform instrumentation; independently validate process
 quality using the explicit trace adapter rather than trusting absent traces.
-The SDK path explicitly supplies its judge deployment, threshold and version;
+The custom-rubric SDK path explicitly supplies its judge deployment, threshold and version;
 setting only an optimizer-wide eval model is insufficient for custom evaluators.
 Known-label validation must complete with actual numeric scores and acceptable
 MAE before search. An evaluator 401 or null score is **not** a model score of zero.
 
 Inspect candidates and usage in the recorded job result. Populate the chosen
-`candidate_id`; `deploy-candidate` deploys it as a new version with approval.
+`candidate_id`; `deploy-candidate` requires the optimization receipt and deploys
+an isolated SDK version with approval, preserving ordinary serving routes.
 The runtime resolves optimizer configuration with Entra auth and refuses to
 silently use baseline when a requested candidate was not loaded. Independently
 evaluate every nominated candidate on the **same development cases/rollouts**
@@ -346,6 +404,24 @@ for production. The exported source is a nomination, not a selected winner.
 This checks matched coverage and grader/data hashes and computes a paired
 connected-group bootstrap interval. Its quality/latency gate is not a winner:
 safety review and matched cost evidence still require explicit acceptance.
+
+Native `optimizer-results` is search evidence, not this independent comparison.
+It joins persistent case IDs/query-reference fingerprints, records adaptive
+coverage, and separates the optimizer composite from shared evaluator scores.
+It does not turn missing unscheduled cases into failures or native token
+averages into matched serving-cost savings.
+
+The runtime preserves requested and returned model identity, provider completion
+status and incomplete details. Incomplete generations fail explicitly with
+observed usage. Authorized rich-capture failures use `response.failed`, never a
+successful answer carrying a hidden error. Failed hosted evaluations collect
+bounded, allowlisted diagnostics before cleanup; opaque console text is not
+exported because it can contain credentials. If a proxy discards the failure
+payload, usage remains unknown. Ordinary users still cannot request private
+failure traces.
+Existing deployed agents need the updated runtime redeployed to emit the new
+provider metadata and authorized partial-usage failure payloads; upgrading the
+local skill alone does not change remote code.
 
 ## Calibrate and run RFT
 

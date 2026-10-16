@@ -1733,7 +1733,9 @@ def test_key_vault_evaluation_key_uses_identity_reference_and_never_enters_metad
             )
         )
 
-    monkeypatch.setattr(azure.identity, "DefaultAzureCredential", lambda: Context("identity"))
+    monkeypatch.setattr(
+        azure.identity, "DefaultAzureCredential", lambda **_kwargs: Context("identity")
+    )
     monkeypatch.setattr(secrets_sdk, "SecretClient", client)
     monkeypatch.setenv(
         "HILLCLIMB_EVALUATION_KEY_SECRET_URI",

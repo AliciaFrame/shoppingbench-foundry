@@ -64,7 +64,7 @@ def _vault_key(uri):
 
     vault_url, name, version = validate_secret_uri(uri)
     with (
-        DefaultAzureCredential() as credential,
+        DefaultAzureCredential(process_timeout=60) as credential,
         SecretClient(
             vault_url=vault_url,
             credential=credential,

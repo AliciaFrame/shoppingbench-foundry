@@ -31,14 +31,14 @@ def client():
         if ".openai.azure.com" in endpoint
         else "https://ai.azure.com/.default"
     )
-    with DefaultAzureCredential() as credential:
+    with DefaultAzureCredential(process_timeout=60) as credential:
         key = os.getenv("MAI_API_KEY") or get_bearer_token_provider(credential, scope)
         with OpenAI(base_url=endpoint, api_key=key, max_retries=0, timeout=120) as api:
             yield api
 
 
 def configuration():
-    with DefaultAzureCredential() as credential:
+    with DefaultAzureCredential(process_timeout=60) as credential:
         configured = load_config(
             config_dir=os.getenv("OPTIMIZATION_LOCAL_DIR", str(ROOT)),
             credential=credential,
@@ -139,14 +139,20 @@ def _run_episode(item, calls, api):
             **({"temperature": policy["temperature"]} if policy["temperature"] is not None else {}),
         )
         raw_usage = response.usage.model_dump() if response.usage else None
+        incomplete = getattr(response, "incomplete_details", None)
         calls.append(
             {
                 "model": model,
+                "returned_model": getattr(response, "model", None),
+                "response_status": getattr(response, "status", None),
+                "incomplete_details": incomplete.model_dump() if incomplete else None,
                 "purpose": "inference",
                 "raw_usage": raw_usage,
                 "cache_write_mode": os.getenv("MAI_CACHE_WRITE_MODE", "none"),
             }
         )
+        if getattr(response, "status", None) not in (None, "completed") or incomplete:
+            raise RuntimeError("Provider generation did not complete")
         inputs.extend(message.model_dump(exclude_none=True) for message in response.output)
         tool_calls = [message for message in response.output if message.type == "function_call"]
         if not tool_calls:
@@ -180,30 +186,34 @@ async def handler(request, context, _cancellation_signal):
         if os.getenv("HILLCLIMB_ENABLE_EVALUATION") == "1"
         else {"messages": [{"role": "user", "content": inputs}]}
     )
-    result = await asyncio.to_thread(run_episode, item)
+    try:
+        result = await asyncio.to_thread(run_episode, item)
+    except EpisodeFailure as error:
+        if not capture:
+            raise
+        stream = ResponseEventStream(response_id=context.response_id, request=request)
+        failure = json.dumps(
+            {
+                "hillclimb_trace_version": 1,
+                "status": "failed",
+                "calls": redact_trace(error.calls),
+            }
+        )
+        usage = response_usage(error.calls)
+
+        async def failed_events():
+            yield stream.emit_created()
+            yield stream.emit_in_progress()
+            yield stream.emit_failed(message=failure, usage=usage)
+
+        return failed_events()
     output_text = result["output_text"]
     if capture:
         trace = {"hillclimb_trace_version": 1, **result}
         trace["output_tools"] = redact_trace(result["output_tools"])
         trace["calls"] = redact_trace(result["calls"])
         output_text = json.dumps(trace)
-    usage_rows = [call["raw_usage"] for call in result["calls"]]
-    usage = None
-    if all(row is not None for row in usage_rows):
-        cached = sum(
-            (row.get("input_tokens_details") or {}).get("cached_tokens", 0) for row in usage_rows
-        )
-        reasoning = sum(
-            (row.get("output_tokens_details") or {}).get("reasoning_tokens", 0)
-            for row in usage_rows
-        )
-        usage = ResponseUsage(
-            input_tokens=sum(row["input_tokens"] for row in usage_rows),
-            output_tokens=sum(row["output_tokens"] for row in usage_rows),
-            total_tokens=sum(row["total_tokens"] for row in usage_rows),
-            input_tokens_details=ResponseUsageInputTokensDetails(cached_tokens=cached),
-            output_tokens_details=ResponseUsageOutputTokensDetails(reasoning_tokens=reasoning),
-        )
+    usage = response_usage(result["calls"])
     stream = ResponseEventStream(response_id=context.response_id, request=request)
 
     async def events():
@@ -220,6 +230,27 @@ async def handler(request, context, _cancellation_signal):
         yield stream.emit_completed(usage=usage)
 
     return events()
+
+
+def response_usage(calls):
+    usage_rows = [call["raw_usage"] for call in calls]
+    usage = None
+    if usage_rows and all(row is not None for row in usage_rows):
+        cached = sum(
+            (row.get("input_tokens_details") or {}).get("cached_tokens", 0) for row in usage_rows
+        )
+        reasoning = sum(
+            (row.get("output_tokens_details") or {}).get("reasoning_tokens", 0)
+            for row in usage_rows
+        )
+        usage = ResponseUsage(
+            input_tokens=sum(row["input_tokens"] for row in usage_rows),
+            output_tokens=sum(row["output_tokens"] for row in usage_rows),
+            total_tokens=sum(row["total_tokens"] for row in usage_rows),
+            input_tokens_details=ResponseUsageInputTokensDetails(cached_tokens=cached),
+            output_tokens_details=ResponseUsageOutputTokensDetails(reasoning_tokens=reasoning),
+        )
+    return usage
 
 
 def create_app():

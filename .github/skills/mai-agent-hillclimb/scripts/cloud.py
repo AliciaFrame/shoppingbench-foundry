@@ -10,9 +10,12 @@ import subprocess
 import time
 import urllib.request
 import uuid
+from contextlib import contextmanager
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import hosted_ops
+import optimizer_results as native_results
 from evaluator_adapter import code_source
 from journey import (
     SKILL,
@@ -25,6 +28,7 @@ from journey import (
     validate_data,
     value_digest,
     write_json,
+    write_jsonl,
 )
 
 
@@ -107,21 +111,30 @@ def sdk_client(base_url):
         if ".openai.azure.com" in base_url
         else "https://ai.azure.com/.default"
     )
-    key = os.getenv("MAI_API_KEY") or get_bearer_token_provider(DefaultAzureCredential(), scope)
+    key = os.getenv("MAI_API_KEY") or get_bearer_token_provider(
+        DefaultAzureCredential(process_timeout=60), scope
+    )
     # A timed-out POST is ambiguous; do not retry billable creates automatically.
     return OpenAI(base_url=base_url.rstrip("/") + "/", api_key=key, max_retries=0, timeout=120)
 
 
+@contextmanager
 def project_client(endpoint):
     from azure.ai.projects import AIProjectClient
     from azure.identity import DefaultAzureCredential
 
-    return AIProjectClient(
-        endpoint=endpoint, credential=DefaultAzureCredential(), allow_preview=True, retry_total=0
-    )
+    with (
+        DefaultAzureCredential(process_timeout=60) as credential,
+        AIProjectClient(
+            endpoint=endpoint, credential=credential, allow_preview=True, retry_total=0
+        ) as client,
+    ):
+        yield client
 
 
 def register_evaluator(project, config, receipt):
+    if config["optimizer"].get("evaluator_type") == "builtin":
+        raise ValueError("Built-in evaluators do not need registration")
     from azure.ai.projects.models import (
         CodeBasedEvaluatorDefinition,
         EvaluatorMetric,
@@ -269,6 +282,8 @@ def evaluator_source(project, config):
 
 
 def evaluator_fingerprint(project, config):
+    if config["optimizer"].get("evaluator_type") == "builtin":
+        return {"builtin_evaluator": config["optimizer"]["evaluator"]}
     result = {"evaluator_sha256": digest(evaluator_source(project, config))}
     if config["optimizer"].get("evaluator_type") == "code":
         result["transport_adapter_sha256"] = digest(
@@ -327,6 +342,8 @@ def evaluator_data(label, config=None):
 
 
 def validate_evaluator(project, config, labels, receipt, timeout=600):
+    if config["optimizer"].get("evaluator_type") == "builtin":
+        raise ValueError("Built-ins do not require custom-rubric validation receipts")
     path = Path(receipt)
     fingerprints = {
         "labels_sha256": digest(labels),
@@ -449,20 +466,166 @@ def validate_evaluator(project, config, labels, receipt, timeout=600):
         return state
 
 
-def optimizer_plan(project, config, validation_receipt):
-    if config["optimizer"].get("evaluator_type", "prompt") != "prompt":
+def builtin_optimizer_data(project, config):
+    spec = optimizer_config(project, config)
+    rows = read_jsonl(spec["dataset"]["local_uri"])
+    native = []
+    for row in rows:
+        item = row.get("item", row)
+        messages = item.get("messages")
+        simple = (
+            isinstance(messages, list)
+            and len(messages) == 1
+            and messages[0].get("role") == "user"
+            and not item.get("context")
+        )
+        if messages is None:
+            query = row["query"]
+            if (
+                isinstance(query, str)
+                and query.startswith("HILLCLIMB_WORKLOAD")
+                and config.get("enable_evaluation") is not True
+            ):
+                raise ValueError("Workload envelopes require isolated evaluation mode")
+        elif simple:
+            query = messages[0]["content"]
+        else:
+            if config.get("enable_evaluation") is not True:
+                raise ValueError("History/context envelopes require isolated evaluation mode")
+            query = row["query"]
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("Built-in optimizer queries must be nonempty text")
+        if not isinstance(row.get("ground_truth", ""), str):
+            raise TypeError("Optimizer ground truth must be a string when supplied")
+        criteria = row.get("criteria")
+        criteria = [] if criteria is None else criteria
+        if not isinstance(criteria, list) or any(
+            not isinstance(criterion, dict)
+            or any(
+                not isinstance(criterion.get(key), str) or not criterion[key].strip()
+                for key in ("name", "instruction")
+            )
+            for criterion in criteria
+        ):
+            raise ValueError("Optimizer criteria require nonempty names and instructions")
+        native.append(
+            {
+                "name": row.get("name", row.get("id")),
+                "query": query,
+                "ground_truth": row.get("ground_truth", ""),
+                "criteria": criteria,
+            }
+        )
+    if any(not isinstance(row["name"], str) or not row["name"].strip() for row in native) or len(
+        {row["name"] for row in native}
+    ) != len(native):
+        raise ValueError("Optimizer examples require unique stable names")
+    sha = value_digest(native)
+    label = re.sub("[^a-z0-9-]", "-", config["run_id"].lower()).strip("-")[:35]
+    if not label:
+        raise ValueError("Run ID must contain an alphanumeric dataset label")
+    return {"name": f"hc-{label}-{sha[:16]}", "version": "1", "sha256": sha, "rows": native}
+
+
+def optimizer_plan(project, config, validation_receipt=None):
+    for key, value in {
+        "max_candidates": config["optimizer"]["max_candidates"],
+        "max_concurrent_agent_runs": config["optimizer"].get("max_concurrent_agent_runs", 1),
+    }.items():
+        if type(value) is not int or value < 1:
+            raise ValueError(f"{key} must be a positive integer")
+    kind = config["optimizer"].get("evaluator_type", "prompt")
+    if kind not in ("prompt", "builtin"):
         raise ValueError(
-            "This optimizer helper requires a calibrated prompt-rubric evaluator. "
+            "This optimizer helper accepts built-in or calibrated prompt-rubric evaluators. "
             "Code evaluators are validated for ordinary evaluation, not established as "
-            "supported by Agent Optimizer. Use the documented azd route for built-in "
+            "supported by Agent Optimizer. Use evaluator_type=builtin for "
             "evaluators such as builtin.task_adherence; retain the canonical grader "
             "for independent acceptance."
         )
-    if config.get("enable_evaluation") is not True:
+    if kind == "builtin":
+        name = config["optimizer"]["evaluator"]
+        if (
+            not isinstance(name, str)
+            or not name.startswith("builtin.")
+            or len(name) <= len("builtin.")
+        ):
+            raise ValueError("Built-in evaluator names must start with builtin.")
+        data = builtin_optimizer_data(project, config)
+    elif config.get("enable_evaluation") is not True:
         raise ValueError(
             "Workload-envelope optimization requires an isolated evaluation deployment"
         )
-    validated = read_json(validation_receipt)
+    if kind == "prompt" and not validation_receipt:
+        raise ValueError("Custom prompt rubrics require --evaluator-validation")
+    if kind == "builtin" and validation_receipt is not None:
+        raise ValueError("Built-ins do not use custom-rubric validation receipts")
+    validated = read_json(validation_receipt) if validation_receipt else None
+    if validated is not None:
+        validate_optimizer_evidence(project, config, validated)
+    spec = optimizer_config(project, config)
+    rows = read_jsonl(spec["dataset"]["local_uri"])
+    settings = config["optimizer"]
+    source = (
+        {"type": "dataset_reference", "name": data["name"], "version": data["version"]}
+        if kind == "builtin"
+        else {
+            "type": "inline",
+            "test_cases": [
+                {"query": row["query"], "ground_truth": row["ground_truth"]} for row in rows
+            ],
+        }
+    )
+    evaluator = {"name": settings["evaluator"]}
+    if kind == "prompt":
+        evaluator.update(
+            version=settings["evaluator_version"],
+            initialization_parameters={
+                "model": settings["eval_model"],
+                "threshold": settings["pass_threshold"],
+            },
+        )
+    attributes = settings.get("target_attributes")
+    if attributes is None:
+        attributes = (
+            ["instructions"]
+            if kind == "builtin"
+            else (["instructions", "tools"] + (["skills"] if optimizer_skills(project) else []))
+        )
+    if not attributes or any(
+        value not in ("instructions", "tools", "skills") for value in attributes
+    ):
+        raise ValueError("Unsupported agent optimization target attributes")
+    return {
+        "display_name": config["run_id"],
+        "target_configuration": {
+            "type": "foundry_agent",
+            "name": config["agent_name"],
+            "version": config["agent_version"],
+        },
+        "optimization_model_configuration": {"model": settings["optimize_model"]},
+        "optimization_configuration": {
+            "type": "agent_optimization",
+            "goal": "improve_quality",
+            "evaluation_configuration": {
+                "training_set": {"type": "target_completion", "source": source},
+                "evaluators": [evaluator],
+                "evaluation_model": {"model": settings["eval_model"]},
+                "max_concurrent_agent_runs": settings.get("max_concurrent_agent_runs", 1),
+            },
+            "candidate_search_configuration": {"max_candidates": settings["max_candidates"]},
+            "baseline_agent_configuration": {
+                "system_prompt": (Path(project) / "instructions.md").read_text(encoding="utf-8"),
+                "current_model": config.get("model_override") or config["model"]["deployment"],
+                "skills": optimizer_skills(project),
+                "tools": read_json(Path(project) / "tools.json"),
+            },
+            "agent_optimization_space": {"target_attributes": attributes},
+        },
+    }
+
+
+def validate_optimizer_evidence(project, config, validated):
     if not validated.get("passed"):
         raise ValueError("Optimizer requires successful known-response evaluator validation")
     if any(
@@ -487,57 +650,6 @@ def optimizer_plan(project, config, validation_receipt):
         raise ValueError(
             "Optimizer evaluator model/version/threshold/project changed after validation"
         )
-    spec = optimizer_config(project, config)
-    rows = read_jsonl(spec["dataset"]["local_uri"])
-    settings = config["optimizer"]
-    return {
-        "display_name": config["run_id"],
-        "target_configuration": {
-            "type": "foundry_agent",
-            "name": config["agent_name"],
-            "version": config["agent_version"],
-        },
-        "optimization_model_configuration": {"model": settings["optimize_model"]},
-        "optimization_configuration": {
-            "type": "agent_optimization",
-            "goal": "improve_quality",
-            "evaluation_configuration": {
-                "training_set": {
-                    "type": "target_completion",
-                    "source": {
-                        "type": "inline",
-                        "test_cases": [
-                            {"query": row["query"], "ground_truth": row["ground_truth"]}
-                            for row in rows
-                        ],
-                    },
-                },
-                "evaluators": [
-                    {
-                        "name": settings["evaluator"],
-                        "version": settings["evaluator_version"],
-                        "initialization_parameters": {
-                            "model": settings["eval_model"],
-                            "threshold": settings["pass_threshold"],
-                        },
-                    }
-                ],
-                "evaluation_model": {"model": settings["eval_model"]},
-                "max_concurrent_agent_runs": settings.get("max_concurrent_agent_runs", 1),
-            },
-            "candidate_search_configuration": {"max_candidates": settings["max_candidates"]},
-            "baseline_agent_configuration": {
-                "system_prompt": (Path(project) / "instructions.md").read_text(encoding="utf-8"),
-                "current_model": config["model"]["deployment"],
-                "skills": optimizer_skills(project),
-                "tools": read_json(Path(project) / "tools.json"),
-            },
-            "agent_optimization_space": {
-                "target_attributes": ["instructions", "tools"]
-                + (["skills"] if optimizer_skills(project) else []),
-            },
-        },
-    }
 
 
 def optimizer_skills(project):
@@ -545,23 +657,118 @@ def optimizer_skills(project):
     return catalog(project)
 
 
-def submit_optimizer(config, plan, receipt):
+def submit_optimizer(config, plan, receipt, project=None):
     path = claim(receipt, "optimize", {"plan": plan})
     state = read_json(path)
     with project_client(config["project_endpoint"]) as api:
+        if config["optimizer"].get("evaluator_type") == "builtin":
+            from azure.core.exceptions import AzureError, ResourceNotFoundError
+
+            if project is None:
+                raise ValueError("Built-in submission requires the source project directory")
+            data = builtin_optimizer_data(project, config)
+            expected = plan["optimization_configuration"]["evaluation_configuration"][
+                "training_set"
+            ]["source"]
+            if expected != {
+                "type": "dataset_reference",
+                "name": data["name"],
+                "version": data["version"],
+            }:
+                raise ValueError("Optimizer dataset changed after planning")
+            staged = Path(receipt).with_name(Path(receipt).stem + "-optimizer.jsonl")
+            if staged.exists():
+                raise FileExistsError(
+                    "Staged optimizer data already exists; reconcile before retrying"
+                )
+            write_jsonl(staged, data["rows"])
+            state.update(
+                phase="register_dataset",
+                dataset={
+                    "name": data["name"],
+                    "version": data["version"],
+                    "sha256": data["sha256"],
+                    "local_uri": str(staged),
+                },
+            )
+            state["case_map"] = native_results.case_map(data["rows"])
+            write_json(path, state)
+            try:
+                api.datasets.get(name=data["name"], version=data["version"])
+            except ResourceNotFoundError:
+                pass
+            else:
+                raise FileExistsError("Optimizer dataset exists; reconcile its registration")
+            try:
+                api.datasets.upload_file(
+                    name=data["name"], version=data["version"], file_path=str(staged)
+                )
+            except AzureError as error:
+                state.update(
+                    status="needs_reconciliation",
+                    error={"type": type(error).__name__, "phase": "register_dataset"},
+                )
+                write_json(path, state)
+                raise RuntimeError(
+                    "Dataset registration failed; details may contain credentials and were withheld. "
+                    "Reconcile the recorded dataset before retrying."
+                ) from None
+            state["dataset"]["registered"] = True
+            write_json(path, state)
+        else:
+            state["case_map"] = native_results.case_map(
+                plan["optimization_configuration"]["evaluation_configuration"]["training_set"][
+                    "source"
+                ]["test_cases"]
+            )
+        state["phase"] = "create_optimization_job"
+        write_json(path, state)
         poller = api.agents.begin_create_optimization_job(
             plan,
             polling=False,
             headers={"Foundry-Features": "Evaluations=V1Preview"},
         )
-        state["operation_id"] = poller.details["job_id"]
-        if not state["operation_id"]:
+        state["operation_id"] = poller.details.get("job_id")
+        if not isinstance(state["operation_id"], str) or not state["operation_id"]:
             raise RuntimeError("Optimizer submission returned no job ID; reconcile before retrying")
         write_json(path, state)
         job = api.agents.get_optimization_job(state["operation_id"])
         state.update(status=job.status, job=job.as_dict())
         write_json(path, state)
         return state
+
+
+def optimizer_results(config, optimization_receipt, output):
+    if Path(output).exists():
+        raise FileExistsError("Native results report already exists")
+    state = read_json(optimization_receipt)
+    if state["status"] != "succeeded":
+        raise ValueError("Native results require a completed optimization job")
+    with project_client(config["project_endpoint"]) as project:
+        candidates = [
+            row.as_dict()
+            for row in project.agents.list_optimization_candidates(job_id=state["operation_id"])
+        ]
+        runs, outputs = {}, {}
+        with project.get_openai_client(max_retries=0) as api:
+            headers = {"Foundry-Features": "Evaluations=V1Preview"}
+            for candidate in candidates:
+                evaluation = candidate.get("evaluation") or {}
+                if not evaluation.get("eval_run_id") or not evaluation.get("eval_id"):
+                    raise ValueError("Candidate did not produce a native evaluation")
+                run_id, eval_id = evaluation["eval_run_id"], evaluation["eval_id"]
+                runs[run_id] = api.evals.runs.retrieve(
+                    run_id, eval_id=eval_id, extra_headers=headers
+                ).model_dump(mode="json", warnings=False)
+                outputs[run_id] = [
+                    row.model_dump(mode="json")
+                    for row in api.evals.runs.output_items.list(
+                        run_id, eval_id=eval_id, extra_headers=headers
+                    )
+                ]
+    report = redact_credentials(native_results.build_report(state, candidates, runs, outputs))
+    write_json(output, report)
+    return report
 
 
 def reconcile_optimizer(config, receipt, operation_id):
@@ -583,41 +790,106 @@ def reconcile_optimizer(config, receipt, operation_id):
         return state
 
 
-def export_candidate(config, optimization_receipt, candidate_id, output):
-    if Path(output).exists():
-        raise FileExistsError("Candidate configuration already exported")
-    state = read_json(optimization_receipt)
+def candidate_profile(api, state, candidate_id):
     if state["status"] != "succeeded":
         raise ValueError("Export requires a completed optimizer job")
     baseline = state["job"]["optimization_configuration"]["baseline_agent_configuration"]
     profile = {
         "instructions": baseline["system_prompt"],
         "model": baseline["current_model"],
-        "tool_definitions": baseline.get("tools", []),
-        "skills": baseline.get("skills", []),
+        "tool_definitions": baseline.get("tools") or [],
+        "skills": baseline.get("skills") or [],
     }
+    candidate = api.agents.get_optimization_candidate(state["operation_id"], candidate_id)
+    details = candidate.as_dict()
+    if details["status"] != "completed":
+        raise ValueError("Candidate did not finish evaluation")
+    mapping = {
+        "instructions": "instructions",
+        "tools": "tool_definitions",
+        "skills": "skills",
+        "model": "model",
+    }
+    for mutation in details.get("output", {}).get("mutations", []):
+        if mutation["type"] not in mapping:
+            raise ValueError(f"Unsupported candidate mutation: {mutation['type']}")
+        profile[mapping[mutation["type"]]] = mutation["value"]
+    return profile, details.get("evaluation")
+
+
+def export_candidate(config, optimization_receipt, candidate_id, output):
+    if Path(output).exists():
+        raise FileExistsError("Candidate configuration already exported")
+    state = read_json(optimization_receipt)
     with project_client(config["project_endpoint"]) as api:
-        candidate = api.agents.get_optimization_candidate(state["operation_id"], candidate_id)
-        details = candidate.as_dict()
-        if details["status"] != "completed":
-            raise ValueError("Candidate did not finish evaluation")
-        mapping = {
-            "instructions": "instructions",
-            "tools": "tool_definitions",
-            "skills": "skills",
-            "model": "model",
-        }
-        for mutation in details.get("output", {}).get("mutations", []):
-            if mutation["type"] not in mapping:
-                raise ValueError(f"Unsupported candidate mutation: {mutation['type']}")
-            profile[mapping[mutation["type"]]] = mutation["value"]
-        write_json(output, profile)
-        return {
-            "candidate_id": candidate_id,
-            "output": str(output),
-            "sha256": digest(output),
-            "evaluation": details.get("evaluation"),
-        }
+        profile, evaluation = candidate_profile(api, state, candidate_id)
+    write_json(output, profile)
+    return {
+        "candidate_id": candidate_id,
+        "output": str(output),
+        "sha256": digest(output),
+        "evaluation": evaluation,
+    }
+
+
+def deploy_candidate(config, optimization_receipt, candidate_id, receipt, timeout=600):
+    from azure.core.exceptions import AzureError
+
+    optimization = read_json(optimization_receipt)
+    with project_client(config["project_endpoint"]) as api:
+        profile, evaluation = candidate_profile(api, optimization, candidate_id)
+        path = claim(
+            receipt,
+            "deploy-candidate",
+            {
+                "optimization_receipt_sha256": digest(optimization_receipt),
+                "profile_sha256": value_digest(profile),
+                "candidate_id": candidate_id,
+            },
+        )
+        state = read_json(path)
+        state["evaluation"] = evaluation
+        try:
+            return hosted_ops.deploy(
+                api, config, optimization, profile, candidate_id, state, path, timeout
+            )
+        except (AzureError, RuntimeError, ValueError, TypeError, OSError) as error:
+            state.update(
+                status="needs_reconciliation",
+                error={
+                    "type": type(error).__name__,
+                    "phase": state.get("phase", "prepare_candidate"),
+                },
+            )
+            write_json(path, state)
+            raise RuntimeError(
+                "Candidate application failed; inspect its receipt and existing version before retrying"
+            ) from None
+
+
+def smoke_hosted(config, text, receipt, timeout=300):
+    from azure.core.exceptions import AzureError
+    from openai import APIError
+
+    if timeout <= 0 or not isinstance(text, str) or not text.strip():
+        raise ValueError("Smoke requires positive timeout and nonempty input")
+    path = claim(
+        receipt,
+        "smoke",
+        {
+            "agent_name": config["agent_name"],
+            "agent_version": config["agent_version"],
+            "input_sha256": value_digest(text),
+        },
+    )
+    state = read_json(path)
+    try:
+        with project_client(config["project_endpoint"]) as api:
+            return hosted_ops.smoke(api, config, text, state, path, timeout)
+    except (AzureError, APIError, RuntimeError, ValueError, TypeError, OSError) as error:
+        state.update(status="failed", error={"type": type(error).__name__})
+        write_json(path, state)
+        raise RuntimeError("Hosted smoke failed; inspect its receipt before retrying") from None
 
 
 def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_path, parity_path):
@@ -837,6 +1109,13 @@ def monitor_rft(config, receipt, timeout=3600):
 
 
 def monitor_optimizer(config, receipt, timeout=3600):
+    from azure.core.exceptions import (
+        HttpResponseError,
+        ServiceRequestError,
+        ServiceResponseError,
+    )
+    from azure.identity import CredentialUnavailableError
+
     path = Path(receipt)
     state = read_json(path)
     operation_id = state.get("operation_id")
@@ -848,18 +1127,71 @@ def monitor_optimizer(config, receipt, timeout=3600):
             write_json(path, state)
     if not operation_id:
         raise ValueError("Optimizer outcome unknown: reconcile jobs before any new submission")
+    if timeout <= 0:
+        raise ValueError("Monitoring timeout must be positive")
     deadline = time.monotonic() + timeout
+    heartbeat, previous = 0, None
     with project_client(config["project_endpoint"]) as client:
         while True:
-            job = client.agents.get_optimization_job(operation_id)
+            for attempt in range(3):
+                try:
+                    job = client.agents.get_optimization_job(operation_id)
+                    break
+                except (
+                    CredentialUnavailableError,
+                    ServiceRequestError,
+                    ServiceResponseError,
+                    HttpResponseError,
+                ) as error:
+                    transient = (
+                        isinstance(error, CredentialUnavailableError)
+                        or not isinstance(error, HttpResponseError)
+                        or error.status_code in (408, 429, 500, 502, 503, 504)
+                    )
+                    retry = transient and attempt < 2 and time.monotonic() < deadline
+                    state["monitor"] = {
+                        "status": "retrying_read" if retry else "disconnected",
+                        "attempt": attempt + 1,
+                        "error_type": type(error).__name__,
+                        "http_status": getattr(error, "status_code", None),
+                        "time": datetime.now(UTC).isoformat(),
+                    }
+                    write_json(path, state)
+                    print(
+                        json.dumps({"operation_id": operation_id, **state["monitor"]}), flush=True
+                    )
+                    if not retry:
+                        raise RuntimeError(
+                            f"Monitor disconnected for {operation_id}; repair access and resume "
+                            "this receipt. The cloud job was not marked failed or resubmitted."
+                        ) from None
+                    time.sleep(5)
             state["job"] = job.as_dict()
             state["status"] = job.status
+            state["monitor"] = {
+                "status": "connected",
+                "last_successful_poll": datetime.now(UTC).isoformat(),
+            }
             write_json(path, state)
+            progress = {
+                "operation_id": operation_id,
+                "status": job.status,
+                "summary": (state["job"].get("result") or {}).get("candidate_summary"),
+            }
+            if progress != previous or time.monotonic() >= heartbeat:
+                print(json.dumps(progress), flush=True)
+                previous, heartbeat = progress, time.monotonic() + 120
             if job.status == "succeeded":
+                state["monitor"]["status"] = "finished"
+                write_json(path, state)
                 return state
             if job.status in ("failed", "cancelled"):
+                state["monitor"]["status"] = "finished"
+                write_json(path, state)
                 raise RuntimeError(f"Optimizer {operation_id} ended {job.status}: {job.error}")
             if time.monotonic() >= deadline:
+                state["monitor"]["status"] = "timeout"
+                write_json(path, state)
                 raise TimeoutError(
                     f"Optimizer {operation_id} still {job.status}; resume monitoring"
                 )
@@ -1106,25 +1438,6 @@ def cli_plan(action, project, config):
                 "json",
             ]
         ]
-    if action == "deploy-candidate":
-        return [
-            [
-                "azd",
-                "ai",
-                "agent",
-                "optimize",
-                "deploy",
-                "--agent",
-                config["agent_name"],
-                "--candidate",
-                config["optimizer"]["candidate_id"],
-                "--project-endpoint",
-                config["project_endpoint"],
-                "--no-prompt",
-                "-o",
-                "json",
-            ]
-        ]
     raise ValueError(f"Unknown cloud action: {action}")
 
 
@@ -1137,7 +1450,15 @@ def optimizer_config(project, config):
     if not dataset.is_file():
         raise FileNotFoundError(f"Optimizer dataset is missing: {dataset}")
     rows = read_jsonl(dataset)
-    if any(row.get("split") != "optimizer" or not row.get("query") for row in rows):
+    if not rows or any(
+        not row.get("query")
+        or (
+            row.get("split") not in (None, "optimizer")
+            if settings.get("evaluator_type") == "builtin"
+            else row.get("split") != "optimizer"
+        )
+        for row in rows
+    ):
         raise ValueError("Optimizer requires query-shaped data from the optimizer-only split")
     return {
         "name": config["run_id"],
@@ -1229,6 +1550,8 @@ def main():
             "validate-evaluator",
             "optimizer-reconcile",
             "export-candidate",
+            "smoke",
+            "optimizer-results",
         ),
     )
     parser.add_argument("--project", required=True)
@@ -1242,7 +1565,8 @@ def main():
     parser.add_argument("--labels")
     parser.add_argument("--tool-probes")
     parser.add_argument("--parity")
-    parser.add_argument("--timeout", type=int, default=3600)
+    parser.add_argument("--timeout", type=int)
+    parser.add_argument("--input", default="Hello, what can you help me with?")
     parser.add_argument("--training-receipt")
     parser.add_argument("--evaluator-validation")
     parser.add_argument("--operation-id")
@@ -1251,6 +1575,75 @@ def main():
     parser.add_argument("--output")
     args = parser.parse_args()
     config = read_json(args.config)
+    timeout = (
+        args.timeout
+        if args.timeout is not None
+        else (300 if args.action == "smoke" else 600 if args.action == "deploy-candidate" else 3600)
+    )
+    if args.action == "smoke":
+        print(
+            json.dumps(
+                {
+                    "action": "smoke",
+                    "agent": config["agent_name"],
+                    "version": config["agent_version"],
+                    "input": args.input,
+                }
+            )
+        )
+        if args.execute:
+            if not args.approve_billable:
+                parser.error("Smoke inference requires --approve-billable")
+            print(json.dumps(smoke_hosted(config, args.input, args.receipt, timeout), indent=2))
+        return
+    if args.action == "optimizer-results":
+        if not args.optimization_receipt or not args.output:
+            parser.error("Native reporting requires --optimization-receipt and --output")
+        if args.execute:
+            path = claim(
+                args.receipt,
+                "optimizer-results",
+                {
+                    "optimization_receipt_sha256": digest(args.optimization_receipt),
+                },
+            )
+            report = optimizer_results(config, args.optimization_receipt, args.output)
+            result = {
+                "status": "completed",
+                "output": args.output,
+                "sha256": digest(args.output),
+                "candidates": len(report["candidates"]),
+            }
+            write_json(path, result)
+            print(json.dumps(result, indent=2))
+        else:
+            print(json.dumps({"action": args.action, "output": args.output}))
+        return
+    if args.action == "deploy-candidate":
+        candidate_id = args.candidate_id or config.get("optimizer", {}).get("candidate_id")
+        if not args.optimization_receipt or not candidate_id:
+            parser.error("SDK deployment requires --optimization-receipt and --candidate-id")
+        print(
+            json.dumps(
+                {
+                    "action": args.action,
+                    "candidate_id": candidate_id,
+                    "isolation": "freeze current serving routes; create evaluation version",
+                }
+            )
+        )
+        if args.execute:
+            if not args.approve_billable:
+                parser.error("Candidate deployment requires --approve-billable")
+            print(
+                json.dumps(
+                    deploy_candidate(
+                        config, args.optimization_receipt, candidate_id, args.receipt, timeout
+                    ),
+                    indent=2,
+                )
+            )
+        return
     if args.action == "export-candidate":
         if not args.execute:
             print(json.dumps({"action": args.action, "candidate_id": args.candidate_id}))
@@ -1273,7 +1666,7 @@ def main():
             parser.error("Remote evaluator validation is billable; approval is required")
         print(
             json.dumps(
-                validate_evaluator(args.project, config, args.labels, args.receipt, args.timeout),
+                validate_evaluator(args.project, config, args.labels, args.receipt, timeout),
                 indent=2,
             )
         )
@@ -1294,7 +1687,7 @@ def main():
             print(json.dumps({"action": args.action, "receipt": args.receipt}))
             return
         monitor = monitor_rft if args.action == "rft-monitor" else monitor_optimizer
-        print(json.dumps(monitor(config, args.receipt, args.timeout), indent=2))
+        print(json.dumps(monitor(config, args.receipt, timeout), indent=2))
         return
     if args.action == "optimize":
         plan = optimizer_plan(args.project, config, args.evaluator_validation)
@@ -1309,6 +1702,8 @@ def main():
             args.parity,
         )
     elif args.action == "register-evaluator":
+        if config["optimizer"].get("evaluator_type") == "builtin":
+            parser.error("Built-in evaluators do not need registration; use optimize directly")
         plan = {
             "name": config["optimizer"]["evaluator"],
             "source_sha256": digest(evaluator_source(args.project, config)),
@@ -1336,7 +1731,9 @@ def main():
         print(json.dumps(register_evaluator(args.project, config, args.receipt), indent=2))
         return
     if args.action == "optimize":
-        print(json.dumps(submit_optimizer(config, plan, args.receipt), indent=2))
+        print(
+            json.dumps(submit_optimizer(config, plan, args.receipt, project=args.project), indent=2)
+        )
         return
     path = claim(args.receipt, args.action, {"sha256": digest(args.config), "plan": plan})
     if args.action == "deploy-hosted":

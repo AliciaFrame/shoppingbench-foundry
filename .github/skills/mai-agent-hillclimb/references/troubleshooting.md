@@ -9,6 +9,12 @@
 | Conversation/session confusion | Use the selected protocol's current session contract. Keep hosted routing sticky within a conversation and isolated between independent evaluation cases. |
 | Tool failures | Check endpoint, schema, auth, network, timeout and state reset. Retain the episode and observed costs; distinguish a model mistake from unavailable infrastructure. |
 | Optimizer runs but candidate has no effect | Verify the runtime actually reads generated configuration and the deployed version is the candidate being evaluated. |
+| SDK-created candidate cannot deploy because azd has no last job | Use `deploy-candidate` with the recorded optimization receipt. The helper applies the candidate through the SDK and does not need CLI-local job context. Never create a replacement optimization job. |
+| Candidate evaluation changes ordinary traffic | Use the isolated SDK deployment path, which resolves `@latest` rules to their current immutable versions before candidate creation. Keep those routes frozen until separate acceptance/promotion. |
+| Local monitor stops while cloud job is running | Inspect `monitor.status` separately from remote job status. Resume the same durable job ID after auth/network repair; a monitor disconnect is not cloud failure. |
+| Valid-looking answer was truncated | Inspect provider completion status and incomplete details. The runtime rejects incomplete generations and retains observed usage; do not count a partial answer as success. |
+| Failed session has no usable logs after cleanup | The hosted evaluator captures bounded allowlisted diagnostic signals before stopping the session. Raw console text is withheld because it may contain secrets; signed failed responses preserve available calls. |
+| Retrieved citations pass checks but claims are unsupported | Add claim/evidence faithfulness to the semantic rubric or source review. Calibrate with valid-link/unsupported-claim negatives; citation provenance and format alone are not correctness. |
 | Higher optimizer/training score, worse task result | Compare with the frozen quality evaluator and inspect reward shortcuts, leaked labels, missing invariants or drift. Do not promote automatically. |
 | RFT stuck waiting for capacity | Monitor the existing job, verify supported SKU/region and approved budget. A queued job is not justification for repeated submissions. |
 | Grader throttling/errors | Measure latency and concurrency, align judge capacity and retry only transient transport failures. Do not return success-like scores on judge failure. |
