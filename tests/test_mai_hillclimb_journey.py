@@ -46,6 +46,7 @@ def write_adapter(project):
         "import json, hashlib, os\nfrom pathlib import Path\n"
         "def policy_contract():\n"
         "    return {'model': os.getenv('MAI_MODEL_OVERRIDE', 'policy'),\n"
+        "            'reasoning_effort': 'medium',\n"
         "            'instructions': Path(__file__).with_name('instructions.md').read_text(),\n"
         "            'domain_sha256': hashlib.sha256(Path(__file__).with_name('domain.py').read_bytes()).hexdigest()}\n"
         "def run_episode(item):\n"
@@ -93,6 +94,19 @@ def calibration_fixture(project, prepared):
     )
     assert report["eligible"]
     return combined, output
+
+
+def rft_calibration_fixture(project):
+    adapter = write_adapter(project)
+    prepared = project / "prepared-rft"
+    journey.prepare(
+        project / "cases.example.jsonl",
+        prepared,
+        project / "tools.json",
+        policy_adapter=adapter,
+    )
+    combined, calibration = calibration_fixture(project, prepared)
+    return prepared, combined, calibration
 
 
 def test_copied_skill_scaffolds_and_prepares_without_site_packages(tmp_path):
@@ -518,7 +532,7 @@ def test_endpoints_require_auth_and_preserve_local_reward_and_tool_parity(projec
     body = {"sample": label["sample"], "item": label["item"]}
     assert client.post("/grade", json=body).status_code == 401
     headers = {"Authorization": "Bearer test-token-not-a-secret"}
-    assert client.post("/grade", json=body, headers=headers).json()["reward"] == 1
+    assert client.post("/grade", json=body, headers=headers).json() == {"score": 1}
     response = client.post(
         "/tools",
         headers=headers,
@@ -530,6 +544,22 @@ def test_endpoints_require_auth_and_preserve_local_reward_and_tool_parity(projec
     )
     assert response.json()["call_id"] == "call-1"
     assert json.loads(response.json()["output"])["team"] == "operations"
+    routed = client.post(
+        "/tools/lookup_policy",
+        headers=headers,
+        json={"arguments": {"category": "outage"}, "call_id": "call-route"},
+    )
+    assert routed.status_code == 200
+    assert routed.json()["call_id"] == "call-route"
+    assert json.loads(routed.json()["output"])["team"] == "operations"
+    assert (
+        client.post(
+            "/tools/lookup_policy",
+            headers=headers,
+            json={"name": "different_tool", "arguments": {}, "call_id": "mismatch"},
+        ).status_code
+        == 400
+    )
     assert (
         client.post(
             "/tools",
@@ -547,7 +577,7 @@ def test_endpoints_require_auth_and_preserve_local_reward_and_tool_parity(projec
 
 
 def test_rft_plan_gates_calibration_data_and_endpoint_parity(project, prepared):
-    combined, calibration = calibration_fixture(project, prepared)
+    prepared, combined, calibration = rft_calibration_fixture(project)
     config = journey.read_json(SKILL / "examples" / "cloud.example.json")
     config["rft"]["min_train_examples"] = 3
     config["rft"]["calibration_adapter"] = "fake_adapter.py"
@@ -572,13 +602,55 @@ def test_rft_plan_gates_calibration_data_and_endpoint_parity(project, prepared):
             "labels_sha256": journey.digest(project / "labels.example.jsonl"),
             "service_url": config["service_url"],
             "tool_names": ["lookup_policy"],
+            "rft_api_verified": True,
+            "rft_base_url": config["rft"]["base_url"],
+            "rft_grader_sha256": journey.value_digest(cloud.endpoint_grader_spec(config)),
         },
     )
     plan = cloud.rft_plan(
         project, config, prepared, calibration, combined, project / "labels.example.jsonl", parity
     )
     assert plan["method"]["reinforcement"]["tools"][0]["name"] == "lookup_policy"
+    assert plan["method"]["reinforcement"]["tools"][0]["server_url"].endswith(
+        "/tools/lookup_policy"
+    )
     assert "headers" not in plan["method"]["reinforcement"]["grader"]
+    config["rft"]["hyperparameters"]["reasoning_effort"] = "low"
+    with pytest.raises(ValueError, match="reasoning effort"):
+        cloud.rft_plan(
+            project,
+            config,
+            prepared,
+            calibration,
+            combined,
+            project / "labels.example.jsonl",
+            parity,
+        )
+    config["rft"]["hyperparameters"]["reasoning_effort"] = "medium"
+    partial = project / "partial-calibration-receipts.jsonl"
+    skipped = journey.read_jsonl(prepared / "train.jsonl")[0]["id"]
+    journey.write_jsonl(
+        partial,
+        [row for row in journey.read_jsonl(combined) if row["case_id"] != skipped],
+    )
+    partial_calibration = project / "partial-calibration.json"
+    assert journey.calibrate(
+        partial,
+        project / "grader.py",
+        project / "labels.example.jsonl",
+        partial_calibration,
+        min_cases=3,
+    )["eligible"]
+    with pytest.raises(ValueError, match="every submitted train/validation case"):
+        cloud.rft_plan(
+            project,
+            config,
+            prepared,
+            partial_calibration,
+            partial,
+            project / "labels.example.jsonl",
+            parity,
+        )
     config["rft"]["capability_evidence"]["agentic_supported"] = False
     with pytest.raises(ValueError, match="access"):
         cloud.rft_plan(
@@ -1368,10 +1440,30 @@ def test_training_materializes_context_once_and_resolves_full_policy_instruction
     )
     train = journey.read_jsonl(prepared / "train.jsonl")[0]
     visible = journey.load_hook(project / "workload.py", "model_messages")(train)
-    assert visible[0]["role"] == "system"
+    assert visible[0]["role"] == "user"
     assert sum("Serving and training" in message["content"] for message in visible) == 1
     assert train["context_in_messages"]
     assert not any("expected" in message["content"] for message in visible)
+    policy = journey.load_hook(adapter, "policy_contract")()
+    assert journey.read_json(prepared / "manifest.json")["resolved_policy_sha256"] == (
+        journey.value_digest(policy)
+    )
+
+
+def test_rft_policy_adapter_rejects_existing_system_messages(project):
+    adapter = write_adapter(project)
+    rows = journey.read_jsonl(project / "cases.example.jsonl")
+    train = next(row for row in rows if row["split"] == "train")
+    train["messages"].insert(0, {"role": "system", "content": "not supported by MAI RFT"})
+    source = project / "rft-system.jsonl"
+    journey.write_jsonl(source, rows)
+    with pytest.raises(ValueError, match="cannot contain system"):
+        journey.prepare(
+            source,
+            project / "bad-rft-system",
+            project / "tools.json",
+            policy_adapter=adapter,
+        )
 
 
 def test_training_and_serving_tool_trace_shapes_share_the_same_process_grade(project):
@@ -1423,6 +1515,91 @@ def test_endpoint_plan_assigns_identity_after_creation_and_keeps_keys_out_of_con
     config["endpoint_environment"]["MAI_JUDGE_API_KEY"] = "must-not-be-in-json"
     with pytest.raises(ValueError, match="credentials"):
         cloud.cli_plan("deploy-endpoints", project, config)
+
+
+def test_prebuilt_endpoint_plan_uses_managed_identity_without_registry_password(project):
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    config.update(
+        service_image="registry.example/grader@sha256:synthetic",
+        service_registry="registry.example",
+    )
+    plan = cloud.cli_plan("deploy-endpoints", project, config)
+    assert "identity" in plan[0] and "--system-assigned" in plan[0]
+    assert "registry" in plan[1] and "--identity" in plan[1] and "system" in plan[1]
+    assert "ingress" in plan[2] and "8080" in plan[2]
+    assert "--image" in plan[3] and config["service_image"] in plan[3]
+    assert all("up" not in command for command in plan)
+    assert "--registry-username" not in json.dumps(plan)
+    assert "--registry-password" not in json.dumps(plan)
+
+
+def test_endpoint_bootstrap_creates_only_a_new_identity_enabled_placeholder(project):
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    plan = cloud.cli_plan("bootstrap-endpoints", project, config)
+    assert len(plan) == 1
+    assert "create" in plan[0] and "--system-assigned" in plan[0]
+    assert "up" not in plan[0]
+    assert plan[0][plan[0].index("--min-replicas") + 1] == "0"
+    assert "--source" not in plan[0] and "--secrets" not in plan[0]
+
+
+def test_hook_lazy_sibling_imports_keep_provenance_globals_and_do_not_change_sys_path(tmp_path):
+    root = tmp_path / "first"
+    root.mkdir()
+    (root / "facts.py").write_text("VALUE = 'first'\n")
+    (root / "adapter.py").write_text(
+        "def policy_contract():\n    from facts import VALUE\n    return VALUE\n"
+        "def run():\n    from .facts import VALUE\n    return VALUE\n"
+    )
+    before = list(sys.path)
+    hook = journey.load_hook(root / "adapter.py", "run")
+    assert hook() == "first"
+    assert hook.__globals__["policy_contract"]() == "first"
+    assert sys.path == before
+
+
+def test_hook_helpers_are_isolated_between_projects_and_reloads(tmp_path):
+    hooks = []
+    for index in range(2):
+        root = tmp_path / str(index)
+        root.mkdir()
+        (root / "facts.py").write_text(f"VALUE = {index}\n")
+        (root / "helper.py").write_text(
+            "def value():\n    from facts import VALUE\n    return VALUE\n"
+        )
+        (root / "adapter.py").write_text(
+            "def run():\n    from helper import value\n    return value()\n"
+        )
+        hooks.append(journey.load_hook(root / "adapter.py", "run"))
+    assert [hook() for hook in hooks] == [0, 1]
+    assert [hook() for hook in reversed(hooks)] == [1, 0]
+    (tmp_path / "0" / "facts.py").write_text("VALUE = 9\n")
+    reloaded = journey.load_hook(tmp_path / "0" / "adapter.py", "run")
+    assert reloaded() == 9
+    assert hooks[0]() == 0
+
+
+def test_hook_project_packages_and_dotted_lazy_imports_are_isolated(tmp_path):
+    root = tmp_path / "project"
+    package = root / "helpers"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("from .constants import PREFIX\n")
+    (package / "constants.py").write_text("PREFIX = 'project-local'\n")
+    (package / "scoring.py").write_text(
+        "def result():\n    from .constants import PREFIX\n    return PREFIX + '-package'\n"
+    )
+    (root / "adapter.py").write_text(
+        "def run():\n"
+        "    import helpers.scoring\n"
+        "    from helpers import constants\n"
+        "    return helpers.scoring.result(), constants.PREFIX\n"
+    )
+    before = list(sys.path)
+    hook = journey.load_hook(root / "adapter.py", "run")
+    assert hook() == ("project-local-package", "project-local")
+    assert sys.path == before
+    assert "helpers" not in sys.modules
+    assert "helpers.scoring" not in sys.modules
 
 
 def test_savings_cli_produces_matched_three_stage_report(project, prepared):

@@ -21,6 +21,9 @@ the selected environment, phase, approvals, operation IDs, receipt paths,
 contract fingerprints, selected candidate, and final-test status. A schema
 example is in [the contract template](../examples/project-contract.example.json).
 Its unresolved fields must be filled; it is not runnable cloud configuration.
+Before creating run artifacts, verify that the run directory is ignored by
+source control. Keep workload-specific data, receipts and resource configuration
+out of commits; adding the skill does not make those artifacts publishable.
 
 ## Evaluation adapter
 

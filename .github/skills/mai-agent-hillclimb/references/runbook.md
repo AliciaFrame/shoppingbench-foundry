@@ -129,16 +129,22 @@ python $J prepare --data "$P\cases.jsonl" --tools "$P\tools.json" `
   --instructions "$P\instructions.md" --output "$P\prepared"
 ```
 
-This freezes separate files and a hash manifest, generates query-shaped
-optimizer rows, and adds selected system instructions to training/validation
-rows only. It rejects conflicting existing system messages. Prepare again in
-a **new** directory after selecting a different policy; recalibrate that data.
-Never put reference answers into prompts merely to satisfy an evaluator.
+This freezes separate files and a hash manifest and generates query-shaped
+optimizer rows. The explicit `--instructions` path adds selected system
+instructions to training/validation rows and rejects conflicts; do not use that
+format for a training service that disallows system messages.
+Prepare again in a **new** directory after selecting a different policy;
+recalibrate that data. Never put reference answers into prompts merely to
+satisfy an evaluator.
 
 For RFT, prepare from the **resolved selected policy**, including skill bodies:
 use `--policy-adapter "$P\agent.py"` instead of `--instructions`. This requires
 runtime packages and actual model configuration to be set first. Task context
-is materialized into training messages exactly once. Calibration receipts must
+is materialized into training messages exactly once. MAI reinforcement examples
+remain system-message-free; the manifest binds the resolved policy fingerprint,
+and submission verifies that fingerprint against calibration and current
+runtime policy. Existing system messages are rejected before upload.
+Calibration receipts must
 record the same model, endpoint, instructions, tools, domain implementation,
 runtime limits and implementation fingerprint; changing any requires new
 rollouts and calibration.
@@ -449,6 +455,30 @@ judge calls are recorded in the calibration report for the experiment ledger.
 
 For endpoint grading/tool calling, provision the bundled authenticated service:
 
+For Key Vault secrets or a private prebuilt image, bootstrap a **new** app in
+an existing approved Container Apps environment first:
+
+```powershell
+& $PY $C bootstrap-endpoints --project $P --config "$P\cloud.json" `
+  --receipt "$P\endpoint-bootstrap.json" --execute --approve-billable
+```
+
+This creates an identity-enabled placeholder, not a grader. It refuses to replace
+an existing app. Read its principal from the receipt and grant **Key Vault Secrets
+User** at the exact approved secret ARM scope before binding the secret. For a
+private image, configure that identity's approved registry pull permission:
+`AcrPull` for legacy registry RBAC, or the appropriate repository-scoped reader
+role for an ABAC registry. Do not enable registry admin or introduce a password
+to work around a managed-identity pull failure.
+
+Build the adapted Dockerfile, including every domain helper/data asset, using
+the approved registry (`az acr build --registry <registry> --image <unique-tag> $P`).
+Resolve its digest with `az acr repository show`, then set `service_image` to
+`<registry-host>/<repository>@sha256:<digest>` and `service_registry` to its host.
+The prebuilt-image path updates the existing app with system-identity pull;
+it does not use `containerapp up`, which can request registry credentials even
+when identity-based pull is configured.
+
 ```powershell
 $env:HILLCLIMB_ENDPOINT_TOKEN = "<secret-from-approved-secret-store>"
 & $PY $C deploy-endpoints --project $P --config "$P\cloud.json" `
@@ -456,12 +486,15 @@ $env:HILLCLIMB_ENDPOINT_TOKEN = "<secret-from-approved-secret-store>"
 # Put the returned HTTPS service URL in cloud.json.
 & $PY $C endpoint-parity --project $P --config "$P\cloud.json" `
   --receipt "$P\parity.json" --labels "$P\reviewed-labels.jsonl" `
-  --tool-probes "$P\tool-probes.jsonl" --execute
+  --tool-probes "$P\tool-probes.jsonl" --execute --approve-billable
 ```
 
 The service shares the exact `grade` and domain hooks, requires bearer auth,
-limits requests/outputs to 1 MB, returns `reward` on `/grade`, and preserves
-`call_id` on `/tools`. Invalid input is explicit 4xx, not a free reward.
+limits requests/outputs to 1 MB, returns **only `{"score": number}`** on `/grade`,
+and preserves `call_id` on `/tools/<tool-name>`. A routed callback does not require
+the caller to duplicate the tool name in its body; a conflicting name is rejected.
+The legacy name-in-body `/tools` route remains available. Invalid input is
+explicit 4xx, not a free reward.
 The deployment uses secret references and 2-5 replicas; inspect capacity,
 concurrency and external tool side effects for your workload. In a partial
 deployment, reconcile the registry build and set `service_image` (immutable
@@ -480,6 +513,16 @@ required model-inference role using the returned identity as
 `rft.parity_tolerance` for predeclared semantic-score tolerance (default zero
 for deterministic parity), and calibrate it before training.
 
+Direct HTTP parity is not proof of the Foundry callback contract. With `rft`
+configured, `endpoint-parity` also validates and executes the grader through
+Foundry's actual grader API on the reviewed labels. It rejects metadata error
+flags even when the API returns numeric zero. RFT submission requires this
+evidence, bound to the endpoint, image and grader specification. Re-run it after
+any change; an older HTTP-only parity receipt is insufficient.
+Project-local Python helpers are loaded in an isolated project namespace, so
+lazy sibling imports work without borrowing another project's cached module.
+Keep nonstandard service assets in the Dockerfile and `.dockerignore` as well.
+
 Confirm current RFT model/region/SKU and agentic-access support; record dated
 capability evidence in configuration. Match each example's function schemas
 to job tools. The helper checks disjoint groups, dataset hashes, selected system
@@ -494,10 +537,17 @@ instructions, eligible calibration, reviewed labels, and endpoint/tool parity:
 # Add --execute --approve-billable to the same command.
 & $PY $C rft-monitor --project $P --config "$P\cloud.json" `
   --receipt "$P\rft.json" --timeout 3600 --execute
+& $PY $C rft-cancel --project $P --config "$P\cloud.json" `
+  --receipt "$P\rft.json" --execute --approve-billable
 ```
 
 Uploads and the job ID are persisted immediately. Mutating SDK calls do not
 automatically retry. A monitoring timeout resumes the **same** job.
+`rft-cancel` retrieves and verifies the recorded endpoint, model and job before
+one cancellation request, persists the request first, then confirms terminal
+cancellation through the same receipt. It refuses a different endpoint or
+training target. Cancellation does not imply zero cost; record observed work
+and current pricing evidence.
 `grader_type: python` supports a self-contained non-network grader;
 `grader_type: endpoint` adds runtime secret headers without storing them.
 Neither model catalog membership nor a historical success proves current RFT

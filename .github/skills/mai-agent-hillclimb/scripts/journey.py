@@ -1,6 +1,7 @@
 """Portable evaluation, calibration, and selection. Cloud calls are opt-in."""
 
 import argparse
+import builtins
 import hashlib
 import importlib.util
 import json
@@ -10,7 +11,10 @@ import random
 import shutil
 import statistics
 import sys
+import threading
 import time
+import types
+import uuid
 from pathlib import Path
 
 SKILL = Path(__file__).resolve().parents[1]
@@ -83,6 +87,8 @@ def implementation_digest(adapter):
         "OPTIMIZATION_CONFIG",
         "MAI_MAX_TOOL_STEPS",
         "MAI_MAX_OUTPUT_TOKENS",
+        "MAI_REQUEST_TIMEOUT_SECONDS",
+        "MAI_REASONING_EFFORT",
         "MAI_CACHE_WRITE_MODE",
     ):
         selected.append((variable, os.getenv(variable)))
@@ -91,16 +97,77 @@ def implementation_digest(adapter):
 
 def load_hook(path, name):
     path = Path(path).resolve()
-    spec = importlib.util.spec_from_file_location(f"hillclimb_{path.stem}", path)
-    if spec is None or spec.loader is None:
-        raise ValueError(f"Cannot load hook: {path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    sys.path.insert(0, str(path.parent))
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        sys.path.pop(0)
+    namespace = f"hillclimb_project_{uuid.uuid4().hex}"
+    package = types.ModuleType(namespace)
+    package.__path__ = [str(path.parent)]
+    sys.modules[namespace] = package
+    module_lock = threading.RLock()
+
+    def local_source(module_name):
+        parts = module_name.split(".")
+        if not parts or any(not part.isidentifier() for part in parts):
+            return None
+        candidate = path.parent.joinpath(*parts)
+        if candidate.with_suffix(".py").is_file():
+            return candidate.with_suffix(".py"), None
+        initializer = candidate / "__init__.py"
+        if initializer.is_file():
+            return initializer, [str(candidate)]
+        return None
+
+    def local_module(stem):
+        with module_lock:
+            qualified = f"{namespace}.{stem}"
+            if qualified in sys.modules:
+                return sys.modules[qualified]
+            resolved = local_source(stem)
+            if resolved is None:
+                raise ValueError(f"Cannot load hook dependency: {stem}")
+            source, package_paths = resolved
+            parent = stem.rpartition(".")[0]
+            if parent:
+                local_module(parent)
+            spec = importlib.util.spec_from_file_location(
+                qualified,
+                source,
+                submodule_search_locations=package_paths,
+            )
+            if spec is None or spec.loader is None:
+                raise ValueError(f"Cannot load hook dependency: {source}")
+            module = importlib.util.module_from_spec(spec)
+            module.__dict__["__builtins__"] = {**vars(builtins), "__import__": project_import}
+            sys.modules[qualified] = module
+            setattr(package, stem, module)
+            loaded = False
+            try:
+                # Execute selected project code, bypassing timestamp-based bytecode caches.
+                exec(compile(source.read_bytes(), str(source), "exec"), module.__dict__)  # noqa: S102
+                loaded = True
+            finally:
+                if not loaded:
+                    sys.modules.pop(qualified, None)
+            if parent:
+                setattr(local_module(parent), stem.rsplit(".", 1)[-1], module)
+            return module
+
+    def project_import(module_name, globals=None, locals=None, fromlist=(), level=0):
+        # Keep project helpers isolated, including imports made after the hook loads.
+        fromlist = fromlist or ()
+        if level in (0, 1) and module_name and local_source(module_name):
+            imported = local_module(module_name)
+            for member in fromlist:
+                child = f"{module_name}.{member}"
+                if member != "*" and local_source(child):
+                    local_module(child)
+            return imported if fromlist else local_module(module_name.split(".", 1)[0])
+        if level == 1 and not module_name:
+            for member in fromlist:
+                if local_source(member):
+                    local_module(member)
+            return package
+        return builtins.__import__(module_name, globals, locals, fromlist, level)
+
+    module = local_module(path.stem)
     hook = getattr(module, name)
     if not callable(hook):
         raise TypeError(f"Expected callable {name} in {path}")
@@ -171,10 +238,11 @@ def prepare(data, output, tools_path=None, instructions_path=None, policy_adapte
             row["tools"] = schemas
     if instructions_path and policy_adapter:
         raise ValueError("Choose instructions or a resolved policy adapter, not both")
-    if instructions_path or policy_adapter:
+    policy = load_hook(policy_adapter, "policy_contract")() if policy_adapter else None
+    if instructions_path or policy is not None:
         instructions = (
-            load_hook(policy_adapter, "policy_contract")()["instructions"].strip()
-            if policy_adapter
+            policy["instructions"].strip()
+            if policy is not None
             else Path(instructions_path).read_text(encoding="utf-8").strip()
         )
         if not instructions:
@@ -183,6 +251,13 @@ def prepare(data, output, tools_path=None, instructions_path=None, policy_adapte
             if row["split"] not in ("train", "validation"):
                 continue
             first = row["messages"][0]
+            if policy is not None:
+                if first["role"] == "system":
+                    raise ValueError(
+                        "Reinforcement examples cannot contain system messages; "
+                        "the resolved policy is bound by fingerprint"
+                    )
+                continue
             if first["role"] == "system":
                 if first["content"].strip() != instructions:
                     raise ValueError(
@@ -233,6 +308,7 @@ def prepare(data, output, tools_path=None, instructions_path=None, policy_adapte
             "source_sha256": digest(data),
             "counts": counts,
             "files": {split: digest(output / f"{split}.jsonl") for split in SPLITS},
+            "resolved_policy_sha256": value_digest(policy) if policy is not None else None,
         },
     )
     return counts

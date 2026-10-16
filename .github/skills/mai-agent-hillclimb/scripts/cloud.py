@@ -13,6 +13,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
 from pathlib import Path
+from urllib.parse import quote
 
 import hosted_ops
 import optimizer_results as native_results
@@ -219,6 +220,16 @@ def http_post(url, body, token):
         return json.load(response)
 
 
+def endpoint_grader_spec(config):
+    return {
+        "type": "endpoint",
+        "name": "project_reward",
+        "url": config["service_url"].rstrip("/") + "/grade",
+        "rate_limit": config["rft"]["grader_rate_limit"],
+        "pass_threshold": config["rft"]["pass_threshold"],
+    }
+
+
 def endpoint_parity(project, config, labels, tool_probes, output):
     project = Path(project)
     grader = load_hook(project / "grader.py", "grade")
@@ -232,14 +243,19 @@ def endpoint_parity(project, config, labels, tool_probes, output):
     tolerance = config.get("rft", {}).get("parity_tolerance", 0)
     if not isinstance(tolerance, (float, int)) or not 0 <= tolerance <= 1:
         raise ValueError("Endpoint parity tolerance must be in [0,1]")
-    differences = []
+    differences, expected_scores = [], []
     for row in reviewed:
         expected = score(grader, row["sample"], row["item"])
-        actual = http_post(
+        expected_scores.append(expected)
+        response = http_post(
             endpoint + "/grade", {"sample": row["sample"], "item": row["item"]}, token
-        )["reward"]
+        )
+        if not isinstance(response, dict) or set(response) != {"score"}:
+            raise ValueError("Endpoint grader must return a JSON object with a score field only")
+        actual = response["score"]
         if (
-            not isinstance(actual, (int, float))
+            isinstance(actual, bool)
+            or not isinstance(actual, (int, float))
             or not math.isfinite(actual)
             or not 0 <= actual <= 1
         ):
@@ -249,12 +265,10 @@ def endpoint_parity(project, config, labels, tool_probes, output):
             raise ValueError(f"Endpoint grader parity failed for {row['id']}")
     for index, probe in enumerate(probes):
         local = execute_tool(probe["name"], probe["arguments"])
+        body = {key: value for key, value in probe.items() if key != "name"}
         remote = http_post(
-            endpoint + "/tools",
-            {
-                **probe,
-                "call_id": f"parity-{index}",
-            },
+            endpoint + "/tools/" + quote(probe["name"], safe=""),
+            {**body, "call_id": f"parity-{index}"},
             token,
         )
         if remote["call_id"] != f"parity-{index}" or json.loads(remote["output"]) != local:
@@ -270,7 +284,65 @@ def endpoint_parity(project, config, labels, tool_probes, output):
         "tool_names": sorted({probe["name"] for probe in probes}),
         "parity_tolerance": tolerance,
         "max_score_difference": max(differences),
+        "rft_api_verified": False,
+        "service_image": config.get("service_image"),
     }
+    if config.get("rft"):
+        from openai import APIError
+
+        spec = endpoint_grader_spec(config)
+        wire = {**spec, "headers": {"Authorization": "Bearer " + token}}
+        client = sdk_client(config["rft"]["base_url"])
+        report.update(
+            passed=False,
+            phase="foundry_grader_api",
+            rft_base_url=config["rft"]["base_url"],
+            rft_grader_sha256=value_digest(spec),
+            rft_api_samples=[],
+        )
+        write_json(output, report)
+        try:
+            client.fine_tuning.alpha.graders.validate(grader=wire)
+            for row, expected in zip(reviewed, expected_scores, strict=True):
+                tested = client.fine_tuning.alpha.graders.run(
+                    grader=wire,
+                    model_sample=row["sample"]["output_text"],
+                    item=row["item"],
+                )
+                errors = (tested.model_dump(mode="json", warnings=False).get("metadata") or {}).get(
+                    "errors"
+                ) or {}
+                if any(value is True for value in errors.values()):
+                    raise RuntimeError(
+                        "Foundry grader API reported execution errors, not a valid zero reward"
+                    )
+                if (
+                    isinstance(tested.reward, bool)
+                    or not isinstance(tested.reward, (int, float))
+                    or not math.isfinite(tested.reward)
+                    or not 0 <= tested.reward <= 1
+                    or abs(tested.reward - expected) > tolerance + 1e-9
+                ):
+                    raise ValueError(
+                        "Foundry grader API reward differs from the reviewed local reward"
+                    )
+                report["rft_api_samples"].append(
+                    {
+                        "id": row["id"],
+                        "expected": expected,
+                        "reward": tested.reward,
+                    }
+                )
+                write_json(output, report)
+        except APIError as error:
+            report.update(
+                error_type=type(error).__name__, http_status=getattr(error, "status_code", None)
+            )
+            write_json(output, report)
+            raise RuntimeError(
+                "RFT grader API validation failed; credential-bearing details withheld"
+            ) from None
+        report.update(passed=True, phase="verified", rft_api_verified=True)
     write_json(output, report)
     return report
 
@@ -915,7 +987,12 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
         )
     if current_policy["model"] != config["rft"]["source_deployment"]:
         raise ValueError("RFT source deployment differs from the calibrated inference model")
+    requested_effort = config["rft"]["hyperparameters"].get("reasoning_effort")
+    if requested_effort is not None and current_policy.get("reasoning_effort") != requested_effort:
+        raise ValueError("RFT reasoning effort differs from the calibrated policy")
     manifest = read_json(prepared / "manifest.json")
+    if manifest.get("resolved_policy_sha256") != value_digest(current_policy):
+        raise ValueError("Prepared RFT data is not bound to the selected resolved policy")
     all_rows = []
     for split, expected_hash in manifest["files"].items():
         path = prepared / f"{split}.jsonl"
@@ -930,13 +1007,26 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
         raise ValueError("Calibration must cover the submitted training and validation data")
     train = read_jsonl(prepared / "train.jsonl")
     validation = read_jsonl(prepared / "validation.jsonl")
-    instructions = current_policy["instructions"].strip()
-    for row in train + validation:
+    submitted = {row["id"]: row for row in train + validation}
+    coverage = {}
+    for episode in read_jsonl(receipts_path):
+        row = submitted.get(episode["case_id"])
         if (
-            row["messages"][0]["role"] != "system"
-            or row["messages"][0]["content"].strip() != instructions
+            row is None
+            or episode["item"] != row
+            or episode["data_sha256"] != manifest["files"][row["split"]]
         ):
-            raise ValueError("Training examples must contain the selected policy instructions")
+            raise ValueError(
+                "Calibration episodes do not match the submitted training/validation rows"
+            )
+        coverage.setdefault(row["id"], set()).add(episode["rollout"])
+    if set(coverage) != set(submitted) or any(len(values) < 2 for values in coverage.values()):
+        raise ValueError(
+            "Calibration must cover every submitted train/validation case at least twice"
+        )
+    for row in train + validation:
+        if any(message["role"] == "system" for message in row["messages"]):
+            raise ValueError("Reinforcement examples must not contain system messages")
     if len(train) < config["rft"]["min_train_examples"] or len(validation) < 1:
         raise ValueError("Too few training/validation examples for selected service")
     capability = config["rft"]["capability_evidence"]
@@ -979,19 +1069,21 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
             raise ValueError("Training tool implementation changed after parity")
         if parity["service_url"] != config["service_url"].rstrip("/"):
             raise ValueError("Endpoint changed after parity")
+        if parity.get("service_image") != config.get("service_image"):
+            raise ValueError("Endpoint image changed after parity")
         if parity["labels_sha256"] != digest(labels_path):
             raise ValueError("Endpoint parity must cover reviewed calibration labels")
         if parity.get("parity_tolerance", 0) != config["rft"].get("parity_tolerance", 0):
             raise ValueError("Endpoint parity tolerance changed after validation")
         if {tool["name"] for tool in tools} - set(parity["tool_names"]):
             raise ValueError("Every training tool must have a parity probe")
-        grader = {
-            "type": "endpoint",
-            "name": "project_reward",
-            "url": config["service_url"].rstrip("/") + "/grade",
-            "rate_limit": config["rft"]["grader_rate_limit"],
-            "pass_threshold": threshold,
-        }
+        grader = endpoint_grader_spec(config)
+        if (
+            not parity.get("rft_api_verified")
+            or parity.get("rft_base_url") != config["rft"]["base_url"]
+            or parity.get("rft_grader_sha256") != value_digest(grader)
+        ):
+            raise ValueError("Endpoint parity must include current Foundry grader API execution")
     elif config["rft"]["grader_type"] != "python":
         raise ValueError("Bundled RFT submission supports python or endpoint graders")
     elif load_hook(project / "grader.py", "grade").__globals__.get("REQUIRES_NETWORK"):
@@ -1024,7 +1116,12 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
     }
     if tools:
         reinforcement["tools"] = [
-            {"name": tool["name"], "server_url": config["service_url"].rstrip("/") + "/tools"}
+            {
+                "name": tool["name"],
+                "server_url": config["service_url"].rstrip("/")
+                + "/tools/"
+                + quote(tool["name"], safe=""),
+            }
             for tool in tools
         ]
         reinforcement["max_episode_steps"] = config["rft"]["max_episode_steps"]
@@ -1037,6 +1134,8 @@ def rft_plan(project, config, prepared, calibration_path, receipts_path, labels_
 
 
 def submit_rft(project, config, prepared, plan, receipt):
+    from openai import APIError
+
     path = claim(
         receipt,
         "rft-submit",
@@ -1045,6 +1144,7 @@ def submit_rft(project, config, prepared, plan, receipt):
             "train_sha256": digest(Path(prepared) / "train.jsonl"),
             "validation_sha256": digest(Path(prepared) / "validation.jsonl"),
             "project": str(Path(project).resolve()),
+            "base_url": config["rft"]["base_url"],
         },
     )
     state = read_json(path)
@@ -1071,10 +1171,72 @@ def submit_rft(project, config, prepared, plan, receipt):
             tool["headers"] = headers
     body.update(training_file=state["train_file_id"], validation_file=state["validation_file_id"])
     training_type = body.pop("trainingType")
-    job = client.fine_tuning.jobs.create(**body, extra_body={"trainingType": training_type})
+    state["phase"] = "create_training_job"
+    write_json(path, state)
+    try:
+        job = client.fine_tuning.jobs.create(**body, extra_body={"trainingType": training_type})
+    except APIError as error:
+        state.update(
+            status="needs_reconciliation",
+            error={
+                "type": type(error).__name__,
+                "http_status": getattr(error, "status_code", None),
+            },
+        )
+        write_json(path, state)
+        raise RuntimeError(
+            "RFT submission failed; credential-bearing details withheld. "
+            "Reconcile the recorded files and job outcome before retrying."
+        ) from None
     state.update(job_id=job.id, status=job.status)
     write_json(path, state)
     return {"job_id": job.id, "status": job.status}
+
+
+def cancel_rft(config, receipt):
+    from openai import APIError
+
+    path = Path(receipt)
+    state = read_json(path)
+    if not state.get("job_id"):
+        raise ValueError("No recorded training job; reconcile submission before cancelling")
+    expected = state["config"]
+    if (
+        expected.get("base_url") != config["rft"]["base_url"]
+        or expected["plan"]["model"] != config["rft"]["model"]
+    ):
+        raise ValueError("Cancellation endpoint/model differs from the submission receipt")
+    client = sdk_client(config["rft"]["base_url"])
+    job = client.fine_tuning.jobs.retrieve(state["job_id"])
+    if job.model != expected["plan"]["model"]:
+        raise ValueError("Remote job model differs from the recorded training target")
+    if job.status in ("succeeded", "failed"):
+        raise ValueError(f"Training is already terminal ({job.status}); no cancellation sent")
+    state["cancellation"] = {
+        "status": "requested",
+        "requested_at": datetime.now(UTC).isoformat(),
+    }
+    write_json(path, state)
+    if job.status != "cancelled":
+        try:
+            job = client.fine_tuning.jobs.cancel(state["job_id"])
+        except APIError as error:
+            state["cancellation"].update(
+                status="needs_reconciliation",
+                error_type=type(error).__name__,
+                http_status=getattr(error, "status_code", None),
+            )
+            write_json(path, state)
+            raise RuntimeError(
+                "Cancellation outcome unknown; resume reads of the same job, not submission"
+            ) from None
+    state.update(
+        status=job.status, job=redact_credentials(job.model_dump(mode="json", warnings=False))
+    )
+    if job.status == "cancelled":
+        state["cancellation"]["status"] = "confirmed"
+    write_json(path, state)
+    return state
 
 
 def monitor_rft(config, receipt, timeout=3600):
@@ -1087,7 +1249,7 @@ def monitor_rft(config, receipt, timeout=3600):
     while True:
         job = client.fine_tuning.jobs.retrieve(state["job_id"])
         state["status"] = job.status
-        state["job"] = redact_credentials(job.model_dump(mode="json"))
+        state["job"] = redact_credentials(job.model_dump(mode="json", warnings=False))
         state["checkpoints"] = (
             [
                 row.model_dump(mode="json")
@@ -1098,6 +1260,10 @@ def monitor_rft(config, receipt, timeout=3600):
         )
         write_json(path, state)
         if job.status == "succeeded":
+            return state
+        if job.status == "cancelled" and state.get("cancellation"):
+            state["cancellation"]["status"] = "confirmed"
+            write_json(path, state)
             return state
         if job.status in ("failed", "cancelled"):
             raise RuntimeError(f"Training ended {job.status}: {job.error}")
@@ -1334,6 +1500,33 @@ def cli_plan(action, project, config):
         ]
     if action == "deploy-hosted":
         return [["azd", "deploy", "--no-prompt", "-o", "json"]]
+    if action == "bootstrap-endpoints":
+        return [
+            az
+            + [
+                "containerapp",
+                "create",
+                "--name",
+                config["service_name"],
+                "-g",
+                rg,
+                "--environment",
+                config["service_environment"],
+                "--image",
+                "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+                "--ingress",
+                "external",
+                "--target-port",
+                "80",
+                "--system-assigned",
+                "--min-replicas",
+                "0",
+                "--max-replicas",
+                "1",
+                "-o",
+                "json",
+            ]
+        ]
     if action == "deploy-endpoints":
         name = config["service_name"]
         endpoint_env = config.get("endpoint_environment", {})
@@ -1358,7 +1551,7 @@ def cli_plan(action, project, config):
             if token_reference
             else "<environment-secret>"
         )
-        return [
+        deployment = [
             az
             + [
                 "containerapp",
@@ -1390,6 +1583,57 @@ def cli_plan(action, project, config):
                 "-o",
                 "json",
             ],
+        ]
+        if config.get("service_image"):
+            deployment = [
+                deployment[1],
+                az
+                + [
+                    "containerapp",
+                    "registry",
+                    "set",
+                    "--name",
+                    name,
+                    "-g",
+                    rg,
+                    "--server",
+                    config["service_registry"],
+                    "--identity",
+                    "system",
+                    "-o",
+                    "none",
+                ],
+                az
+                + [
+                    "containerapp",
+                    "ingress",
+                    "enable",
+                    "--name",
+                    name,
+                    "-g",
+                    rg,
+                    "--type",
+                    "external",
+                    "--target-port",
+                    "8080",
+                    "-o",
+                    "none",
+                ],
+                az
+                + [
+                    "containerapp",
+                    "update",
+                    "--name",
+                    name,
+                    "-g",
+                    rg,
+                    "--image",
+                    config["service_image"],
+                    "-o",
+                    "json",
+                ],
+            ]
+        return deployment + [
             az
             + [
                 "containerapp",
@@ -1535,6 +1779,7 @@ def main():
             "deploy-model",
             "init-hosted",
             "deploy-hosted",
+            "bootstrap-endpoints",
             "deploy-endpoints",
             "optimize",
             "optimizer-status",
@@ -1542,6 +1787,7 @@ def main():
             "endpoint-parity",
             "rft-submit",
             "rft-monitor",
+            "rft-cancel",
             "register-evaluator",
             "deploy-checkpoint",
             "grant-inference",
@@ -1675,12 +1921,23 @@ def main():
         if not args.execute:
             print(json.dumps({"action": args.action, "service_url": config["service_url"]}))
             return
+        if not args.approve_billable:
+            parser.error("Endpoint/RFT grader execution requires --approve-billable")
         print(
             json.dumps(
                 endpoint_parity(args.project, config, args.labels, args.tool_probes, args.receipt),
                 indent=2,
             )
         )
+        return
+    if args.action == "rft-cancel":
+        if not args.execute:
+            state = read_json(args.receipt)
+            print(json.dumps({"action": args.action, "job_id": state.get("job_id")}))
+            return
+        if not args.approve_billable:
+            parser.error("Training cancellation requires approval for this recorded job")
+        print(json.dumps(cancel_rft(config, args.receipt), indent=2))
         return
     if args.action in ("rft-monitor", "optimizer-monitor"):
         if not args.execute:
