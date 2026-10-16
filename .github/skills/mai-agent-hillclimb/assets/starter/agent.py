@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import math
 import os
 from contextlib import contextmanager
 from pathlib import Path
@@ -16,11 +17,25 @@ from azure.ai.agentserver.responses.models import (
 )
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from domain import TOOL_DEFINITIONS, execute_tool
-from evaluation_auth import authorize_capture, redact_trace
+from evaluation_auth import authorize_capture, failure_details, redact_trace
 from openai import OpenAI
 from workload import decode_input, model_messages, skill_catalog
 
 ROOT = Path(__file__).resolve().parent
+
+
+def request_timeout():
+    value = float(os.getenv("MAI_REQUEST_TIMEOUT_SECONDS", "120"))
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError("MAI_REQUEST_TIMEOUT_SECONDS must be finite and positive")
+    return value
+
+
+def reasoning_effort():
+    value = os.getenv("MAI_REASONING_EFFORT")
+    if value is not None and value not in {"none", "minimal", "low", "medium", "high", "xhigh"}:
+        raise ValueError("MAI_REASONING_EFFORT is not a recognized effort setting")
+    return value
 
 
 @contextmanager
@@ -33,7 +48,9 @@ def client():
     )
     with DefaultAzureCredential(process_timeout=60) as credential:
         key = os.getenv("MAI_API_KEY") or get_bearer_token_provider(credential, scope)
-        with OpenAI(base_url=endpoint, api_key=key, max_retries=0, timeout=120) as api:
+        with OpenAI(
+            base_url=endpoint, api_key=key, max_retries=0, timeout=request_timeout()
+        ) as api:
             yield api
 
 
@@ -91,6 +108,8 @@ def policy_contract():
         "temperature": config.temperature,
         "max_tool_steps": int(os.getenv("MAI_MAX_TOOL_STEPS", "6")),
         "max_output_tokens": int(os.getenv("MAI_MAX_OUTPUT_TOKENS", "1024")),
+        "request_timeout_seconds": request_timeout(),
+        "reasoning_effort": reasoning_effort(),
         "domain_sha256": hashlib.sha256((ROOT / "domain.py").read_bytes()).hexdigest(),
     }
 
@@ -99,6 +118,7 @@ class EpisodeFailure(RuntimeError):
     def __init__(self, error, calls):
         super().__init__(f"{type(error).__name__}: {error}")
         self.calls = calls
+        self.failure_details = failure_details(error)
 
 
 def run_episode(item):
@@ -137,6 +157,11 @@ def _run_episode(item, calls, api):
             tools=policy["tools"],
             max_output_tokens=policy["max_output_tokens"],
             **({"temperature": policy["temperature"]} if policy["temperature"] is not None else {}),
+            **(
+                {"reasoning": {"effort": policy["reasoning_effort"]}}
+                if policy.get("reasoning_effort")
+                else {}
+            ),
         )
         raw_usage = response.usage.model_dump() if response.usage else None
         incomplete = getattr(response, "incomplete_details", None)
@@ -197,6 +222,7 @@ async def handler(request, context, _cancellation_signal):
                 "hillclimb_trace_version": 1,
                 "status": "failed",
                 "calls": redact_trace(error.calls),
+                "error": error.failure_details,
             }
         )
         usage = response_usage(error.calls)

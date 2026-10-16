@@ -3,6 +3,7 @@ import io
 import json
 import subprocess
 import sys
+import traceback
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -568,3 +569,204 @@ def test_plain_smoke_dry_run_needs_no_sdk_or_signing_key(project):
     )
     assert json.loads(result.stdout)["action"] == "smoke"
     assert not receipt.exists()
+
+
+def test_rft_submission_errors_cannot_echo_endpoint_credentials(project, prepared, monkeypatch):
+    import httpx
+    from openai import BadRequestError
+
+    secret = "synthetic-endpoint-secret"
+    monkeypatch.setenv("HILLCLIMB_ENDPOINT_TOKEN", secret)
+    config = {
+        "endpoint_token_env": "HILLCLIMB_ENDPOINT_TOKEN",
+        "rft": {"base_url": "https://resource.example/openai/v1", "grader_type": "endpoint"},
+    }
+    plan = {
+        "model": "synthetic-model",
+        "suffix": "synthetic",
+        "trainingType": "developerTier",
+        "method": {
+            "type": "reinforcement",
+            "reinforcement": {
+                "grader": {"type": "endpoint", "url": "https://grader.example/grade"},
+            },
+        },
+    }
+
+    def reject(**kwargs):
+        assert kwargs["method"]["reinforcement"]["grader"]["headers"]["Authorization"].endswith(
+            secret
+        )
+        raise BadRequestError(
+            "Server echoed " + secret,
+            response=httpx.Response(400, request=httpx.Request("POST", "https://resource.example")),
+            body={"message": secret},
+        )
+
+    client = SimpleNamespace(
+        files=SimpleNamespace(
+            create=lambda **_: SimpleNamespace(id="file-synthetic"),
+            retrieve=lambda _: SimpleNamespace(status="processed"),
+        ),
+        fine_tuning=SimpleNamespace(jobs=SimpleNamespace(create=reject)),
+    )
+    monkeypatch.setattr(cloud, "sdk_client", lambda _: client)
+    path = project / "rft-rejected.json"
+    with pytest.raises(RuntimeError, match="credential-bearing details withheld") as failure:
+        cloud.submit_rft(project, config, prepared, plan, path)
+    assert secret not in "".join(traceback.format_exception(failure.value))
+    assert secret not in path.read_text()
+    assert failure.value.__suppress_context__
+    state = journey.read_json(path)
+    assert state["status"] == "needs_reconciliation"
+    assert state["phase"] == "create_training_job"
+    assert state["train_file_id"] == "file-synthetic"
+    assert state["validation_file_id"] == "file-synthetic"
+
+
+def test_cancel_and_monitor_only_the_bound_job_without_duplicate_cancellation(project, monkeypatch):
+    config = {"rft": {"base_url": "https://resource.example/openai/v1", "model": "synthetic-model"}}
+    path = project / "rft.json"
+    journey.write_json(
+        path,
+        {
+            "job_id": "ftjob-synthetic",
+            "status": "running",
+            "config": {"base_url": config["rft"]["base_url"], "plan": {"model": "synthetic-model"}},
+        },
+    )
+    cancelled, dump_options = [], []
+    job = SimpleNamespace(id="ftjob-synthetic", status="running", model="synthetic-model")
+
+    def dump(**kwargs):
+        dump_options.append(kwargs)
+        return {
+            "id": job.id,
+            "status": job.status,
+            "headers": {"Authorization": "synthetic-secret"},
+        }
+
+    def cancel(job_id):
+        cancelled.append(job_id)
+        job.status = "cancelled"
+        return job
+
+    job.model_dump = dump
+    client = SimpleNamespace(
+        fine_tuning=SimpleNamespace(
+            jobs=SimpleNamespace(retrieve=lambda _: job, cancel=cancel),
+        )
+    )
+    monkeypatch.setattr(cloud, "sdk_client", lambda _: client)
+    assert cloud.cancel_rft(config, path)["cancellation"]["status"] == "confirmed"
+    assert cloud.cancel_rft(config, path)["status"] == "cancelled"
+    assert cloud.monitor_rft(config, path)["status"] == "cancelled"
+    assert cancelled == ["ftjob-synthetic"]
+    assert all(options == {"mode": "json", "warnings": False} for options in dump_options)
+    assert "synthetic-secret" not in path.read_text()
+
+
+def test_rft_cancel_refuses_unbound_endpoint_before_accessing_cloud(project, monkeypatch):
+    path = project / "rft.json"
+    journey.write_json(
+        path,
+        {
+            "job_id": "ftjob-synthetic",
+            "config": {"base_url": "https://old.example/openai/v1", "plan": {"model": "synthetic"}},
+        },
+    )
+    monkeypatch.setattr(
+        cloud, "sdk_client", lambda _: pytest.fail("Must reject before cloud access")
+    )
+    with pytest.raises(ValueError, match="Cancellation endpoint/model differs"):
+        cloud.cancel_rft(
+            {"rft": {"base_url": "https://new.example/openai/v1", "model": "synthetic"}}, path
+        )
+
+
+@pytest.mark.parametrize("api_error", [False, True])
+def test_endpoint_parity_checks_foundry_transport_and_rejects_error_shaped_zero(
+    project, monkeypatch, api_error
+):
+    config = journey.read_json(SKILL / "examples" / "cloud.example.json")
+    monkeypatch.setenv(config["endpoint_token_env"], "synthetic-token")
+    grade = journey.load_hook(project / "grader.py", "grade")
+    execute = journey.load_hook(project / "domain.py", "execute_tool")
+    labels = journey.read_jsonl(project / "labels.example.jsonl")
+    labels_path = project / "api-labels.jsonl"
+    journey.write_jsonl(labels_path, [labels[1]] if api_error else labels)
+
+    def http(url, body, _token):
+        if url.endswith("/grade"):
+            return {"score": grade(body["sample"], body["item"])}
+        return {
+            "call_id": body["call_id"],
+            "output": json.dumps(execute(url.rsplit("/", 1)[-1], body["arguments"])),
+        }
+
+    calls = []
+
+    def api_run(**kwargs):
+        calls.append(kwargs["model_sample"])
+        result = grade({"output_text": kwargs["model_sample"]}, kwargs["item"])
+        return SimpleNamespace(
+            reward=result,
+            model_dump=lambda **_: {
+                "metadata": {"errors": {"endpoint_grader_server_error": api_error}}
+            },
+        )
+
+    client = SimpleNamespace(
+        fine_tuning=SimpleNamespace(
+            alpha=SimpleNamespace(
+                graders=SimpleNamespace(validate=lambda **_: None, run=api_run),
+            )
+        )
+    )
+    monkeypatch.setattr(cloud, "sdk_client", lambda _: client)
+    monkeypatch.setattr(cloud, "http_post", http)
+    output = project / "api-parity.json"
+    if api_error:
+        with pytest.raises(RuntimeError, match="execution errors, not a valid zero"):
+            cloud.endpoint_parity(
+                project,
+                config,
+                labels_path,
+                project / "tool-probes.example.jsonl",
+                output,
+            )
+        assert journey.read_json(output)["passed"] is False
+    else:
+        report = cloud.endpoint_parity(
+            project,
+            config,
+            labels_path,
+            project / "tool-probes.example.jsonl",
+            output,
+        )
+        assert report["passed"] and report["rft_api_verified"]
+        assert len(report["rft_api_samples"]) == len(calls) == 3
+        assert report["rft_grader_sha256"] == journey.value_digest(
+            cloud.endpoint_grader_spec(config)
+        )
+        assert "synthetic-token" not in output.read_text()
+
+
+@pytest.mark.parametrize("response", [{"reward": 1}, {"score": 1, "extra": 0}, {"score": True}])
+def test_endpoint_parity_requires_the_exact_score_only_wire_contract(
+    project, monkeypatch, response
+):
+    monkeypatch.setenv("TEST_ENDPOINT_TOKEN", "synthetic-token")
+    monkeypatch.setattr(cloud, "http_post", lambda *_: response)
+    config = {
+        "service_url": "https://endpoint.example",
+        "endpoint_token_env": "TEST_ENDPOINT_TOKEN",
+    }
+    with pytest.raises(ValueError, match="score field only|invalid reward"):
+        cloud.endpoint_parity(
+            project,
+            config,
+            project / "labels.example.jsonl",
+            project / "tool-probes.example.jsonl",
+            project / "bad-parity.json",
+        )

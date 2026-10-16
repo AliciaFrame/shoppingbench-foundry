@@ -100,6 +100,40 @@ def evaluation_metadata(text):
     }
 
 
+def failure_details(error):
+    allowed = {
+        "RuntimeError",
+        "ValueError",
+        "TypeError",
+        "KeyError",
+        "FileNotFoundError",
+        "ModuleNotFoundError",
+        "HTTPError",
+        "URLError",
+        "TimeoutError",
+        "APIConnectionError",
+        "AuthenticationError",
+        "PermissionDeniedError",
+        "RateLimitError",
+        "BadRequestError",
+        "InternalServerError",
+        "ClientAuthenticationError",
+        "CredentialUnavailableError",
+        "ServiceRequestError",
+        "ServiceResponseError",
+        "ExceptionGroup",
+    }
+    if isinstance(error, dict):
+        kind, status = error.get("type"), error.get("http_status")
+    else:
+        kind = type(error).__name__
+        status = getattr(error, "status_code", getattr(error, "code", None))
+    return {
+        "type": kind if isinstance(kind, str) and kind in allowed else "unknown",
+        "http_status": status if type(status) is int and 100 <= status <= 599 else None,
+    }
+
+
 def authorize_capture(text, metadata):
     if metadata.get("hillclimb_capture") != "v1":
         return False

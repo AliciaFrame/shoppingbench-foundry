@@ -7,13 +7,17 @@ import time
 from azure.ai.projects import AIProjectClient
 from azure.ai.projects.models import VersionRefIndicator
 from azure.identity import DefaultAzureCredential
-from evaluation_auth import evaluation_key, evaluation_metadata
+from evaluation_auth import evaluation_key, evaluation_metadata, failure_details
 from workload import decode_trace, encode_input
 
 
 class HostedEpisodeFailure(RuntimeError):
-    def __init__(self, calls):
-        super().__init__("Hosted agent generation failed")
+    def __init__(self, calls, details=None):
+        self.failure_details = failure_details(details or {})
+        kind = self.failure_details["type"]
+        status = self.failure_details["http_status"]
+        suffix = f" ({kind}" + (f", HTTP {status}" if status is not None else "") + ")"
+        super().__init__("Hosted agent generation failed" + (suffix if kind != "unknown" else ""))
         self.calls = calls
 
 
@@ -83,12 +87,12 @@ def summarize_logs(pipeline_response, chunks, _headers):
     }
 
 
-def failed_calls(response):
+def failed_trace(response):
     error = getattr(response, "error", None)
     try:
         trace = json.loads(error.message) if error else {}
     except (TypeError, ValueError):
-        return []
+        return {}
     if (
         isinstance(trace, dict)
         and trace.get("hillclimb_trace_version") == 1
@@ -96,8 +100,12 @@ def failed_calls(response):
         and isinstance(trace.get("calls"), list)
         and all(isinstance(call, dict) for call in trace["calls"])
     ):
-        return trace["calls"]
-    return []
+        return trace
+    return {}
+
+
+def failed_calls(response):
+    return failed_trace(response).get("calls", [])
 
 
 def run_episode(item):
@@ -142,7 +150,8 @@ def run_episode(item):
             if getattr(response, "status", None) not in (None, "completed") or getattr(
                 response, "incomplete_details", None
             ):
-                raise HostedEpisodeFailure(failed_calls(response))
+                trace = failed_trace(response)
+                raise HostedEpisodeFailure(trace.get("calls", []), trace.get("error"))
             if not response.output_text:
                 raise RuntimeError("Hosted agent returned an empty answer")
             result = decode_trace(response.output_text)

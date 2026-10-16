@@ -47,16 +47,20 @@ async def endpoint_grade(request: Request, authorization: str | None = Header(de
     body = await payload(request, authorization)
     try:
         reward = await asyncio.to_thread(grade, body["sample"], body["item"])
-        if not math.isfinite(reward) or not 0 <= reward <= 1:
+        if (
+            isinstance(reward, bool)
+            or not isinstance(reward, (int, float))
+            or not math.isfinite(reward)
+            or not 0 <= reward <= 1
+        ):
             raise ValueError("Reward must be finite and within [0,1]")
     except (KeyError, TypeError, ValueError) as error:
         logger.warning("Invalid grading request: %s", error)
         raise HTTPException(422, str(error)) from error
-    return {"reward": reward}
+    return {"score": reward}
 
 
-@app.post("/tools")
-async def endpoint_tool(request: Request, authorization: str | None = Header(default=None)):
+async def tool_response(request, authorization, tool_name):
     body = await payload(request, authorization)
     try:
         arguments = body["arguments"]
@@ -64,7 +68,9 @@ async def endpoint_tool(request: Request, authorization: str | None = Header(def
             arguments = json.loads(arguments)
         if not isinstance(arguments, dict):
             raise TypeError("Tool arguments must be an object")
-        result = await asyncio.to_thread(execute_tool, body["name"], arguments)
+        if tool_name and body.get("name") not in (None, tool_name):
+            raise HTTPException(400, "Tool name does not match route")
+        result = await asyncio.to_thread(execute_tool, tool_name or body["name"], arguments)
         response = {
             "type": "function_call_output",
             "call_id": body["call_id"],
@@ -77,3 +83,17 @@ async def endpoint_tool(request: Request, authorization: str | None = Header(def
     except (KeyError, TypeError, ValueError) as error:
         logger.warning("Invalid tool request: %s", error)
         raise HTTPException(422, str(error)) from error
+
+
+@app.post("/tools")
+async def endpoint_tool(request: Request, authorization: str | None = Header(default=None)):
+    return await tool_response(request, authorization, None)
+
+
+@app.post("/tools/{tool_name}")
+async def endpoint_named_tool(
+    tool_name: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+):
+    return await tool_response(request, authorization, tool_name)

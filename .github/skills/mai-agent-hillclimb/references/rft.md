@@ -86,6 +86,13 @@ Keep train and validation results separate. If one split is used to justify
 signal while another is used for submission checks, disclose that policy and
 verify the evidence rather than hiding a weak validation distribution.
 
+If the acceptance goal is to confirm startup and cancel, define startup before
+submission. Accepted, pending and a message saying training started are not
+enough: require a real metrics event with a nonnegative training step and
+numeric training reward (or an equally direct provider-specific training-work
+signal). Persist that event before cancelling the same durable job ID. Then
+confirm terminal cancellation; do not submit another job to test cancellation.
+
 ## Evaluate checkpoints
 
 Record all deployable checkpoints and their hosting charges. Deploy candidates

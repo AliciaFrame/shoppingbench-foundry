@@ -71,7 +71,10 @@ def incomplete_response():
     )
 
 
-def test_incomplete_nonempty_generation_preserves_usage_and_provenance(runtime, monkeypatch):
+@pytest.mark.parametrize("effort", [None, "medium"])
+def test_incomplete_nonempty_generation_preserves_usage_and_provenance(
+    runtime, monkeypatch, effort
+):
     agent = runtime.agent
     monkeypatch.setattr(
         agent,
@@ -83,9 +86,16 @@ def test_incomplete_nonempty_generation_preserves_usage_and_provenance(runtime, 
             "temperature": None,
             "max_tool_steps": 1,
             "max_output_tokens": 3,
+            "reasoning_effort": effort,
         },
     )
-    api = SimpleNamespace(responses=SimpleNamespace(create=lambda **_: incomplete_response()))
+    requests = []
+
+    def create(**kwargs):
+        requests.append(kwargs)
+        return incomplete_response()
+
+    api = SimpleNamespace(responses=SimpleNamespace(create=create))
     monkeypatch.setattr(agent, "client", lambda: nullcontext(api))
     with pytest.raises(agent.EpisodeFailure, match="did not complete") as failure:
         agent.run_episode({"messages": [{"role": "user", "content": "Synthetic input"}]})
@@ -100,6 +110,47 @@ def test_incomplete_nonempty_generation_preserves_usage_and_provenance(runtime, 
             "cache_write_mode": "none",
         }
     ]
+    assert requests[0].get("reasoning") == ({"effort": effort} if effort else None)
+
+
+@pytest.mark.parametrize("value", ["0", "-1", "nan", "inf"])
+def test_runtime_rejects_invalid_request_timeout(runtime, monkeypatch, value):
+    monkeypatch.setenv("MAI_REQUEST_TIMEOUT_SECONDS", value)
+    with pytest.raises(ValueError, match="finite and positive"):
+        runtime.agent.request_timeout()
+
+
+def test_runtime_binds_reasoning_effort_and_request_deadline(runtime, monkeypatch):
+    agent = runtime.agent
+    monkeypatch.setenv("MAI_OPENAI_BASE_URL", "https://provider.example/openai/v1")
+    monkeypatch.setenv("MAI_API_KEY", "synthetic-key")
+    monkeypatch.setenv("MAI_REQUEST_TIMEOUT_SECONDS", "300")
+    monkeypatch.setenv("MAI_REASONING_EFFORT", "medium")
+    monkeypatch.setattr(
+        agent,
+        "configuration",
+        lambda: SimpleNamespace(
+            model="synthetic-model",
+            temperature=None,
+            skills=[],
+            skills_dir=None,
+            tool_definitions=[],
+            compose_instructions=lambda: "Synthetic policy",
+        ),
+    )
+    options = {}
+    monkeypatch.setattr(agent, "DefaultAzureCredential", lambda **_: nullcontext(object()))
+    monkeypatch.setattr(
+        agent, "OpenAI", lambda **kwargs: options.update(kwargs) or nullcontext(None)
+    )
+    policy = agent.policy_contract()
+    assert policy["reasoning_effort"] == "medium" and policy["request_timeout_seconds"] == 300
+    with agent.client():
+        pass
+    assert options["timeout"] == 300
+    monkeypatch.setenv("MAI_REASONING_EFFORT", "unrecognized")
+    with pytest.raises(ValueError, match="recognized effort"):
+        agent.reasoning_effort()
 
 
 def hosted_project(runtime, monkeypatch, create_response, events, *, diagnostic=None, cleanup=None):
@@ -211,6 +262,24 @@ async def invoke(agent, metadata):
     return [event async for event in stream]
 
 
+def test_failure_details_exclude_opaque_messages_and_invalid_metadata(runtime):
+    from urllib.error import HTTPError
+
+    details = runtime.agent.failure_details
+    assert details(HTTPError("https://private.example", 429, "synthetic-secret", None, None)) == {
+        "type": "HTTPError",
+        "http_status": 429,
+    }
+    assert details({"type": ["synthetic-secret"], "http_status": "synthetic-secret"}) == {
+        "type": "unknown",
+        "http_status": None,
+    }
+    assert details({"type": "HTTPError", "http_status": 500, "message": "synthetic-secret"}) == {
+        "type": "HTTPError",
+        "http_status": 500,
+    }
+
+
 @pytest.mark.parametrize("unknown_tail", [False, True])
 def test_authorized_failure_uses_real_failed_event_and_remote_usage(
     runtime, monkeypatch, unknown_tail
@@ -240,6 +309,10 @@ def test_authorized_failure_uses_real_failed_event_and_remote_usage(
         assert terminal["usage"]["input_tokens"] == 12
     assert terminal["output"] == []
     assert "private failure message" not in terminal["error"]["message"]
+    assert json.loads(terminal["error"]["message"])["error"] == {
+        "type": "RuntimeError",
+        "http_status": None,
+    }
     import httpx
     from openai import OpenAI
 
@@ -255,6 +328,7 @@ def test_authorized_failure_uses_real_failed_event_and_remote_usage(
     with pytest.raises(hosted.HostedEpisodeFailure) as failure:
         hosted.run_episode({"messages": [{"role": "user", "content": "Synthetic input"}]})
     assert failure.value.calls == calls
+    assert failure.value.failure_details == {"type": "RuntimeError", "http_status": None}
     assert history == ["diagnostics", "logs", "logs_closed", "cleanup"]
 
 
