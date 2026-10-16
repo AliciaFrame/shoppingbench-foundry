@@ -1,7 +1,5 @@
 # ShoppingBench agent hill climbing on Microsoft Foundry
 
-[![CI](https://github.com/AliciaFrame/shoppingbench-foundry/actions/workflows/ci.yml/badge.svg?branch=remediation%2Fv2-rft-hardening)](https://github.com/AliciaFrame/shoppingbench-foundry/actions/workflows/ci.yml?query=branch%3Aremediation%2Fv2-rft-hardening)
-
 This repository is a reproducible, end-to-end demonstration of improving five
 tool-using shopping agents built on **MAI-Code-1.1-Flash**, using two levers
 in sequence:
@@ -215,6 +213,32 @@ See [CHANGELOG.md](CHANGELOG.md) for v1/v2 workflow differences and release note
 | [`src/shoppingbench_foundry`](src/shoppingbench_foundry) | Tool API, canonical grader, RFT graders, and catalog store |
 | [`azure`](azure) | Azure deployment for the catalog, tool API, and RFT grader endpoints |
 | [`docs`](docs/README.md) | Architecture, results, reproducibility, and demo walkthrough |
+
+## Companion skill: MAI-agent-hillclimb
+
+The standalone [MAI-agent-hillclimb skill](.github/skills/mai-agent-hillclimb/SKILL.md)
+guides hosted-agent setup, baseline evaluation, Agent Optimizer, justified RFT,
+and checkpoint selection/verification for any use case. ShoppingBench is an
+optional worked example, not a required runtime or evaluator.
+
+The skill bundles a runnable hosted-agent starter, grader/evaluator and tool
+endpoints, isolated dataset/evaluation helpers, calibrated optimizer and RFT
+commands, sealed selection, and a standard-library cost calculator with
+Azure-first/GitHub-fallback pricing guidance. Follow its
+Matched reports compare quality, latency, serving savings, cost per successful
+task, and experiment investment/break-even without treating unknown costs as zero. Follow its
+[executable runbook](.github/skills/mai-agent-hillclimb/references/runbook.md).
+It does not require another Foundry skill to be loaded. Clone this
+repository to use its project skill, or copy the entire skill directory into
+a supported project/personal skills location.
+
+Run its deliberately synthetic offline cost example:
+
+```powershell
+python .github\skills\mai-agent-hillclimb\scripts\cost_report.py `
+  --receipts .github\skills\mai-agent-hillclimb\examples\episodes.synthetic.jsonl `
+  --prices .github\skills\mai-agent-hillclimb\examples\prices.synthetic.json
+```
 
 ## Reproduce
 

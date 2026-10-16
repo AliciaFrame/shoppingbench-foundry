@@ -1,0 +1,7 @@
+*
+!requirements.txt
+!domain.py
+!grader.py
+!service.py
+!judge-rubric.md
+!Dockerfile

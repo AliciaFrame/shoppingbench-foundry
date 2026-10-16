@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.foundry/
+.azure/
+.git/
+*.jsonl
+*.env
+.env*
+service.py
+Dockerfile
+cloud.json
+hosted_eval.py

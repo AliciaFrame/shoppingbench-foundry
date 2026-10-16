@@ -1,0 +1,19 @@
+{
+  "run_id": "replace-with-unique-run",
+  "project_endpoint": "https://replace.services.ai.azure.com/api/projects/replace",
+  "agent_name": "replace-with-existing-optimization-ready-agent",
+  "agent_version": "replace-with-active-baseline-version",
+  "enable_evaluation": false,
+  "model": {
+    "deployment": "replace-with-policy-model-deployment"
+  },
+  "optimizer": {
+    "dataset": "prepared\\optimizer.jsonl",
+    "evaluator_type": "builtin",
+    "evaluator": "builtin.task_adherence",
+    "eval_model": "replace-with-evaluation-model-deployment",
+    "optimize_model": "replace-with-optimization-model-deployment",
+    "max_candidates": 2,
+    "max_concurrent_agent_runs": 1
+  }
+}
