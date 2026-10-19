@@ -11,6 +11,9 @@
     "searchLocation": {
       "value": "${AZURE_SEARCH_LOCATION=swedencentral}"
     },
+    "deploymentProfile": {
+      "value": "${SHOPPINGBENCH_DEPLOYMENT_PROFILE=benchmark}"
+    },
     "shoppingbenchApiToken": {
       "value": "${SHOPPINGBENCH_API_TOKEN}"
     },

@@ -5,6 +5,13 @@ param environmentName string
 param location string = resourceGroup().location
 param searchLocation string = location
 
+@allowed([
+  'benchmark'
+  'demo'
+])
+@description('The demo profile uses Basic Search and one small runtime replica.')
+param deploymentProfile string = 'benchmark'
+
 @secure()
 @minLength(32)
 param shoppingbenchApiToken string
@@ -106,7 +113,7 @@ resource search 'Microsoft.Search/searchServices@2025-05-01' = {
     type: 'SystemAssigned'
   }
   sku: {
-    name: 'standard'
+    name: deploymentProfile == 'demo' ? 'basic' : 'standard'
   }
   properties: {
     disableLocalAuth: true
@@ -269,15 +276,15 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
           ]
           resources: {
-            cpu: json('1.0')
-            memory: '2Gi'
+            cpu: json(deploymentProfile == 'demo' ? '0.25' : '1.0')
+            memory: deploymentProfile == 'demo' ? '0.5Gi' : '2Gi'
           }
         }
       ]
       scale: {
         // Concurrent RFT rollouts call the tool and grader endpoints in parallel.
-        minReplicas: 2
-        maxReplicas: 5
+        minReplicas: deploymentProfile == 'demo' ? 1 : 2
+        maxReplicas: deploymentProfile == 'demo' ? 1 : 5
         rules: [
           {
             name: 'http'
