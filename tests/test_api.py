@@ -172,6 +172,24 @@ def test_tool_api_fails_closed_without_token(monkeypatch):
     assert response.json() == {"detail": "Bearer authentication is not configured"}
 
 
+def test_swagger_exposes_one_bearer_authorization_flow(monkeypatch):
+    monkeypatch.setenv("SHOPPINGBENCH_API_TOKEN", "test-token")
+    schema = TestClient(app).get("/openapi.json").json()
+
+    assert schema["components"]["securitySchemes"] == {
+        "HTTPBearer": {
+            "type": "http",
+            "description": "Paste the ShoppingBench API token. Swagger adds the Bearer prefix.",
+            "scheme": "bearer",
+        }
+    }
+    assert schema["paths"]["/find_product"]["get"]["security"] == [{"HTTPBearer": []}]
+    assert not any(
+        parameter["name"].lower() == "authorization"
+        for parameter in schema["paths"]["/find_product"]["get"].get("parameters", [])
+    )
+
+
 def test_web_search_grade_route_retries_only_unreachable_judge(monkeypatch):
     import httpx
     import pytest
