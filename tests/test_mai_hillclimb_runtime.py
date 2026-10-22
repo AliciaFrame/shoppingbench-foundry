@@ -153,6 +153,58 @@ def test_runtime_binds_reasoning_effort_and_request_deadline(runtime, monkeypatc
         agent.reasoning_effort()
 
 
+def test_rft_calibration_uses_materialized_user_policy_without_system_instructions(
+    runtime,
+    monkeypatch,
+):
+    agent = runtime.agent
+    policy = {
+        "instructions": "Synthetic selected policy",
+        "model": "requested-deployment",
+        "tools": [],
+        "temperature": None,
+        "max_tool_steps": 1,
+        "max_output_tokens": 10,
+        "reasoning_effort": "low",
+        "rft_calibration_mode": True,
+    }
+    monkeypatch.setattr(agent, "policy_contract", lambda: policy)
+    requests = []
+    response = SimpleNamespace(
+        usage=SimpleNamespace(model_dump=lambda: USAGE),
+        incomplete_details=None,
+        status="completed",
+        model="provider",
+        output=[],
+        output_text='{"ok":true}',
+    )
+    monkeypatch.setattr(
+        agent,
+        "client",
+        lambda: nullcontext(
+            SimpleNamespace(
+                responses=SimpleNamespace(
+                    create=lambda **kwargs: requests.append(kwargs) or response
+                ),
+            )
+        ),
+    )
+    materialized = agent.TRAINING_POLICY_PREFIX + policy["instructions"]
+    result = agent.run_episode(
+        {
+            "messages": [
+                {"role": "user", "content": materialized},
+                {"role": "user", "content": "Synthetic task"},
+            ]
+        }
+    )
+    assert result["output_text"] == '{"ok":true}'
+    assert "instructions" not in requests[0]
+    assert requests[0]["input"][0]["content"] == materialized
+    with pytest.raises(agent.EpisodeFailure, match="does not contain"):
+        agent.run_episode({"messages": [{"role": "user", "content": "Missing policy"}]})
+
+
 def hosted_project(runtime, monkeypatch, create_response, events, *, diagnostic=None, cleanup=None):
     hosted = runtime.hosted
     monkeypatch.setenv("MAI_HOSTED_AGENT_NAME", "synthetic-agent")

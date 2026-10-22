@@ -1441,12 +1441,18 @@ def test_training_materializes_context_once_and_resolves_full_policy_instruction
     train = journey.read_jsonl(prepared / "train.jsonl")[0]
     visible = journey.load_hook(project / "workload.py", "model_messages")(train)
     assert visible[0]["role"] == "user"
+    assert visible[0]["content"] == journey.training_policy_message(
+        journey.load_hook(adapter, "policy_contract")()["instructions"]
+    )
     assert sum("Serving and training" in message["content"] for message in visible) == 1
     assert train["context_in_messages"]
     assert not any("expected" in message["content"] for message in visible)
     policy = journey.load_hook(adapter, "policy_contract")()
     assert journey.read_json(prepared / "manifest.json")["resolved_policy_sha256"] == (
         journey.value_digest(policy)
+    )
+    assert journey.read_json(prepared / "manifest.json")["training_policy_message_sha256"] == (
+        journey.value_digest(journey.training_policy_message(policy["instructions"]))
     )
 
 

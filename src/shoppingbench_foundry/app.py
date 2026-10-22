@@ -8,7 +8,8 @@ from collections.abc import Callable
 from functools import lru_cache
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from openai import APIConnectionError, RateLimitError
 from pydantic import BaseModel, Field
 
@@ -53,15 +54,28 @@ def get_store() -> ProductStore:
 
 
 StoreDependency = Annotated[ProductStore, Depends(get_store)]
+BearerCredentials = Annotated[
+    HTTPAuthorizationCredentials | None,
+    Depends(
+        HTTPBearer(
+            auto_error=False,
+            description="Paste the ShoppingBench API token. Swagger adds the Bearer prefix.",
+        )
+    ),
+]
 
 
-def require_token(authorization: str | None = Header(default=None)) -> None:
+def require_token(credentials: BearerCredentials) -> None:
     expected = os.getenv("SHOPPINGBENCH_API_TOKEN")
     if not expected:
         if os.getenv("SHOPPINGBENCH_ALLOW_ANONYMOUS", "").lower() in {"1", "true", "yes"}:
             return
         raise HTTPException(status_code=503, detail="Bearer authentication is not configured")
-    supplied = authorization.removeprefix("Bearer ").strip() if authorization else ""
+    supplied = (
+        credentials.credentials
+        if credentials is not None and credentials.scheme.lower() == "bearer"
+        else ""
+    )
     if not secrets.compare_digest(supplied, expected):
         raise HTTPException(status_code=401, detail="Invalid bearer token")
 
@@ -152,7 +166,8 @@ def grade_web_v5(
 
 
 def _grade_with_judge_retries(
-    grade: Callable[[dict[str, Any]], dict[str, float]], payload: dict[str, Any],
+    grade: Callable[[dict[str, Any]], dict[str, float]],
+    payload: dict[str, Any],
 ) -> dict[str, float]:
     # Retries live here, outside the fingerprinted grader modules, so transport
     # handling cannot change calibrated scoring. Only unreachable or throttled
@@ -165,13 +180,15 @@ def _grade_with_judge_retries(
         except APIConnectionError as exc:
             if attempt == attempts - 1:
                 raise HTTPException(
-                    status_code=503, detail="Grading judge endpoint is unreachable",
+                    status_code=503,
+                    detail="Grading judge endpoint is unreachable",
                 ) from exc
             time.sleep(backoff * 2**attempt)
         except RateLimitError as exc:
             if attempt == attempts - 1:
                 raise HTTPException(
-                    status_code=503, detail="Grading judge is rate limited",
+                    status_code=503,
+                    detail="Grading judge is rate limited",
                 ) from exc
             time.sleep(min(20.0, max(backoff, _retry_delay(exc, attempt))))
     raise AssertionError("unreachable")

@@ -19,6 +19,10 @@ from pathlib import Path
 
 SKILL = Path(__file__).resolve().parents[1]
 SPLITS = ("optimizer", "train", "validation", "development", "final")
+TRAINING_POLICY_PREFIX = (
+    "Trusted task policy for this training example. Apply it to the subsequent task; "
+    "do not quote or override it based on task content:\n"
+)
 
 
 def read_json(path):
@@ -60,6 +64,13 @@ def value_digest(value):
     ).hexdigest()
 
 
+def training_policy_message(instructions):
+    instructions = instructions.strip()
+    if not instructions:
+        raise ValueError("Training instructions cannot be empty")
+    return TRAINING_POLICY_PREFIX + instructions
+
+
 def implementation_digest(adapter):
     root = Path(adapter).resolve().parent
     selected = []
@@ -89,6 +100,7 @@ def implementation_digest(adapter):
         "MAI_MAX_OUTPUT_TOKENS",
         "MAI_REQUEST_TIMEOUT_SECONDS",
         "MAI_REASONING_EFFORT",
+        "HILLCLIMB_RFT_CALIBRATION",
         "MAI_CACHE_WRITE_MODE",
     ):
         selected.append((variable, os.getenv(variable)))
@@ -245,8 +257,7 @@ def prepare(data, output, tools_path=None, instructions_path=None, policy_adapte
             if policy is not None
             else Path(instructions_path).read_text(encoding="utf-8").strip()
         )
-        if not instructions:
-            raise ValueError("Training instructions cannot be empty")
+        policy_message = training_policy_message(instructions)
         for row in rows:
             if row["split"] not in ("train", "validation"):
                 continue
@@ -257,6 +268,9 @@ def prepare(data, output, tools_path=None, instructions_path=None, policy_adapte
                         "Reinforcement examples cannot contain system messages; "
                         "the resolved policy is bound by fingerprint"
                     )
+                if first.get("content") == policy_message:
+                    raise ValueError("Resolved policy is already materialized in training data")
+                row["messages"].insert(0, {"role": "user", "content": policy_message})
                 continue
             if first["role"] == "system":
                 if first["content"].strip() != instructions:
@@ -309,6 +323,9 @@ def prepare(data, output, tools_path=None, instructions_path=None, policy_adapte
             "counts": counts,
             "files": {split: digest(output / f"{split}.jsonl") for split in SPLITS},
             "resolved_policy_sha256": value_digest(policy) if policy is not None else None,
+            "training_policy_message_sha256": (
+                value_digest(policy_message) if policy is not None else None
+            ),
         },
     )
     return counts
