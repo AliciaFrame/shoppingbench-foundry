@@ -38,6 +38,13 @@ ACR incur charges while provisioned, even when the demo is idle.
 Set both `AZURE_LOCATION` and `AZURE_SEARCH_LOCATION` in the AZD environment
 when choosing a region other than Sweden Central.
 
+For an isolated reproduction in an existing resource group, set
+`AZURE_RESOURCE_GROUP` explicitly and use a new environment name. Set
+`SHOPPINGBENCH_RESOURCE_NAME_PREFIX` (for example, `mtas`) before provisioning
+to prefix the eight top-level runtime resources. The default `az` preserves
+existing names. Use 1-8 lowercase alphanumeric characters. This does not rename
+existing resources or establish a resource-group retention guarantee.
+
 The deployment outputs:
 
 - `AZURE_SEARCH_ENDPOINT`

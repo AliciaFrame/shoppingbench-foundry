@@ -5,6 +5,9 @@
     "environmentName": {
       "value": "${AZURE_ENV_NAME}"
     },
+    "resourceNamePrefix": {
+      "value": "${SHOPPINGBENCH_RESOURCE_NAME_PREFIX=az}"
+    },
     "location": {
       "value": "${AZURE_LOCATION=swedencentral}"
     },

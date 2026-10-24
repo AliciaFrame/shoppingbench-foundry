@@ -96,6 +96,7 @@ def main() -> None:
         "instructions_sha256": sha256(runtime.CONFIG_DIR / "instructions.md"),
         "tools_sha256": sha256(runtime.CONFIG_DIR / "tools.json"),
         "runtime_sha256": sha256(REPO_ROOT / "agents" / "shared" / "web_search_runtime.py"),
+        "evaluator_sha256": sha256(Path(__file__)),
         "selection_deployment": runtime.SELECTION_MODEL,
         "web_deployment": runtime.WEB_SEARCH_MODEL,
         "selection_reasoning_effort": runtime.SELECTION_REASONING_EFFORT or "provider-default",
@@ -201,8 +202,8 @@ def main() -> None:
             field: sum((r["usage"] or {}).get(field, 0) for r in state.responses)
             for field in ("input_tokens", "output_tokens", "total_tokens")
         }
-        result["usage_complete"] = not result.get("error") and all(
-            r["usage"] is not None for r in state.responses
+        result["usage_complete"] = bool(state.responses) and not result.get("error") and all(
+            ((r["usage"] or {}).get("total_tokens") or 0) > 0 for r in state.responses
         )
         return result
 

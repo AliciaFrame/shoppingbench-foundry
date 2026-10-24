@@ -10,6 +10,21 @@ The checked-in metadata names the model used for the published experiment;
 change `model:` in a copied seed when running against another compatible
 deployment.
 
+Use `--agent-name` and `--experiment-name` to target a separately named hosted
+agent and optimization job without modifying the published task names. For
+example, `--agent-name mtas-product --experiment-name mtas-product-round1`.
+Keep a copied seed with the intended model deployment and use
+`--seed-dir`, `--dataset`, and `--name-suffix` to isolate local materialization.
+When the separately named agent lives in a copied azd project, pass
+`--project-dir` for that project's directory and `--project-endpoint` for the
+existing Foundry project. `--no-wait` returns after submission; persist the
+returned operation ID and monitor that job instead of submitting again.
+Model selection is not requested: the generated configuration omits
+`model_search_space` and retains the seed's policy model. Do not specify a
+singleton containing the baseline model: the optimizer removes the baseline
+from that list and rejects the resulting empty search space. The judge and
+optimization models are separate dependencies, not candidate policy models.
+
 ```powershell
 python optimize\run.py product `
   --round 1 `

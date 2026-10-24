@@ -2,6 +2,10 @@ targetScope = 'resourceGroup'
 
 @minLength(1)
 param environmentName string
+@minLength(1)
+@maxLength(8)
+@description('Lowercase alphanumeric resource-name prefix; keep short enough for Storage account names.')
+param resourceNamePrefix string = 'az'
 param location string = resourceGroup().location
 param searchLocation string = location
 
@@ -28,14 +32,14 @@ var tags = {
   'azd-env-name': environmentName
   project: 'shoppingbench-foundry'
 }
-var identityName = 'azid${token}'
-var registryName = 'azcr${token}'
-var storageName = 'azst${token}'
-var searchName = 'azsr${token}'
-var workspaceName = 'azla${token}'
-var insightsName = 'azai${token}'
-var environmentResourceName = 'azce${token}'
-var appName = 'azca${token}'
+var identityName = '${resourceNamePrefix}id${token}'
+var registryName = '${resourceNamePrefix}cr${token}'
+var storageName = '${resourceNamePrefix}st${token}'
+var searchName = '${resourceNamePrefix}sr${token}'
+var workspaceName = '${resourceNamePrefix}la${token}'
+var insightsName = '${resourceNamePrefix}ai${token}'
+var environmentResourceName = '${resourceNamePrefix}ce${token}'
+var appName = '${resourceNamePrefix}ca${token}'
 
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName

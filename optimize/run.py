@@ -25,6 +25,8 @@ def build_config(
     seed_dir: Path | None = None,
     dataset_path: Path | None = None,
     name_suffix: str = "",
+    agent_name: str | None = None,
+    experiment_name: str | None = None,
 ) -> dict:
     benchmark_task = BENCHMARK_TASKS.get(task, task)
     dataset_round = "round1" if round_number == 1 else "round2"
@@ -56,9 +58,10 @@ def build_config(
     model = model_lines[0]
     experiment_suffix = f"-{name_suffix}" if name_suffix else ""
     return {
-        "name": f"shoppingbench-{task}-optimization{name_round}{experiment_suffix}",
+        "name": experiment_name
+        or f"shoppingbench-{task}-optimization{name_round}{experiment_suffix}",
         "agent": {
-            "name": AGENTS[task],
+            "name": agent_name or AGENTS[task],
             "kind": "hosted",
             "version": agent_version,
             "model": model,
@@ -84,6 +87,15 @@ def main() -> None:
     parser.add_argument("--seed-dir", type=Path)
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--name-suffix", default="")
+    parser.add_argument(
+        "--agent-name", help="Isolated hosted-agent name; defaults to the task agent."
+    )
+    parser.add_argument("--experiment-name", help="Override the cloud optimization job name.")
+    parser.add_argument(
+        "--project-dir", type=Path, help="azd project directory; defaults to agents/."
+    )
+    parser.add_argument("--project-endpoint", help="Existing Foundry project endpoint.")
+    parser.add_argument("--no-wait", action="store_true", help="Return after job submission.")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -94,42 +106,53 @@ def main() -> None:
     dataset_path = args.dataset
     if dataset_path is not None and not dataset_path.is_absolute():
         dataset_path = repo_root / dataset_path
+    project_dir = args.project_dir or repo_root / "agents"
+    if not project_dir.is_absolute():
+        project_dir = repo_root / project_dir
+    project_dir = project_dir.resolve()
+    if not (project_dir / "azure.yaml").is_file():
+        raise FileNotFoundError(f"azd project manifest not found: {project_dir / 'azure.yaml'}")
     work_dir = repo_root / "optimize" / "work"
     work_dir.mkdir(parents=True, exist_ok=True)
     experiment_suffix = f"-{args.name_suffix}" if args.name_suffix else ""
     config_path = work_dir / f"{args.task}-round{args.round}{experiment_suffix}.json"
-    config_path.write_text(
-        json.dumps(
-            build_config(
-                repo_root,
-                args.task,
-                args.round,
-                args.agent_version,
-                args.eval_model,
-                args.optimization_model,
-                seed_dir,
-                dataset_path,
-                args.name_suffix,
-            ),
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
+    config = build_config(
+        repo_root,
+        args.task,
+        args.round,
+        args.agent_version,
+        args.eval_model,
+        args.optimization_model,
+        seed_dir,
+        dataset_path,
+        args.name_suffix,
+        args.agent_name,
+        args.experiment_name,
     )
+    config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
     command = [
         "azd",
         "ai",
         "agent",
         "optimize",
         "--agent",
-        AGENTS[args.task],
+        config["agent"]["name"],
         "--config",
         str(config_path),
     ]
+    if args.project_endpoint:
+        command.extend(["--project-endpoint", args.project_endpoint])
+    if args.no_wait:
+        command.append("--no-wait")
     if args.dry_run:
-        print(json.dumps({"command": command, "config": str(config_path)}, indent=2))
+        print(
+            json.dumps(
+                {"command": command, "config": str(config_path), "cwd": str(project_dir)},
+                indent=2,
+            )
+        )
         return
-    subprocess.run(command, cwd=repo_root / "agents", check=True)
+    subprocess.run(command, cwd=project_dir, check=True)
 
 
 if __name__ == "__main__":

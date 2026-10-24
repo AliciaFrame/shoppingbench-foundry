@@ -67,6 +67,85 @@ def test_build_config_maps_web_search_to_web_dataset(tmp_path: Path):
     assert config["dataset"]["local_uri"] == str(dataset)
 
 
+def test_build_config_supports_isolated_agent_and_job_names(tmp_path: Path):
+    seed = tmp_path / "seed"
+    seed.mkdir()
+    (seed / "metadata.yaml").write_text("model: existing-qwen\n", encoding="utf-8")
+    dataset = tmp_path / "optimization.jsonl"
+    dataset.write_text('{"name":"case"}\n', encoding="utf-8")
+
+    config = build_config(
+        tmp_path,
+        "product",
+        1,
+        "1",
+        "judge",
+        "optimizer",
+        seed_dir=seed,
+        dataset_path=dataset,
+        agent_name="mtas-product",
+        experiment_name="mtas-product-round1",
+    )
+
+    assert config["name"] == "mtas-product-round1"
+    assert config["agent"]["name"] == "mtas-product"
+    assert config["agent"]["model"] == "existing-qwen"
+    assert "optimization_config" not in config["options"]
+
+
+def test_submission_uses_isolated_project_and_explicit_endpoint(tmp_path: Path, monkeypatch):
+    from optimize import run
+
+    project = tmp_path / "isolated"
+    project.mkdir()
+    (project / "azure.yaml").write_text("name: isolated\n", encoding="utf-8")
+    seed = tmp_path / "seed"
+    seed.mkdir()
+    (seed / "metadata.yaml").write_text("model: existing-qwen\n", encoding="utf-8")
+    dataset = tmp_path / "optimization.jsonl"
+    dataset.write_text('{"name":"case"}\n', encoding="utf-8")
+    monkeypatch.setattr(run, "__file__", str(tmp_path / "optimize" / "run.py"))
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "run.py",
+            "product",
+            "--agent-version",
+            "1",
+            "--eval-model",
+            "judge",
+            "--optimization-model",
+            "optimizer",
+            "--seed-dir",
+            str(seed),
+            "--dataset",
+            str(dataset),
+            "--agent-name",
+            "mtas-product",
+            "--experiment-name",
+            "mtas-product-round1",
+            "--project-dir",
+            "isolated",
+            "--project-endpoint",
+            "https://example.test/project",
+            "--no-wait",
+        ],
+    )
+    calls = []
+    monkeypatch.setattr(run.subprocess, "run", lambda *args, **kwargs: calls.append((args, kwargs)))
+
+    run.main()
+
+    (((command,), options),) = calls
+    assert command[command.index("--agent") + 1] == "mtas-product"
+    assert command[-3:] == [
+        "--project-endpoint",
+        "https://example.test/project",
+        "--no-wait",
+    ]
+    assert options == {"cwd": project, "check": True}
+
+
 def test_prepackage_refreshes_changed_and_removed_files_without_nesting(tmp_path):
     manifest = (Path(__file__).parents[1] / "agents" / "azure.yaml").read_text(encoding="utf-8")
     if os.name == "nt":

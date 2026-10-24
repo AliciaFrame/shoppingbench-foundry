@@ -219,7 +219,8 @@ def _evaluate(
             for field in ("input_tokens", "output_tokens", "total_tokens")
         },
         usage_complete=bool(state.responses) and not state.uncertain_usage and all(
-            response["usage"] is not None for response in state.responses
+            ((response["usage"] or {}).get("total_tokens") or 0) > 0
+            for response in state.responses
         ),
         latency_seconds=round(time.perf_counter() - started_at - state.wait, 6),
     )

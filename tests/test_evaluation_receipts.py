@@ -91,6 +91,30 @@ def test_transport_retry_retries_only_the_request_not_the_episode(monkeypatch):
     assert len(result["transport_retries"]) == 1
 
 
+def test_zero_usage_placeholder_is_not_complete_usage(monkeypatch):
+    placeholder = SimpleNamespace(
+        model="managed-compute",
+        usage=SimpleNamespace(model_dump=lambda **kwargs: {
+            "input_tokens": 0, "output_tokens": 0, "total_tokens": 0,
+        }),
+    )
+    runtime = SimpleNamespace(model_client=FakeClient(lambda **kwargs: placeholder))
+
+    def episode(query):
+        runtime.model_client.responses.create(input=query)
+        return "{}", {}
+
+    runtime._run_episode = episode
+    monkeypatch.setattr(evaluator, "runtime", runtime)
+    monkeypatch.setattr(evaluator, "grade_sample", lambda *args: {"score": 1})
+    evaluator._instrument_runtime()
+    result = evaluator._evaluate({"name": "case", "query": "request", "item": {}}, None)
+
+    assert result["grade"]["score"] == 1
+    assert result["responses"][0]["usage"]["total_tokens"] == 0
+    assert not result["usage_complete"]
+
+
 def test_resume_rejects_changed_contract_duplicates_and_legacy_outputs(tmp_path):
     output = tmp_path / "results.jsonl"
     contract = {"model": "first", "dataset": "frozen"}

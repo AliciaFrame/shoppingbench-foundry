@@ -64,6 +64,11 @@ exit status by default; `--record-errors-as-zero` explicitly permits a zero
 exit status for calibration runs. Missing provider usage remains marked as
 incomplete, not invented as an exact zero-token cost.
 
+Some managed-compute gateways return all-zero token-usage placeholders even
+when a response contains generated text. The evaluators retain these raw
+counters but mark usage incomplete; do not interpret them as zero-cost
+inference. Managed GPU hourly charges must be reported separately.
+
 Each new output has a `.manifest.json` binding it to the dataset, catalog,
 runtime, instructions, tools, model endpoint/deployment, and SDK versions.
 Changing that contract requires a new output path. Legacy receipts without a
