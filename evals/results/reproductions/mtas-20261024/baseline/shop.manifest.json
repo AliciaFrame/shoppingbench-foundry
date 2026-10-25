@@ -1,0 +1,33 @@
+{
+  "started_at": "2026-10-24T17:25:49.692201+00:00",
+  "contract": {
+    "hash_line_endings": "LF",
+    "dataset_sha256": "cdd5854d924b56f341477f7b46d0724932c2c5e707e764dc3f37dd9365a66766",
+    "documents_sha256": "3b1346718a71c923fa3241fcddc5f991df62440c3deab3c4c81b60561dc442d0",
+    "evaluator_sha256": "067041f22882b241cc036c173e396329649f0db0ad7d59ae11ea481b0d2c8379",
+    "runtime_sha256": "2ba23bcf4e9b1e7dc9df023f2b5f3dfceb41c05fea83aabad29456f365b1ce7c",
+    "grader_sha256": "153e5566b304216c2ee2b0673d86626e7e84b24faee74fe22591ce9777a0fde4",
+    "store_sha256": "92d686af6a2b1751714eaf7009e7c41e3151b9c8c6475f94e4be46ba577b31b5",
+    "trajectory_sha256": "e6f028fdb9a5411ff9c001d1bb416425ff99d4abed646fbcaa37f5d1b16f989f",
+    "instructions_sha256": "25bdee1f152bd8498ffaf49dc14d35a2f7113a0d99e6b7b7b80acac4f3527c5b",
+    "tools_sha256": "c1bc300d365188bc3231f33f0da7f9a97cfbf95baf2b0ad449f5e02ccdfa1c8d",
+    "runtime_module": "agents.shared.baseline_runtime",
+    "task": "shop",
+    "model_deployment": "qwen--qwen38-27b",
+    "max_tool_steps": 30,
+    "sdk_versions": {
+      "openai": "2.54.0",
+      "agentserver_responses": "2.1.0"
+    },
+    "cases": 30,
+    "rollouts": 3
+  },
+  "archive": {
+    "source_manifest_sha256": "92f12e7644ed337ea27ceb44c0c29f69c87848c858729e21300646d9bcfd5d64",
+    "omitted_private_contract_fields": [
+      "model_base_url",
+      "catalog_backend"
+    ],
+    "resume_allowed": false
+  }
+}

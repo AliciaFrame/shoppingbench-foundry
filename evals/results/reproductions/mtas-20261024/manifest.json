@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "run_id": "mtas-20261024",
+  "hash_line_endings": "LF",
+  "files": [
+    {
+      "path": "baseline/product.jsonl",
+      "sha256": "fd7b019362ac6892c6b03ebaa0e267afe874b056ee152aa818f4019f4b78a8b6"
+    },
+    {
+      "path": "baseline/product.manifest.json",
+      "sha256": "58db1961dca5f0cd48d09a27fa94da38e43cd593e1a4ff904b02302174f0c6c8"
+    },
+    {
+      "path": "baseline/shop.jsonl",
+      "sha256": "f481d134844b7d3fed6e6a218982a32e09737ec1ff5852ad74ece14b31d6c1d3"
+    },
+    {
+      "path": "baseline/shop.manifest.json",
+      "sha256": "8b4ce0f9730623015efb384eaa9bfeb1ae9c24c348ea6d5cea28c47739bf1dfd"
+    },
+    {
+      "path": "baseline/voucher.jsonl",
+      "sha256": "28c28f8b1d3777c0334a4629e0b24fa00c1b7a9d028c4f2b755e466b74264fe9"
+    },
+    {
+      "path": "baseline/voucher.manifest.json",
+      "sha256": "1d49e76b4822f2e1f9d8bf4d8c5fad1632c26d58cb7bec08b1f1366b85ecf1e4"
+    },
+    {
+      "path": "baseline/web.jsonl",
+      "sha256": "6987ef6ed6d490122465f85eed2784637e1065312b575feb15aaaef72e330edb"
+    },
+    {
+      "path": "baseline/web.manifest.json",
+      "sha256": "4b1ba5602059f76109625074f1bc8422c048c66da3c2367261ee3c99123f58d1"
+    },
+    {
+      "path": "baseline/web-live.jsonl",
+      "sha256": "dca031875a0487d53a0f7c9b27db8ba0a77d367109d1bf1d27edf6591904c2ad"
+    },
+    {
+      "path": "baseline/web-live.manifest.json",
+      "sha256": "aad31b6aa69419b410b6f232c897720dccc2dc5634bc243b8fa3d51ed53a6100"
+    },
+    {
+      "path": "references/previous-hosted.json",
+      "sha256": "9ad2b85db6b4baf1b058462855241d38990dc59d70d24fb43d2f7e0039f817e2"
+    },
+    {
+      "path": "references/original-paper.json",
+      "sha256": "6d8c8ae86a7e264d8cb67f1d2d8e2178de51ec39fdbb31a45ea8fba310fc4ae2"
+    },
+    {
+      "path": "summary.json",
+      "sha256": "58fcb43d0ea3247cf1e4410362e5cbfb0a2391c7a6d6a230261400154659586d"
+    }
+  ]
+}

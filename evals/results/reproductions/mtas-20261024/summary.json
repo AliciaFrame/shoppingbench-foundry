@@ -1,0 +1,236 @@
+{
+  "run_id": "mtas-20261024",
+  "label": "User-directed Qwen3.8 adaptation, not an exact MAI reproduction",
+  "published_source_commit": "a6d2cf7aa5af910944c9f71acb72ba805766aa9a",
+  "verified_at": "2026-10-25T01:45:20.718041+00:00",
+  "baseline_finished_at": "2026-10-25T01:43:51.510161+00:00",
+  "completed_episodes": 450,
+  "expected_episodes": 450,
+  "development_cases_per_task": 30,
+  "rollouts_per_case": 3,
+  "supervisor_exit_code": 0,
+  "runtime_failures": [
+    {
+      "task": "web",
+      "name": "web-132-rollout-2",
+      "error": "ValueError: Unknown tool: web_search",
+      "score": 0.0
+    }
+  ],
+  "usage_incomplete_episodes": 450,
+  "native_optimizer": {
+    "status": "rejected_before_job_creation",
+    "http_status": 400,
+    "error": "Agent model deployment 'qwen--qwen38-27b' not found. Ensure the deployment exists in the account.",
+    "evidence": "optimizer-product-submit.log",
+    "job_id": null,
+    "policy": "Existing Qwen3.8-27B",
+    "optimizer_and_judge": "mtas-gpt54-judge (GPT-5.4)"
+  },
+  "training_submissions": 0,
+  "final_test_started": false,
+  "final_limitation": "Published final cases were already opened historically. Any new evaluation on them is a published-final rerun, not a freshly sealed independent test.",
+  "supporting_pull_request": "https://github.com/AliciaFrame/shoppingbench-foundry/pull/9",
+  "limitations": [
+    "User-directed Qwen adaptation, not an exact MAI score reproduction.",
+    "Canonical partial-credit scores are not end-to-end success rates.",
+    "MAI references are published historical development scores, not new MAI runs.",
+    "Live-Web reasoning effort uses provider default because Qwen rejects published medium.",
+    "All token usage is incomplete; no token-cost or complete bill total is claimed.",
+    "All runtime failures are retained; no failed episodes were replaced.",
+    "Native optimizer and RFT are incomplete; no replay or substitute training was run."
+  ],
+  "execution_code_commit": "eb48825d467ca6379ed851aa055214dc8c33ea97",
+  "tasks": [
+    {
+      "task": "product",
+      "published_mai_development": {
+        "baseline": 0.7529,
+        "optimized": 0.9408,
+        "rft": null
+      },
+      "qwen_baseline": {
+        "episodes": 90,
+        "expected": 90,
+        "complete": true,
+        "status": "complete",
+        "runtime_errors": 0,
+        "usage_incomplete": 90,
+        "strict_success_episodes": 7,
+        "valid_final_answer_episodes": 8,
+        "exact_selection_episodes": 84,
+        "strict_success_rate": 0.07777777777777778,
+        "mean_score": 0.854907411111111,
+        "mean_latency_seconds": 36.360872844444444,
+        "receipt": "baseline/product.jsonl",
+        "partial_tail_while_writing": false
+      },
+      "delta_vs_published_mai_baseline": 0.102007411111111,
+      "evaluator_returncode": 0,
+      "receipt_sha256": "fd7b019362ac6892c6b03ebaa0e267afe874b056ee152aa818f4019f4b78a8b6",
+      "qwen_optimizer": {
+        "status": "submission_rejected_http_400",
+        "mean_score": null,
+        "job_id": null
+      },
+      "qwen_rft": {
+        "status": "not_in_published_training_scope",
+        "mean_score": null,
+        "job_id": null
+      }
+    },
+    {
+      "task": "shop",
+      "published_mai_development": {
+        "baseline": 0.7957,
+        "optimized": 0.9371,
+        "rft": null
+      },
+      "qwen_baseline": {
+        "episodes": 90,
+        "expected": 90,
+        "complete": true,
+        "status": "complete",
+        "runtime_errors": 0,
+        "usage_incomplete": 90,
+        "strict_success_episodes": 14,
+        "valid_final_answer_episodes": 15,
+        "exact_selection_episodes": 87,
+        "strict_success_rate": 0.15555555555555556,
+        "mean_score": 0.8900694444444445,
+        "mean_latency_seconds": 55.61793401111111,
+        "receipt": "baseline/shop.jsonl",
+        "partial_tail_while_writing": false
+      },
+      "delta_vs_published_mai_baseline": 0.0943694444444445,
+      "evaluator_returncode": 0,
+      "receipt_sha256": "f481d134844b7d3fed6e6a218982a32e09737ec1ff5852ad74ece14b31d6c1d3",
+      "qwen_optimizer": {
+        "status": "not_submitted_shared_managed_compute_blocker",
+        "mean_score": null,
+        "job_id": null
+      },
+      "qwen_rft": {
+        "status": "not_in_published_training_scope",
+        "mean_score": null,
+        "job_id": null
+      }
+    },
+    {
+      "task": "voucher",
+      "published_mai_development": {
+        "baseline": 0.8547,
+        "optimized": 0.8606,
+        "rft": 0.9248
+      },
+      "qwen_baseline": {
+        "episodes": 90,
+        "expected": 90,
+        "complete": true,
+        "status": "complete",
+        "runtime_errors": 0,
+        "usage_incomplete": 90,
+        "strict_success_episodes": 5,
+        "valid_final_answer_episodes": 5,
+        "exact_selection_episodes": 89,
+        "strict_success_rate": 0.05555555555555555,
+        "mean_score": 0.8964814777777779,
+        "mean_latency_seconds": 69.21009085555556,
+        "receipt": "baseline/voucher.jsonl",
+        "partial_tail_while_writing": false
+      },
+      "delta_vs_published_mai_baseline": 0.04178147777777785,
+      "evaluator_returncode": 0,
+      "receipt_sha256": "28c28f8b1d3777c0334a4629e0b24fa00c1b7a9d028c4f2b755e466b74264fe9",
+      "qwen_optimizer": {
+        "status": "not_submitted_shared_managed_compute_blocker",
+        "mean_score": null,
+        "job_id": null
+      },
+      "qwen_rft": {
+        "status": "not_run_selection_calibration_and_method_gates_pending",
+        "mean_score": null,
+        "job_id": null
+      }
+    },
+    {
+      "task": "web",
+      "published_mai_development": {
+        "baseline": 0.6911,
+        "optimized": 0.7286,
+        "rft": 0.7175
+      },
+      "qwen_baseline": {
+        "episodes": 90,
+        "expected": 90,
+        "complete": true,
+        "status": "complete",
+        "runtime_errors": 1,
+        "usage_incomplete": 90,
+        "strict_success_episodes": 48,
+        "valid_final_answer_episodes": 52,
+        "exact_selection_episodes": null,
+        "strict_success_rate": 0.5333333333333333,
+        "mean_score": 0.6005555555555555,
+        "mean_latency_seconds": 159.2887786,
+        "receipt": "baseline/web.jsonl",
+        "partial_tail_while_writing": false
+      },
+      "delta_vs_published_mai_baseline": -0.09054444444444454,
+      "evaluator_returncode": 1,
+      "receipt_sha256": "6987ef6ed6d490122465f85eed2784637e1065312b575feb15aaaef72e330edb",
+      "qwen_optimizer": {
+        "status": "not_submitted_shared_managed_compute_blocker",
+        "mean_score": null,
+        "job_id": null
+      },
+      "qwen_rft": {
+        "status": "not_run_selection_calibration_and_method_gates_pending",
+        "mean_score": null,
+        "job_id": null
+      }
+    },
+    {
+      "task": "web-live",
+      "published_mai_development": {
+        "baseline": 0.2497,
+        "optimized": 0.8292,
+        "rft": 0.9025
+      },
+      "qwen_baseline": {
+        "episodes": 90,
+        "expected": 90,
+        "complete": true,
+        "status": "complete",
+        "runtime_errors": 0,
+        "usage_incomplete": 90,
+        "strict_success_episodes": 75,
+        "valid_final_answer_episodes": 75,
+        "exact_selection_episodes": null,
+        "strict_success_rate": 0.8333333333333334,
+        "mean_score": 0.8555555555555555,
+        "mean_latency_seconds": 47.382628877777776,
+        "receipt": "baseline/web-live.jsonl",
+        "partial_tail_while_writing": false
+      },
+      "delta_vs_published_mai_baseline": 0.6058555555555555,
+      "evaluator_returncode": 0,
+      "receipt_sha256": "dca031875a0487d53a0f7c9b27db8ba0a77d367109d1bf1d27edf6591904c2ad",
+      "qwen_optimizer": {
+        "status": "not_submitted_shared_managed_compute_blocker",
+        "mean_score": null,
+        "job_id": null
+      },
+      "qwen_rft": {
+        "status": "not_run_selection_calibration_and_method_gates_pending",
+        "mean_score": null,
+        "job_id": null
+      }
+    }
+  ],
+  "references": {
+    "original_paper": "references/original-paper.json",
+    "previous_hosted": "references/previous-hosted.json"
+  },
+  "private_evidence_note": "Cloud resource inventories, authentication, deployment endpoints, raw logs and private environment configuration remain outside this portable archive."
+}

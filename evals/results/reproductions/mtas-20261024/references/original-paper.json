@@ -1,0 +1,96 @@
+{
+  "title": "ShoppingBench: A Real-World Intent-Grounded Shopping Benchmark for LLM-based Agents",
+  "source": "https://arxiv.org/html/2508.04266v3#Sx6.T1",
+  "version": "arXiv 2508.04266v3",
+  "table": 1,
+  "verified_at": "2026-10-24",
+  "catalog_size": "more than 2.5 million products",
+  "test_cases": 900,
+  "cases_by_task": {
+    "product": 250,
+    "shop": 250,
+    "voucher": 250,
+    "knowledge": 150
+  },
+  "units": "percent",
+  "metrics": {
+    "ASR": "Absolute Success Rate: all task-specific product relevance and knowledge/shop/budget conditions must pass.",
+    "CAR": "Cumulative Average of Product Relevance: partial product relevance, not the Foundry canonical score.",
+    "overall_ASR": "Paper-reported domain-weighted ASR; not a simple average of the four displayed task percentages."
+  },
+  "baselines": [
+    {
+      "model": "GPT-4.1",
+      "product": {
+        "ASR": 59.6,
+        "CAR": 83.6
+      },
+      "shop": {
+        "ASR": 46.4,
+        "CAR": 79.2
+      },
+      "voucher": {
+        "ASR": 30.4,
+        "CAR": 72.8
+      },
+      "knowledge": {
+        "ASR": 62.0,
+        "CAR": 67.3
+      },
+      "overall_ASR": 48.2
+    },
+    {
+      "model": "Qwen3-32B",
+      "product": {
+        "ASR": 51.6,
+        "CAR": 77.6
+      },
+      "shop": {
+        "ASR": 25.6,
+        "CAR": 54.2
+      },
+      "voucher": {
+        "ASR": 18.0,
+        "CAR": 63.8
+      },
+      "knowledge": {
+        "ASR": 45.3,
+        "CAR": 54.0
+      },
+      "overall_ASR": 34.0
+    }
+  ],
+  "authors_trained_reference_not_a_baseline": {
+    "model": "SFT+RL-Qwen3-4B",
+    "product": {
+      "ASR": 60.8,
+      "CAR": 86.1
+    },
+    "shop": {
+      "ASR": 53.2,
+      "CAR": 85.5
+    },
+    "voucher": {
+      "ASR": 33.2,
+      "CAR": 79.0
+    },
+    "knowledge": {
+      "ASR": 46.7,
+      "CAR": 51.3
+    },
+    "overall_ASR": 48.7
+  },
+  "task_mapping": {
+    "product": "Products Finder",
+    "shop": "Multi-products seller",
+    "voucher": "Coupon & Budget",
+    "web-live": "Knowledge is the related original task, using Serper web search rather than this adaptation's GPT lookup.",
+    "web": "No separate static-knowledge baseline in Table 1; do not duplicate the live Knowledge score as a static result."
+  },
+  "comparability_limitations": [
+    "Neither MAI-Code-1.1-Flash nor Qwen3.8-27B is evaluated in the original paper.",
+    "Original ASR and CAR are not identical to the Foundry canonical score or its strict-success flag.",
+    "Foundry uses a controlled 3636-document corpus and 30 development cases per task with three rollouts, unlike the paper's original catalog and 900-case test.",
+    "Do not compute cross-paper score deltas or claim a ranking between the different evaluation settings."
+  ]
+}

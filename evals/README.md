@@ -19,6 +19,14 @@
 | `results/final/` | One-time sealed final-test receipts |
 | `results/summary.json` | Generated release metrics for score, latency, and tokens |
 | `results/model-comparison/` | Portable GPT score/usage receipts, prices and provenance, and generated MAI/GPT cost comparison |
+| `results/reproductions/<run-id>/` | Separate immutable run archives: raw receipts, portable contracts, comparisons, references and checksums |
+
+Keep new evaluation campaigns in their own run directory rather than overwriting
+published results. The completed Qwen3.8 baseline is archived at
+[`results/reproductions/mtas-20261024/`](results/reproductions/mtas-20261024/),
+including all 450 episodes and the separately labeled original-paper and
+previous hosted GPT references. Private deployment configuration stays outside
+the portable archive.
 
 ## Grading
 

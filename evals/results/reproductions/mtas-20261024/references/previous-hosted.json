@@ -1,0 +1,48 @@
+{
+  "scope": "Previously completed hosted Product baselines; no new model runs",
+  "verified_at": "2026-10-24",
+  "references": [
+    {
+      "model": "GPT-4.1",
+      "deployment": "gpt-4.1",
+      "agent_version": "shopping-agent:2",
+      "task": "product",
+      "cases": 250,
+      "successes": 146,
+      "ASR_percent": 58.4,
+      "CAR_percent": 81.03079365079363,
+      "policy_blocked_cases_retained": 0,
+      "dataset_sha256": "46d044e1129f3f8782ac6fef8409692581ff4ff3834e2d3a0fc5d54e0dc9ae8f",
+      "upstream_commit": "2f4d132500d4962d7ee3143e103b93499c82aca0",
+      "generation": "Controlled by deployed version; temperature and step cap are not overridden.",
+      "scoring_parity_verified": true,
+      "source": "shoppingbench-product-full-20261011/results.json",
+      "source_sha256": "e3696eed7323b85a87422c840af444e6c2a5df921c72fdbf3097d16c30d1eca9"
+    },
+    {
+      "model": "GPT-6.1 Sol",
+      "deployment": "gpt-6.1-sol",
+      "agent_version": "shopping-agent:4",
+      "task": "product",
+      "cases": 250,
+      "successes": 171,
+      "ASR_percent": 68.4,
+      "CAR_percent": 82.98873015873012,
+      "policy_blocked_cases_retained": 1,
+      "dataset_sha256": "46d044e1129f3f8782ac6fef8409692581ff4ff3834e2d3a0fc5d54e0dc9ae8f",
+      "upstream_commit": "2f4d132500d4962d7ee3143e103b93499c82aca0",
+      "generation": "Published agent defaults; no per-request generation overrides.",
+      "scoring_parity_verified": true,
+      "source": "shoppingbench-product-gpt61sol-hosted-full-20261018/results.json",
+      "source_sha256": "59f5bda5763aa862155b4064f39171d31ef2057c7a93b094f3f8e29486211eab"
+    }
+  ],
+  "other_task_results": "Not established for these specific historical agent runs",
+  "limitations": [
+    "GPT baselines use the same 250-case Product dataset and original-style ASR/CAR.",
+    "Agent versions differ (2 versus 4); do not attribute all differences to model weights.",
+    "These are not shopping-agent-new campaign scores, not upstream-runner scores, and not the Foundry controlled-corpus canonical metric.",
+    "Do not compare their ASR or CAR numerically as the same metric as current MAI/Qwen canonical scores."
+  ],
+  "source_path_note": "Historical run directory/filename only; original receipt hashes are preserved. These 250-case source trajectories are not included in this archive."
+}

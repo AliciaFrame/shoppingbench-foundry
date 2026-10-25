@@ -1,0 +1,31 @@
+{
+  "started_at": "2026-10-25T00:32:46.685362+00:00",
+  "contract": {
+    "hash_line_endings": "LF",
+    "dataset_sha256": "52a4e3fd18279510b0dc2835bc5be9434a2ed1938a7046b96a9aea7c09c874c0",
+    "documents_sha256": "3b1346718a71c923fa3241fcddc5f991df62440c3deab3c4c81b60561dc442d0",
+    "agent_mode": "baseline",
+    "instructions_sha256": "92996f043f9df609e2bf700fdde108c5695679bbc4f5416c599e5e856a2851b2",
+    "tools_sha256": "bd1119bc9fc21293755167c046dba248c11fcdbd2a59e4f790d8317c6fd9b83a",
+    "runtime_sha256": "23dfb7c4979c39f69f361d13b402c88cfab2b89f19752967805f7049fad9c0e2",
+    "evaluator_sha256": "2e5e465970a961f24a8545fb035b51038e9482263d2cc4da739391a96547694e",
+    "selection_deployment": "qwen--qwen38-27b",
+    "web_deployment": "mtas-gpt54mini-lookup",
+    "selection_reasoning_effort": "provider-default",
+    "selection_max_output_tokens": 4096,
+    "web_max_output_tokens": 256,
+    "web_source_limit": 2,
+    "web_max_attempts": 3,
+    "max_tool_steps": 8,
+    "enforce_selection_tool_limits": false,
+    "catalog_search_result_limit": 10,
+    "catalog_backend": "hosted-production-azure-search",
+    "cases": 30,
+    "rollouts": 3
+  },
+  "archive": {
+    "source_manifest_sha256": "ab7ac13e7734a7ab7c00c8f11b22245a3c76c4af0af1f3476033e6020a4d725c",
+    "omitted_private_contract_fields": [],
+    "resume_allowed": false
+  }
+}
