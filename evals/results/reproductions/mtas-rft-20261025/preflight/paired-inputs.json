@@ -1,0 +1,340 @@
+{
+  "arms": {
+    "original": {
+      "source_stage": "baseline",
+      "catalog": [
+        {
+          "task": "voucher",
+          "train": 150,
+          "validation": 20,
+          "calibration_rollouts": 100,
+          "holdout_excluded": 50,
+          "split_manifest": "manifest.json",
+          "validation_groups": 20,
+          "training_groups": 150,
+          "developer_message_sha256": "e2ce24720ccfdcc2557ce725924d7e07b88a7a16eb3610021b2b397031040ef0"
+        },
+        {
+          "task": "web",
+          "train": 49,
+          "validation": 21,
+          "calibration_rollouts": 105,
+          "holdout_excluded": 50,
+          "split_manifest": "manifest.json",
+          "validation_groups": 20,
+          "training_groups": 48,
+          "developer_message_sha256": "9c454ab9cc97f4386fd29978a12134c5d7eb1907653805745f779b4b09b88981"
+        }
+      ],
+      "live": {
+        "hash_line_endings": "LF",
+        "status": "prepared-not-approved-for-submission",
+        "architecture": "fixed native live-web resolver followed by optimized catalog agent",
+        "training_target": "catalog continuation; live web resolver weights are unchanged",
+        "evidence_sha256": "3453fe44f9fe81e8579499169f724f5ab04d927e159a1f3419f8ae22f66324c3",
+        "instructions_sha256": "92996f043f9df609e2bf700fdde108c5695679bbc4f5416c599e5e856a2851b2",
+        "tools_sha256": "a44e1b6353a76cf674958efea9d4eb6919be7563228564ac093b5dfe6b9818c0",
+        "training_groups": 37,
+        "validation_groups": 20,
+        "files": {
+          "web-train.jsonl": {
+            "sha256": "daeacc5391fc06ed650ae13ef5379c0c2636deb1f8d90059656b372c35f0c82a",
+            "rows": 38
+          },
+          "web-validation.jsonl": {
+            "sha256": "aac77aa841d7cf5fa5c1bc31186ab062007cf2623c6bb48dc9fb796969c53f87",
+            "rows": 21
+          }
+        },
+        "remaining_gates": [
+          "Calibrate finalized inputs using the training-compatible tool loop",
+          "Verify hosted grader parity and tool availability with the training service"
+        ],
+        "semantic_review": {
+          "sha256": "0647606f97550c25045e8b65f6636fafcad91eb4f6b7a0c39788c86135aa01df",
+          "included_cases": [
+            "web-002",
+            "web-004",
+            "web-005",
+            "web-007",
+            "web-009",
+            "web-010",
+            "web-012",
+            "web-013",
+            "web-016",
+            "web-017",
+            "web-020",
+            "web-021",
+            "web-023",
+            "web-027",
+            "web-029",
+            "web-033",
+            "web-034",
+            "web-036",
+            "web-038",
+            "web-039",
+            "web-040",
+            "web-041",
+            "web-048",
+            "web-052",
+            "web-054",
+            "web-055",
+            "web-056",
+            "web-058",
+            "web-062",
+            "web-064",
+            "web-065",
+            "web-066",
+            "web-067",
+            "web-070",
+            "web-078",
+            "web-084",
+            "web-087",
+            "web-089",
+            "web-090",
+            "web-095",
+            "web-096",
+            "web-100",
+            "web-102",
+            "web-105",
+            "web-109",
+            "web-110",
+            "web-115",
+            "web-116",
+            "web-119",
+            "web-123",
+            "web-126",
+            "web-130",
+            "web-131",
+            "web-133",
+            "web-134",
+            "web-137",
+            "web-139",
+            "web-146",
+            "web-147"
+          ],
+          "excluded_cases": {
+            "web-085": "No complete, cited, label-consistent capture after the bounded retrieval attempts.",
+            "web-121": "Only paid-Juneteenth state in 2020 is date-dependent; query lacks a defensible as-of date.",
+            "web-124": "EU authorisation, EMA recommendation and public announcement dates are conflated.",
+            "web-035": "Web response adds an unrequested MoMA teether recommendation rather than only resolving the factual clue.",
+            "web-057": "Ambiguous last-born versus last-serving president; preserve original benchmark, quarantine this training query.",
+            "web-042": "No complete, cited, label-consistent capture after the bounded retrieval attempts.",
+            "web-026": "Performance/filming city differs from exhibition city; Dublin label requires a revised question.",
+            "web-037": "Question specifies 2022 rather than the reported 2002 stroke; contemporary source not independently verified.",
+            "web-143": "Quarantine the entire connected group to prevent a partial-group split.",
+            "web-149": "Web response invents a particular Bible edition/publisher beyond the factual year; quarantine its connected group.",
+            "web-050": "Historical browser-share snapshot is underspecified and not independently reproducible."
+          },
+          "note": "Curated training inputs, not an unbiased end-to-end evaluation cohort"
+        }
+      },
+      "files": {
+        "catalog-data/voucher-calibration-eval.jsonl": "9eb1c840e832725f06d127490abf49fc3a532d4cd5b2a34505eff75b04e66ed4",
+        "catalog-data/voucher-train.jsonl": "248caeca08e9843b08848613ecf66d871d55149f7497520e32a448fde93795e8",
+        "catalog-data/voucher-validation-eval.jsonl": "cf5aa9ebb4b1423657f08991fbd431c25080def9942c87d26bf04d197e558ac0",
+        "catalog-data/voucher-validation.jsonl": "a7ee91f856e222982b5153f4d5341f3b32e88c715d315526e3645fcff048b856",
+        "catalog-data/web-calibration-eval.jsonl": "d4f697c32114b42ad0933a6074ecf456ea39b712438c57873e4054348be44a40",
+        "catalog-data/web-train.jsonl": "d08c73d84abeecbcdfcd44e3cde5e6250c411f5491904c2e77c1ae6ff60ae9f3",
+        "catalog-data/web-validation-eval.jsonl": "fa6576b6e4d018df7457098657f3b3565824180d1aa3df3400b5571c0728fb77",
+        "catalog-data/web-validation.jsonl": "47aabb36aa81fae16f0752d97e23f82d296b1a70d1776189ee9005b391b54ad3",
+        "configs/voucher/optimized/instructions.md": "f7c8512492b842c8d04cfc24a6ac30c43f98028df4caf3bb4c53253bb41c4d5f",
+        "configs/voucher/optimized/tools.json": "37159a8cf8f520bc7c33244d4f1a7e8f2192ce2ebc149a5ff426e08760bad2f9",
+        "configs/web/optimized/instructions.md": "ba9c55479c850bde53a2f79bcfebd9bd96de7048094cc77c78d453df9c46e55c",
+        "configs/web/optimized/tools.json": "288d3b2d2db0494dd1e2a8287e7784ec64c39f14f41b43bbb98f52385fbfa6b3",
+        "configs/web_search/optimized/instructions.md": "92996f043f9df609e2bf700fdde108c5695679bbc4f5416c599e5e856a2851b2",
+        "configs/web_search/optimized/tools.json": "a44e1b6353a76cf674958efea9d4eb6919be7563228564ac093b5dfe6b9818c0",
+        "live-data/manifest.json": "0c403ae13299f3af162d66462e74fcef7a2e2f4f1f250b39110edd0d66ff23bb",
+        "live-data/web-train.jsonl": "daeacc5391fc06ed650ae13ef5379c0c2636deb1f8d90059656b372c35f0c82a",
+        "live-data/web-validation.jsonl": "aac77aa841d7cf5fa5c1bc31186ab062007cf2623c6bb48dc9fb796969c53f87"
+      }
+    },
+    "published-optimized": {
+      "source_stage": "optimized",
+      "catalog": [
+        {
+          "task": "voucher",
+          "train": 150,
+          "validation": 20,
+          "calibration_rollouts": 100,
+          "holdout_excluded": 50,
+          "split_manifest": "manifest.json",
+          "validation_groups": 20,
+          "training_groups": 150,
+          "developer_message_sha256": "db72d9bff91061a28b2598090e9c74fa06080d7b3ccc59e56aee19525fe1cd4f"
+        },
+        {
+          "task": "web",
+          "train": 49,
+          "validation": 21,
+          "calibration_rollouts": 105,
+          "holdout_excluded": 50,
+          "split_manifest": "manifest.json",
+          "validation_groups": 20,
+          "training_groups": 48,
+          "developer_message_sha256": "10e3f8722b9f1237a5991e79196a5cca9927da91ab5bdce57d6c421002e669a5"
+        }
+      ],
+      "live": {
+        "hash_line_endings": "LF",
+        "status": "prepared-not-approved-for-submission",
+        "architecture": "fixed native live-web resolver followed by optimized catalog agent",
+        "training_target": "catalog continuation; live web resolver weights are unchanged",
+        "evidence_sha256": "3453fe44f9fe81e8579499169f724f5ab04d927e159a1f3419f8ae22f66324c3",
+        "instructions_sha256": "2a4213099e4bbfbcfb6d43e87d972b506f66f97ff5efbfcf3ca97285d7bd01eb",
+        "tools_sha256": "a44e1b6353a76cf674958efea9d4eb6919be7563228564ac093b5dfe6b9818c0",
+        "training_groups": 37,
+        "validation_groups": 20,
+        "files": {
+          "web-train.jsonl": {
+            "sha256": "daed9e768bcebd78acd91cc7843adc7bf65ac0afc7a43ad0c2a1e4e1d79a230b",
+            "rows": 38
+          },
+          "web-validation.jsonl": {
+            "sha256": "f347920d037627d558eae3f3fcb9af69768f04f3441b592c1c44c9e0742a342d",
+            "rows": 21
+          }
+        },
+        "remaining_gates": [
+          "Calibrate finalized inputs using the training-compatible tool loop",
+          "Verify hosted grader parity and tool availability with the training service"
+        ],
+        "semantic_review": {
+          "sha256": "0647606f97550c25045e8b65f6636fafcad91eb4f6b7a0c39788c86135aa01df",
+          "included_cases": [
+            "web-002",
+            "web-004",
+            "web-005",
+            "web-007",
+            "web-009",
+            "web-010",
+            "web-012",
+            "web-013",
+            "web-016",
+            "web-017",
+            "web-020",
+            "web-021",
+            "web-023",
+            "web-027",
+            "web-029",
+            "web-033",
+            "web-034",
+            "web-036",
+            "web-038",
+            "web-039",
+            "web-040",
+            "web-041",
+            "web-048",
+            "web-052",
+            "web-054",
+            "web-055",
+            "web-056",
+            "web-058",
+            "web-062",
+            "web-064",
+            "web-065",
+            "web-066",
+            "web-067",
+            "web-070",
+            "web-078",
+            "web-084",
+            "web-087",
+            "web-089",
+            "web-090",
+            "web-095",
+            "web-096",
+            "web-100",
+            "web-102",
+            "web-105",
+            "web-109",
+            "web-110",
+            "web-115",
+            "web-116",
+            "web-119",
+            "web-123",
+            "web-126",
+            "web-130",
+            "web-131",
+            "web-133",
+            "web-134",
+            "web-137",
+            "web-139",
+            "web-146",
+            "web-147"
+          ],
+          "excluded_cases": {
+            "web-085": "No complete, cited, label-consistent capture after the bounded retrieval attempts.",
+            "web-121": "Only paid-Juneteenth state in 2020 is date-dependent; query lacks a defensible as-of date.",
+            "web-124": "EU authorisation, EMA recommendation and public announcement dates are conflated.",
+            "web-035": "Web response adds an unrequested MoMA teether recommendation rather than only resolving the factual clue.",
+            "web-057": "Ambiguous last-born versus last-serving president; preserve original benchmark, quarantine this training query.",
+            "web-042": "No complete, cited, label-consistent capture after the bounded retrieval attempts.",
+            "web-026": "Performance/filming city differs from exhibition city; Dublin label requires a revised question.",
+            "web-037": "Question specifies 2022 rather than the reported 2002 stroke; contemporary source not independently verified.",
+            "web-143": "Quarantine the entire connected group to prevent a partial-group split.",
+            "web-149": "Web response invents a particular Bible edition/publisher beyond the factual year; quarantine its connected group.",
+            "web-050": "Historical browser-share snapshot is underspecified and not independently reproducible."
+          },
+          "note": "Curated training inputs, not an unbiased end-to-end evaluation cohort"
+        }
+      },
+      "files": {
+        "catalog-data/voucher-calibration-eval.jsonl": "69ee7379a7816370b752d9ea5ac19c6f8436651af929f0e3465e333f2e21df8e",
+        "catalog-data/voucher-train.jsonl": "4bbe918a52197778dcd40b59264ef2c0703a6740c8f000706c988886030da532",
+        "catalog-data/voucher-validation-eval.jsonl": "2e78e3dec741d348377df90bd27c04edad39697051d99414a7257071298309a1",
+        "catalog-data/voucher-validation.jsonl": "5661a99c29857b4079262eef30a4459519fa5738cbf13ed2a307e549fa3ee36e",
+        "catalog-data/web-calibration-eval.jsonl": "b30521e1f6bbb026076538b9f90bb37c670bd74bc8ed76b4bf8649d6e3675bec",
+        "catalog-data/web-train.jsonl": "c2fc3543fa4c982615a2fde4e9c1457abcc431d3a50a398fd59099649c65a71b",
+        "catalog-data/web-validation-eval.jsonl": "aa533123f3dfa0f4d8bc91f9a16e69769d4f7c6e0bfe54a68dc498a3c27cfde6",
+        "catalog-data/web-validation.jsonl": "c852f31594ba314a52c15c8dfac3c389834212a8db7e33166b927c10c07c91d1",
+        "configs/voucher/optimized/instructions.md": "e58942da5411ad22949c6b6eac2a107fb3e03dcd98c29c8c005edec5a2e90514",
+        "configs/voucher/optimized/tools.json": "37159a8cf8f520bc7c33244d4f1a7e8f2192ce2ebc149a5ff426e08760bad2f9",
+        "configs/web/optimized/instructions.md": "592f70d14646cc5f2097bc378220d352755ffefc51c4e689f87ec516d3be0318",
+        "configs/web/optimized/tools.json": "288d3b2d2db0494dd1e2a8287e7784ec64c39f14f41b43bbb98f52385fbfa6b3",
+        "configs/web_search/optimized/instructions.md": "2a4213099e4bbfbcfb6d43e87d972b506f66f97ff5efbfcf3ca97285d7bd01eb",
+        "configs/web_search/optimized/tools.json": "a44e1b6353a76cf674958efea9d4eb6919be7563228564ac093b5dfe6b9818c0",
+        "live-data/manifest.json": "3d08fbddc187a29f9637e754a24ff631a0c6636a5a5d9baf409e4e5d007aceb4",
+        "live-data/web-train.jsonl": "daed9e768bcebd78acd91cc7843adc7bf65ac0afc7a43ad0c2a1e4e1d79a230b",
+        "live-data/web-validation.jsonl": "f347920d037627d558eae3f3fcb9af69768f04f3441b592c1c44c9e0742a342d"
+      }
+    }
+  },
+  "final_test_started": false,
+  "paired_data_validation": {
+    "catalog-data/voucher-train.jsonl": {
+      "rows": 150,
+      "identical_except_developer_instruction": true,
+      "common_content_sha256": "a1dd88c5ed45938d7be9eb205d294d2b0f240c5a5cb6c95dcddd1bdf1847d45a"
+    },
+    "catalog-data/voucher-validation.jsonl": {
+      "rows": 20,
+      "identical_except_developer_instruction": true,
+      "common_content_sha256": "dcb1903f5f153636bdd4044f3e4d22413a34a18b1b50602739090b7a33e57533"
+    },
+    "catalog-data/web-train.jsonl": {
+      "rows": 49,
+      "identical_except_developer_instruction": true,
+      "common_content_sha256": "9f266ea47856ba465b3590d69edec3778241685bc1e2756d43fb0c8d663ddb89"
+    },
+    "catalog-data/web-validation.jsonl": {
+      "rows": 21,
+      "identical_except_developer_instruction": true,
+      "common_content_sha256": "95594b2108e4f08093e370712ac983a09bc47a4bf831bec791faf1d3dbb1df15"
+    },
+    "live-data/web-train.jsonl": {
+      "rows": 38,
+      "identical_except_developer_instruction": true,
+      "common_content_sha256": "d6724dc48d330fb656004986e901650d2aa0395bcbc6a9fc8aa76a47e211014d"
+    },
+    "live-data/web-validation.jsonl": {
+      "rows": 21,
+      "identical_except_developer_instruction": true,
+      "common_content_sha256": "3f981afa92c468d32f7f7b344ff61c4da953ec151c09f4a9ef87264bdec9e56d"
+    }
+  },
+  "frozen_live_evidence": {
+    "path": "rft/data/web-search/captures.jsonl",
+    "sha256": "3453fe44f9fe81e8579499169f724f5ab04d927e159a1f3419f8ae22f66324c3",
+    "note": "Published reviewed training inputs, not new evaluation or training results."
+  }
+}

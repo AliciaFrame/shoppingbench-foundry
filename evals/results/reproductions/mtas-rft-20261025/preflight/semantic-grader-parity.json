@@ -1,0 +1,189 @@
+{
+  "checked_at": "2026-10-25T03:52:05.255824+00:00",
+  "grader_version": "web-search-rft-v6",
+  "grader_sha256": "a18ebd495e070f1d9f9cd7f02755054a60e6441ead433c997f8a7ea286fe1dc4",
+  "judge_model": "mtas-gpt54-judge",
+  "judge_base_url": "<selected-foundry-project-openai-endpoint>",
+  "source_dataset_sha256": "daeacc5391fc06ed650ae13ef5379c0c2636deb1f8d90059656b372c35f0c82a",
+  "source_case": "web-105",
+  "scope": "Synthetic anti-shortcut fixtures from training inputs, not agent evaluation or RFT.",
+  "local_judge_usage_complete_for_entire_preflight": false,
+  "missing_usage_note": "The first pre-repair local judge response was not durably captured before the hosted HTTP failure. Listed local calls are observed receipts, not a complete total.",
+  "tests": [
+    {
+      "fixture": "grounded",
+      "sample": {
+        "output_tools": [
+          {
+            "name": "find_product",
+            "arguments": {
+              "q": "Johnny Bravo",
+              "page": 1
+            }
+          },
+          {
+            "name": "view_product_information",
+            "arguments": {
+              "product_ids": "4418671454"
+            }
+          },
+          {
+            "name": "recommend_product",
+            "arguments": {
+              "product_ids": "4418671454"
+            }
+          },
+          {
+            "name": "terminate",
+            "arguments": {
+              "product_ids": "4418671454",
+              "resolved_clue": "Johnny Bravo",
+              "final_answer": "The clue resolves to Johnny Bravo. Product 4418671454: GooFee - ETQT Worldwide - Unisex - ETQT Brand Shirt - Alien Shirt - Johnny Bravo - Weird Guy."
+            }
+          }
+        ]
+      },
+      "status": "completed",
+      "local_score": 1.0,
+      "expected_quality_pass": true,
+      "local_quality_pass": true,
+      "local_grounding": {
+        "issues": [],
+        "clue_faithfulness": "full",
+        "product_faithfulness": "full",
+        "answer_completeness": "full",
+        "clue_correctness": "full"
+      },
+      "local_failed_gates": [],
+      "hosted_score": 1.0,
+      "matches": true
+    },
+    {
+      "fixture": "unsupported_claims_with_unchanged_sources",
+      "sample": {
+        "output_tools": [
+          {
+            "name": "find_product",
+            "arguments": {
+              "q": "Johnny Bravo",
+              "page": 1
+            }
+          },
+          {
+            "name": "view_product_information",
+            "arguments": {
+              "product_ids": "4418671454"
+            }
+          },
+          {
+            "name": "recommend_product",
+            "arguments": {
+              "product_ids": "4418671454"
+            }
+          },
+          {
+            "name": "terminate",
+            "arguments": {
+              "product_ids": "4418671454",
+              "resolved_clue": "Johnny Bravo",
+              "final_answer": "The clue resolves to Johnny Bravo. Product 4418671454: GooFee - ETQT Worldwide - Unisex - ETQT Brand Shirt - Alien Shirt - Johnny Bravo - Weird Guy. This is officially artist-endorsed, manufactured in France, and guaranteed in stock for next-day delivery."
+            }
+          }
+        ]
+      },
+      "status": "completed",
+      "local_score": 0.493762,
+      "expected_quality_pass": false,
+      "local_quality_pass": false,
+      "local_grounding": {
+        "issues": [
+          "Product faithfulness: The answer adds unsupported material claims that the shirt is \"officially artist-endorsed,\" \"manufactured in France,\" and \"guaranteed in stock for next-day delivery\"; the supplied product metadata only supports a unisex shirt titled with \"Johnny Bravo\" and does not support endorsement, origin, stock, or delivery promises."
+        ],
+        "clue_faithfulness": "full",
+        "product_faithfulness": "partial",
+        "answer_completeness": "full",
+        "clue_correctness": "full"
+      },
+      "local_failed_gates": [
+        "product_faithfulness"
+      ],
+      "hosted_score": 0.493762,
+      "matches": true
+    },
+    {
+      "fixture": "empty",
+      "sample": {},
+      "status": "completed",
+      "local_score": 0.0,
+      "expected_quality_pass": false,
+      "local_quality_pass": false,
+      "local_grounding": null,
+      "local_failed_gates": [
+        "exact_recommendation",
+        "exact_terminal",
+        "viewed_expected",
+        "meaningful_search",
+        "completed_protocol",
+        "ordered_inspection",
+        "answer_product_ids",
+        "clue_correctness",
+        "clue_faithfulness",
+        "product_faithfulness",
+        "answer_completeness"
+      ],
+      "hosted_score": 0.0,
+      "matches": true
+    }
+  ],
+  "local_judge_calls": [
+    {
+      "model": "mtas-gpt54-judge",
+      "response_id": "resp_07e40797d44c2cdd016add7c1fbfb48190a966801cecd323cd",
+      "usage": {
+        "input_tokens": 2459,
+        "input_tokens_details": {
+          "cached_tokens": 2304,
+          "cache_write_tokens": 0
+        },
+        "output_tokens": 353,
+        "output_tokens_details": {
+          "reasoning_tokens": 307
+        },
+        "total_tokens": 2812
+      }
+    },
+    {
+      "model": "mtas-gpt54-judge",
+      "response_id": "resp_0c6a99a446c07dcb016add7cec9748819399e81d47f9f3d50d",
+      "usage": {
+        "input_tokens": 2480,
+        "input_tokens_details": {
+          "cached_tokens": 2304,
+          "cache_write_tokens": 0
+        },
+        "output_tokens": 571,
+        "output_tokens_details": {
+          "reasoning_tokens": 454
+        },
+        "total_tokens": 3051
+      }
+    }
+  ],
+  "hosted_judge_usage_complete": false,
+  "previous_hosted_attempts": [
+    {
+      "checked_at": "2026-10-25T03:48:44.993995+00:00",
+      "tests": [
+        {
+          "fixture": "grounded",
+          "status": "hosted_http_error",
+          "local_score": 1.0,
+          "expected_quality_pass": true,
+          "local_quality_pass": true,
+          "local_failed_gates": [],
+          "http_status": 500
+        }
+      ]
+    }
+  ]
+}

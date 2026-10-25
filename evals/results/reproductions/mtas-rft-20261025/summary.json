@@ -1,0 +1,48 @@
+{
+  "run_id": "mtas-rft-20261025",
+  "snapshot_at": "2026-10-25T03:56:13.113663+00:00",
+  "status": "calibration_in_progress_not_rft_results",
+  "policy": "Existing user-selected Qwen3.8-27B deployment",
+  "judge": "GPT-5.4, mtas-gpt54-judge, fixed external grader",
+  "training_submissions": 0,
+  "checkpoints": [],
+  "rft_improvement_established": false,
+  "cost_caveat": "Existing managed GPU/runtime charges continue. Observed usage is not a complete bill; no new GPU or training job has been provisioned.",
+  "final_test_started": false,
+  "tasks": {
+    "voucher": {
+      "original": {
+        "completed": 3,
+        "expected": 100,
+        "runtime_errors": 0,
+        "usage_incomplete": 0
+      },
+      "published-optimized": {
+        "completed": 3,
+        "expected": 100,
+        "runtime_errors": 0,
+        "usage_incomplete": 0
+      }
+    },
+    "web": {
+      "original": {
+        "completed": 0,
+        "expected": 105
+      },
+      "published-optimized": {
+        "completed": 0,
+        "expected": 105
+      }
+    }
+  },
+  "scope": "Paired validation serving inference, not development or final-test performance.",
+  "controls": "Same model, tools, natural Chat loop, cases, reward and request bounds; developer instructions differ.",
+  "limitations": [
+    "Original-instruction control differs from the older Responses vanilla runtime.",
+    "Native Chat smoke returned positive usage; earlier Responses placeholders remain incomplete.",
+    "General Qwen managed RFT support and accepted graders do not establish Qwen live-tool training compatibility.",
+    "Native training alias to existing serving-asset mapping remains unverified.",
+    "Published final cases have historical exposure; no new final-test inference performed."
+  ],
+  "semantic_local_hosted_parity_passed": true
+}

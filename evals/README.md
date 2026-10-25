@@ -28,6 +28,11 @@ including all 450 episodes and the separately labeled original-paper and
 previous hosted GPT references. Private deployment configuration stays outside
 the portable archive.
 
+The separate two-instruction-arm Qwen RFT investigation is at
+[`results/reproductions/mtas-rft-20261025/`](results/reproductions/mtas-rft-20261025/).
+Its dated snapshots distinguish calibration progress from actual training;
+partial receipts do not establish an RFT improvement.
+
 ## Grading
 
 The shared grader in `shoppingbench_foundry.grading` scores exact ordered

@@ -1,0 +1,116 @@
+{
+  "checked_at": "2026-10-25T03:35:22.938529+00:00",
+  "operation": "fine_tuning.alpha.graders.validate",
+  "results": [
+    {
+      "task": "voucher",
+      "grader_version": "v3",
+      "threshold": 0.9,
+      "status": "validated",
+      "response_type": "GraderValidateResponse"
+    },
+    {
+      "task": "web",
+      "grader_version": "web-v5",
+      "threshold": 0.9,
+      "status": "validated",
+      "response_type": "GraderValidateResponse"
+    },
+    {
+      "task": "web",
+      "grader_version": "web-search-v6",
+      "threshold": 0.85,
+      "status": "validated",
+      "response_type": "GraderValidateResponse"
+    }
+  ],
+  "interpretation": "Grader-schema acceptance does not establish Qwen model-specific live-tool training support or prove grader execution/parity.",
+  "training_submissions": 0,
+  "file_uploads": 0,
+  "direct_hosted_parity": [
+    {
+      "grader": "v3",
+      "fixture": "complete",
+      "local_score": 1.0,
+      "hosted_score": 1.0,
+      "matches": true
+    },
+    {
+      "grader": "v3",
+      "fixture": "no_termination",
+      "local_score": 0.96,
+      "hosted_score": 0.96,
+      "matches": true
+    },
+    {
+      "grader": "v3",
+      "fixture": "empty",
+      "local_score": 0.0,
+      "hosted_score": 0.0,
+      "matches": true
+    },
+    {
+      "grader": "v3",
+      "fixture": "prose_without_tool_execution",
+      "local_score": 0.0,
+      "hosted_score": 0.0,
+      "matches": true
+    },
+    {
+      "grader": "web-v5",
+      "fixture": "complete",
+      "local_score": 1.0,
+      "hosted_score": 1.0,
+      "matches": true
+    },
+    {
+      "grader": "web-v5",
+      "fixture": "no_termination",
+      "local_score": 0.1,
+      "hosted_score": 0.1,
+      "matches": true
+    },
+    {
+      "grader": "web-v5",
+      "fixture": "empty",
+      "local_score": 0.0,
+      "hosted_score": 0.0,
+      "matches": true
+    },
+    {
+      "grader": "web-v5",
+      "fixture": "prose_without_tool_execution",
+      "local_score": 0.0,
+      "hosted_score": 0.0,
+      "matches": true
+    }
+  ],
+  "native_grader_execution": [
+    {
+      "grader": "v3",
+      "status": "executed",
+      "reward": 0.0,
+      "response_keys": [
+        "api_model_grader_token_usage_per_model",
+        "metadata",
+        "model_grader_token_usage_per_model",
+        "reward",
+        "sub_rewards"
+      ],
+      "limitation": "Text-only negative fixture; no native training tool trajectory."
+    },
+    {
+      "grader": "web-v5",
+      "status": "executed",
+      "reward": 0.0,
+      "response_keys": [
+        "api_model_grader_token_usage_per_model",
+        "metadata",
+        "model_grader_token_usage_per_model",
+        "reward",
+        "sub_rewards"
+      ],
+      "limitation": "Text-only negative fixture; no native training tool trajectory."
+    }
+  ]
+}
